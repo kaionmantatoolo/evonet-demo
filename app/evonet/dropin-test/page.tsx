@@ -738,7 +738,7 @@ export default function EvonetDropinTestPage() {
                           >
                             {event.type}
                           </Typography>
-                          {event.payload && (
+                          {event.payload != null && (
                             <Box
                               component="pre"
                               sx={{
