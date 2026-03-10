@@ -1,0 +1,770 @@
+"use client";
+
+import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  Alert,
+  Box,
+  Button,
+  Chip,
+  Container,
+  Divider,
+  FormControl,
+  Grid,
+  InputLabel,
+  MenuItem,
+  Paper,
+  Select,
+  Stack,
+  Switch,
+  TextField,
+  Typography,
+} from "@mui/material";
+import { EvonetDropinHost } from "../../../components/EvonetDropinHost";
+import type {
+  EvonetDropinConfig,
+  EvonetDropinEvent,
+} from "../../../types/evonet";
+
+const DEFAULT_ENVIRONMENT =
+  (process.env.NEXT_PUBLIC_EVONET_ENVIRONMENT as string | undefined) ??
+  "HKG_prod";
+
+const DEFAULT_SESSION_ID =
+  process.env.NEXT_PUBLIC_EVONET_SESSION_ID ?? "REPLACE_WITH_REAL_SESSION_ID";
+
+const DEFAULT_CURRENCY =
+  process.env.NEXT_PUBLIC_EVONET_DEFAULT_CURRENCY ?? "HKD";
+
+export default function EvonetDropinTestPage() {
+  const [amount, setAmount] = useState<string>("10.00");
+  const [currency, setCurrency] = useState<string>(DEFAULT_CURRENCY);
+  const [orderId, setOrderId] = useState<string>(
+    `EVT-${Date.now().toString().slice(-6)}`
+  );
+  const [description, setDescription] = useState<string>("Local PROD-like test");
+
+  const [customerName, setCustomerName] = useState<string>("Test User");
+  const [customerEmail, setCustomerEmail] = useState<string>("test@example.com");
+  const [customerPhone, setCustomerPhone] = useState<string>("85212345678");
+
+  const [billingCountry, setBillingCountry] = useState<string>("HK");
+  const [billingCity, setBillingCity] = useState<string>("Hong Kong");
+  const [billingPostalCode, setBillingPostalCode] = useState<string>("000000");
+
+  const [shippingCountry, setShippingCountry] = useState<string>("HK");
+  const [shippingCity, setShippingCity] = useState<string>("Hong Kong");
+  const [shippingPostalCode, setShippingPostalCode] = useState<string>("000000");
+
+  const [environment, setEnvironment] = useState<string>(DEFAULT_ENVIRONMENT);
+  const [mode, setMode] = useState<EvonetDropinConfig["mode"]>("embedded");
+  const [language, setLanguage] = useState<string>("en");
+  const [verifyPaymentBrand, setVerifyPaymentBrand] = useState<boolean>(false);
+
+  const [sessionId, setSessionId] = useState<string>(DEFAULT_SESSION_ID);
+
+  const [isCreatingSession, setIsCreatingSession] = useState(false);
+  const [sessionError, setSessionError] = useState<string | null>(null);
+
+  const [configVersion, setConfigVersion] = useState<number>(1);
+  const [events, setEvents] = useState<EvonetDropinEvent[]>([]);
+  const [userAgent, setUserAgent] = useState<string>("Detecting user agent…");
+
+  const config: EvonetDropinConfig = useMemo(
+    () => ({
+      type: "payment",
+      sessionID: sessionId,
+      environment: environment as EvonetDropinConfig["environment"],
+      mode,
+      amount: Number.isNaN(parseFloat(amount)) ? undefined : parseFloat(amount),
+      currency,
+      orderId,
+      description,
+      customerName,
+      customerEmail,
+      customerPhone,
+      billingCountry,
+      billingCity,
+      billingPostalCode,
+      shippingCountry,
+      shippingCity,
+      shippingPostalCode,
+      language,
+      isVerifyPaymentBrand: verifyPaymentBrand,
+    }),
+    [
+      amount,
+      billingCity,
+      billingCountry,
+      billingPostalCode,
+      currency,
+      customerEmail,
+      customerName,
+      customerPhone,
+      description,
+      environment,
+      language,
+      mode,
+      orderId,
+      sessionId,
+      shippingCity,
+      shippingCountry,
+      shippingPostalCode,
+      verifyPaymentBrand,
+    ]
+  );
+
+  const handleInitialize = () => {
+    if (!sessionId || sessionId === "REPLACE_WITH_REAL_SESSION_ID") {
+      alert("Please provide a valid Evonet sessionID before initializing.");
+      return;
+    }
+    if (!amount || Number.isNaN(parseFloat(amount))) {
+      alert("Please enter a valid amount.");
+      return;
+    }
+    setEvents([]);
+    setConfigVersion((v) => v + 1);
+  };
+
+  const handleEvent = useCallback((event: EvonetDropinEvent) => {
+    setEvents((prev) => [event, ...prev].slice(0, 50));
+  }, []);
+
+  useEffect(() => {
+    if (typeof navigator !== "undefined") {
+      setUserAgent(navigator.userAgent);
+    }
+  }, []);
+
+  const handleCreateSession = async () => {
+    setSessionError(null);
+
+    const numericAmount = parseFloat(amount);
+    if (Number.isNaN(numericAmount) || numericAmount <= 0) {
+      setSessionError("Please enter a valid amount before creating sessionID.");
+      return;
+    }
+
+    if (!currency) {
+      setSessionError("Currency is required.");
+      return;
+    }
+
+    if (!orderId) {
+      setSessionError("Order ID is required.");
+      return;
+    }
+
+    setIsCreatingSession(true);
+    try {
+      const response = await fetch("/api/evonet/session", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          amount: numericAmount,
+          currency,
+          orderId,
+          description,
+          environment,
+          locale: language,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        const err =
+          data?.error ?? "Failed to create sessionID via Evonet interaction API.";
+        const details = data?.details;
+        const detailStr =
+          details && typeof details === "object"
+            ? ` — ${JSON.stringify(details).slice(0, 400)}`
+            : "";
+        setSessionError(`${err}${detailStr}`);
+        return;
+      }
+
+      if (!data?.sessionId) {
+        setSessionError(
+          "Interaction API did not return sessionId. Check server logs and Evonet docs."
+        );
+        return;
+      }
+
+      setSessionId(data.sessionId as string);
+    } catch (error) {
+      setSessionError(
+        error instanceof Error
+          ? error.message
+          : "Unexpected error creating sessionID."
+      );
+    } finally {
+      setIsCreatingSession(false);
+    }
+  };
+
+  return (
+    <Box sx={{ minHeight: "100vh", bgcolor: "background.default" }}>
+      <Container maxWidth="lg" sx={{ py: { xs: 3, lg: 5 } }}>
+        <Grid container spacing={3}>
+          <Grid item xs={12} lg={5}>
+            <Stack spacing={2}>
+              <Alert severity="error" variant="outlined">
+                You are configuring a PROD-like Evonet Drop-in test page. Ensure
+                you use sandbox credentials or very small live amounts.
+              </Alert>
+
+              <Box>
+                <Typography variant="h5" sx={{ mb: 1, fontWeight: 600 }}>
+                  Evonet Drop-in Test (Local)
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Configure order and customer details, then initialize Evonet
+                  Drop-in to run local test transactions using your real browser
+                  user agent.
+                </Typography>
+              </Box>
+
+              <Paper variant="outlined" sx={{ p: { xs: 2, lg: 3 } }}>
+                <Stack spacing={3}>
+                  <Box>
+                    <Typography
+                      variant="subtitle2"
+                      sx={{ mb: 2, fontWeight: 600 }}
+                    >
+                      Environment & basics
+                    </Typography>
+                    <Grid container spacing={2}>
+                      <Grid item xs={12}>
+                        <TextField
+                          label="sessionID"
+                          value={sessionId}
+                          onChange={(e) => setSessionId(e.target.value)}
+                          placeholder="Generated by interaction API / backend"
+                          size="small"
+                          fullWidth
+                        />
+                        <Stack
+                          direction="column"
+                          spacing={0.75}
+                          sx={{ mt: 1.5 }}
+                          alignItems="flex-start"
+                        >
+                          <Button
+                            type="button"
+                            onClick={handleCreateSession}
+                            disabled={isCreatingSession}
+                            variant="contained"
+                            size="small"
+                            sx={{ textTransform: "none" }}
+                          >
+                            {isCreatingSession ? "Creating session ID…" : "Create session ID"}
+                          </Button>
+                          <Typography variant="caption" color="text.secondary">
+                            Uses your server-side credentials to call Evonet&apos;s
+                            interaction API and return a session ID. If you see
+                            &quot;store not found&quot;, add EVONET_STORE_ID to
+                            .env.local (from Evonet Portal) or contact Evonet.
+                          </Typography>
+                        </Stack>
+                        {sessionError && (
+                          <Alert severity="error" sx={{ mt: 1.5 }}>
+                            {sessionError}
+                          </Alert>
+                        )}
+                      </Grid>
+
+                      <Grid item xs={12} sm={6}>
+                        <TextField
+                          label="Environment"
+                          value={environment}
+                          onChange={(e) => setEnvironment(e.target.value)}
+                          size="small"
+                          fullWidth
+                          helperText="Example: HKG_prod, UAT, TEST."
+                        />
+                      </Grid>
+
+                      <Grid item xs={12} sm={6}>
+                        <FormControl size="small" fullWidth>
+                          <InputLabel id="mode-label">Mode</InputLabel>
+                          <Select
+                            labelId="mode-label"
+                            label="Mode"
+                            value={mode}
+                            onChange={(e) =>
+                              setMode(
+                                e.target.value as EvonetDropinConfig["mode"]
+                              )
+                            }
+                          >
+                            <MenuItem value="embedded">embedded</MenuItem>
+                            <MenuItem value="fullPage">fullPage</MenuItem>
+                          </Select>
+                        </FormControl>
+                      </Grid>
+
+                      <Grid item xs={12} sm={6}>
+                        <FormControl size="small" fullWidth>
+                          <InputLabel id="language-label">Language</InputLabel>
+                          <Select
+                            labelId="language-label"
+                            label="Language"
+                            value={language}
+                            onChange={(e) => setLanguage(e.target.value)}
+                          >
+                            <MenuItem value="en">en</MenuItem>
+                            <MenuItem value="zh-Hant">zh-Hant</MenuItem>
+                            <MenuItem value="zh-Hans">zh-Hans</MenuItem>
+                            <MenuItem value="ja">ja</MenuItem>
+                            <MenuItem value="ko">ko</MenuItem>
+                            <MenuItem value="th">th</MenuItem>
+                            <MenuItem value="vi">vi</MenuItem>
+                            <MenuItem value="id">id</MenuItem>
+                          </Select>
+                        </FormControl>
+                      </Grid>
+                    </Grid>
+                  </Box>
+
+                  <Box>
+                    <Typography
+                      variant="subtitle2"
+                      sx={{ mb: 2, fontWeight: 600 }}
+                    >
+                      Order details
+                    </Typography>
+                    <Grid container spacing={2}>
+                      <Grid item xs={12} sm={6}>
+                        <TextField
+                          label="Amount"
+                          type="number"
+                          inputProps={{ min: 0, step: "0.01" }}
+                          value={amount}
+                          onChange={(e) => setAmount(e.target.value)}
+                          size="small"
+                          fullWidth
+                        />
+                      </Grid>
+                      <Grid item xs={12} sm={6}>
+                        <TextField
+                          label="Currency"
+                          value={currency}
+                          onChange={(e) =>
+                            setCurrency(e.target.value.toUpperCase())
+                          }
+                          size="small"
+                          fullWidth
+                        />
+                      </Grid>
+                      <Grid item xs={12}>
+                        <TextField
+                          label="Order ID"
+                          value={orderId}
+                          onChange={(e) => setOrderId(e.target.value)}
+                          size="small"
+                          fullWidth
+                        />
+                      </Grid>
+                      <Grid item xs={12}>
+                        <TextField
+                          label="Description"
+                          value={description}
+                          onChange={(e) => setDescription(e.target.value)}
+                          size="small"
+                          fullWidth
+                        />
+                      </Grid>
+                    </Grid>
+                  </Box>
+
+                  <Box>
+                    <Typography
+                      variant="subtitle2"
+                      sx={{ mb: 2, fontWeight: 600 }}
+                    >
+                      Customer
+                    </Typography>
+                    <Grid container spacing={2}>
+                      <Grid item xs={12}>
+                        <TextField
+                          label="Name"
+                          value={customerName}
+                          onChange={(e) => setCustomerName(e.target.value)}
+                          size="small"
+                          fullWidth
+                        />
+                      </Grid>
+                      <Grid item xs={12} sm={6}>
+                        <TextField
+                          label="Email"
+                          type="email"
+                          value={customerEmail}
+                          onChange={(e) => setCustomerEmail(e.target.value)}
+                          size="small"
+                          fullWidth
+                        />
+                      </Grid>
+                      <Grid item xs={12} sm={6}>
+                        <TextField
+                          label="Phone"
+                          type="tel"
+                          value={customerPhone}
+                          onChange={(e) => setCustomerPhone(e.target.value)}
+                          size="small"
+                          fullWidth
+                        />
+                      </Grid>
+                    </Grid>
+                  </Box>
+
+                  <Box>
+                    <Typography
+                      variant="subtitle2"
+                      sx={{ mb: 2, fontWeight: 600 }}
+                    >
+                      Billing & Shipping
+                    </Typography>
+                    <Grid container spacing={2}>
+                      <Grid item xs={12} sm={4}>
+                        <TextField
+                          label="Billing Country"
+                          value={billingCountry}
+                          onChange={(e) =>
+                            setBillingCountry(e.target.value.toUpperCase())
+                          }
+                          size="small"
+                          fullWidth
+                        />
+                      </Grid>
+                      <Grid item xs={12} sm={4}>
+                        <TextField
+                          label="Billing City"
+                          value={billingCity}
+                          onChange={(e) => setBillingCity(e.target.value)}
+                          size="small"
+                          fullWidth
+                        />
+                      </Grid>
+                      <Grid item xs={12} sm={4}>
+                        <TextField
+                          label="Billing Postal Code"
+                          value={billingPostalCode}
+                          onChange={(e) => setBillingPostalCode(e.target.value)}
+                          size="small"
+                          fullWidth
+                        />
+                      </Grid>
+
+                      <Grid item xs={12} sm={4}>
+                        <TextField
+                          label="Shipping Country"
+                          value={shippingCountry}
+                          onChange={(e) =>
+                            setShippingCountry(e.target.value.toUpperCase())
+                          }
+                          size="small"
+                          fullWidth
+                        />
+                      </Grid>
+                      <Grid item xs={12} sm={4}>
+                        <TextField
+                          label="Shipping City"
+                          value={shippingCity}
+                          onChange={(e) => setShippingCity(e.target.value)}
+                          size="small"
+                          fullWidth
+                        />
+                      </Grid>
+                      <Grid item xs={12} sm={4}>
+                        <TextField
+                          label="Shipping Postal Code"
+                          value={shippingPostalCode}
+                          onChange={(e) =>
+                            setShippingPostalCode(e.target.value)
+                          }
+                          size="small"
+                          fullWidth
+                        />
+                      </Grid>
+                    </Grid>
+                  </Box>
+
+                  <Box>
+                    <Typography
+                      variant="subtitle2"
+                      sx={{ mb: 2, fontWeight: 600 }}
+                    >
+                      Options
+                    </Typography>
+                    <Stack
+                      direction="row"
+                      spacing={2}
+                      alignItems="center"
+                      justifyContent="space-between"
+                    >
+                      <Box>
+                        <Typography variant="body2" fontWeight={600}>
+                          Verify payment brand (BIN)
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          If enabled, Drop-in may emit payment_method_selected
+                          events when card brand is verified.
+                        </Typography>
+                      </Box>
+                      <Switch
+                        checked={verifyPaymentBrand}
+                        onChange={() => setVerifyPaymentBrand((v) => !v)}
+                        inputProps={{ "aria-label": "Verify payment brand" }}
+                      />
+                    </Stack>
+                  </Box>
+
+                  <Divider />
+
+                  <Box>
+                    <Button
+                      type="button"
+                      onClick={handleInitialize}
+                      variant="contained"
+                    >
+                      Initialize / Re-initialize Drop-in
+                    </Button>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ display: "block", mt: 1 }}
+                    >
+                      Initialization always runs in the browser, using your real
+                      navigator.userAgent. No Node/cURL calls are used for Drop-in
+                      itself.
+                    </Typography>
+                  </Box>
+                </Stack>
+              </Paper>
+
+              <Paper
+                sx={{
+                  bgcolor: "grey.900",
+                  color: "grey.100",
+                  p: 2,
+                  borderRadius: 3,
+                }}
+              >
+                <Stack
+                  direction="row"
+                  alignItems="center"
+                  justifyContent="space-between"
+                  sx={{ mb: 1 }}
+                >
+                  <Typography variant="subtitle2" sx={{ color: "success.light" }}>
+                    Runtime debug
+                  </Typography>
+                  <Chip
+                    size="small"
+                    label="Browser-only"
+                    sx={{ bgcolor: "grey.800", color: "grey.200" }}
+                  />
+                </Stack>
+                <Grid container spacing={2}>
+                  <Grid item xs={12} sm={6}>
+                    <Typography
+                      variant="overline"
+                      sx={{ color: "grey.400", display: "block" }}
+                    >
+                      Evonet environment
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      sx={{ color: "success.light", wordBreak: "break-all" }}
+                    >
+                      {environment}
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Typography
+                      variant="overline"
+                      sx={{ color: "grey.400", display: "block" }}
+                    >
+                      Drop-in mode
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: "success.light" }}>
+                      {mode}
+                    </Typography>
+                  </Grid>
+                </Grid>
+                <Box sx={{ mt: 2 }}>
+                  <Typography
+                    variant="overline"
+                    sx={{ color: "grey.400", display: "block" }}
+                  >
+                    navigator.userAgent
+                  </Typography>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: "grey.100",
+                      display: "block",
+                      wordBreak: "break-all",
+                    }}
+                  >
+                    {userAgent}
+                  </Typography>
+                </Box>
+              </Paper>
+            </Stack>
+          </Grid>
+
+          <Grid item xs={12} lg={7}>
+            <Stack spacing={2} sx={{ height: "100%" }}>
+              <Paper variant="outlined" sx={{ overflow: "hidden" }}>
+                <Box
+                  sx={{
+                    borderBottom: "1px solid",
+                    borderColor: "divider",
+                    px: { xs: 2, lg: 3 },
+                    py: 2,
+                  }}
+                >
+                  <Stack
+                    direction={{ xs: "column", sm: "row" }}
+                    spacing={2}
+                    alignItems={{ sm: "center" }}
+                    justifyContent="space-between"
+                  >
+                    <Box>
+                      <Typography variant="subtitle2" fontWeight={600}>
+                        Drop-in preview
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        This is the embedded Evonet Drop-in container. After you
+                        initialize, it should render the hosted payment UI here.
+                      </Typography>
+                    </Box>
+                    <Chip
+                      size="small"
+                      variant="outlined"
+                      label={
+                        <Box component="span" sx={{ fontSize: 11 }}>
+                          sessionID:{" "}
+                          <Box
+                            component="span"
+                            sx={{ fontFamily: "monospace" }}
+                          >
+                            {sessionId.slice(0, 6) || "N/A"}…
+                          </Box>
+                        </Box>
+                      }
+                    />
+                  </Stack>
+                </Box>
+                <Box>
+                  <EvonetDropinHost
+                    config={config}
+                    configVersion={configVersion}
+                    onEvent={handleEvent}
+                  />
+                </Box>
+              </Paper>
+
+              <Paper
+                sx={{
+                  flex: 1,
+                  bgcolor: "grey.900",
+                  color: "grey.100",
+                  p: { xs: 2, lg: 3 },
+                  borderRadius: 3,
+                }}
+              >
+                <Stack
+                  direction="row"
+                  alignItems="center"
+                  justifyContent="space-between"
+                  sx={{ mb: 2 }}
+                >
+                  <Typography variant="subtitle2" sx={{ color: "grey.100" }}>
+                    Drop-in events
+                  </Typography>
+                  <Button
+                    type="button"
+                    onClick={() => setEvents([])}
+                    size="small"
+                    variant="outlined"
+                    sx={{
+                      color: "grey.100",
+                      borderColor: "grey.700",
+                      textTransform: "none",
+                    }}
+                  >
+                    Clear
+                  </Button>
+                </Stack>
+                <Box
+                  sx={{
+                    bgcolor: "rgba(2, 6, 23, 0.7)",
+                    border: "1px solid",
+                    borderColor: "grey.800",
+                    borderRadius: 2,
+                    p: 2,
+                    maxHeight: 224,
+                    overflow: "auto",
+                  }}
+                >
+                  {events.length === 0 ? (
+                    <Typography variant="caption" color="grey.400">
+                      No events yet. After initializing Drop-in and performing a
+                      transaction, events such as payment_success,
+                      payment_fail, or payment_method_selected will appear here.
+                    </Typography>
+                  ) : (
+                    <Stack spacing={1} component="ul" sx={{ m: 0, p: 0 }}>
+                      {events.map((event, index) => (
+                        <Box
+                          key={index}
+                          component="li"
+                          sx={{
+                            listStyle: "none",
+                            bgcolor: "grey.900",
+                            borderRadius: 1.5,
+                            px: 1.5,
+                            py: 1,
+                          }}
+                        >
+                          <Typography
+                            variant="caption"
+                            sx={{ fontFamily: "monospace", color: "success.light" }}
+                          >
+                            {event.type}
+                          </Typography>
+                          {event.payload && (
+                            <Box
+                              component="pre"
+                              sx={{
+                                mt: 1,
+                                mb: 0,
+                                maxHeight: 96,
+                                overflow: "auto",
+                                whiteSpace: "pre-wrap",
+                                wordBreak: "break-word",
+                                fontSize: 10,
+                                color: "grey.200",
+                              }}
+                            >
+                              {JSON.stringify(event.payload, null, 2)}
+                            </Box>
+                          )}
+                        </Box>
+                      ))}
+                    </Stack>
+                  )}
+                </Box>
+              </Paper>
+            </Stack>
+          </Grid>
+        </Grid>
+      </Container>
+    </Box>
+  );
+}

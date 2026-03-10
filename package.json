@@ -1,0 +1,29 @@
+{
+  "name": "evonet-demo",
+  "version": "1.0.0",
+  "description": "Evonet Drop-in local test app (Next.js + React + Material UI)",
+  "main": "index.js",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.0",
+    "@mui/material": "^5.18.0",
+    "@mui/material-nextjs": "^5.18.0",
+    "next": "^15.1.6",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.3.5",
+    "@types/react": "^19.2.14",
+    "typescript": "^5.9.3"
+  }
+}
