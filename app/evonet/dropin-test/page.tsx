@@ -67,7 +67,8 @@ export default function EvonetDropinTestPage() {
   const [isCreatingSession, setIsCreatingSession] = useState(false);
   const [sessionError, setSessionError] = useState<string | null>(null);
 
-  const [configVersion, setConfigVersion] = useState<number>(1);
+  // Drop-in should only initialize when user explicitly clicks Initialize.
+  const [configVersion, setConfigVersion] = useState<number>(0);
   const [events, setEvents] = useState<EvonetDropinEvent[]>([]);
   const [userAgent, setUserAgent] = useState<string>("Detecting user agent…");
 
@@ -156,8 +157,6 @@ export default function EvonetDropinTestPage() {
       router.push(`/evonet/result/failed?${toQuery("failed")}`);
     } else if (event.type === "payment_cancelled") {
       router.push(`/evonet/result/cancelled?${toQuery("cancelled")}`);
-    } else if (event.type === "payment_pending") {
-      router.push(`/evonet/result/pending?${toQuery("pending")}`);
     }
   }, []);
 

@@ -67,6 +67,10 @@ export function EvonetDropinHost({
     if (!scriptLoaded) {
       return;
     }
+    // Only initialize after explicit user action from the host page.
+    if (configVersion < 1) {
+      return;
+    }
 
     const win = window as unknown as EvonetWindow;
 
