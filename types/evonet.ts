@@ -73,6 +73,7 @@ export type EvonetDropinEventType =
   | "payment_success"
   | "payment_fail"
   | "payment_pending"
+  | "payment_cancelled"
   | "payment_method_selected"
   | "error"
   | (string & {});

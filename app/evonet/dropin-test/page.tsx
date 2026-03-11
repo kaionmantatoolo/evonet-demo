@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   Alert,
   Box,
@@ -36,6 +37,7 @@ const DEFAULT_CURRENCY =
   process.env.NEXT_PUBLIC_EVONET_DEFAULT_CURRENCY ?? "HKD";
 
 export default function EvonetDropinTestPage() {
+  const router = useRouter();
   const [amount, setAmount] = useState<string>("10.00");
   const [currency, setCurrency] = useState<string>(DEFAULT_CURRENCY);
   const [orderId, setOrderId] = useState<string>(
@@ -128,6 +130,35 @@ export default function EvonetDropinTestPage() {
 
   const handleEvent = useCallback((event: EvonetDropinEvent) => {
     setEvents((prev) => [event, ...prev].slice(0, 50));
+
+    const payload = event.payload as
+      | {
+          merchantTransID?: string;
+          sessionID?: string;
+          code?: string;
+          message?: string;
+        }
+      | undefined;
+
+    const toQuery = (status: string) => {
+      const params = new URLSearchParams();
+      if (payload?.merchantTransID) params.set("merchantTransID", payload.merchantTransID);
+      if (payload?.sessionID) params.set("sessionID", payload.sessionID);
+      if (payload?.code) params.set("code", payload.code);
+      if (payload?.message) params.set("message", payload.message);
+      params.set("status", status);
+      return params.toString();
+    };
+
+    if (event.type === "payment_success") {
+      router.push(`/evonet/result/success?${toQuery("success")}`);
+    } else if (event.type === "payment_fail") {
+      router.push(`/evonet/result/failed?${toQuery("failed")}`);
+    } else if (event.type === "payment_cancelled") {
+      router.push(`/evonet/result/cancelled?${toQuery("cancelled")}`);
+    } else if (event.type === "payment_pending") {
+      router.push(`/evonet/result/pending?${toQuery("pending")}`);
+    }
   }, []);
 
   useEffect(() => {
