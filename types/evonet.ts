@@ -78,6 +78,7 @@ export type EvonetDropinEventType =
   | "payment_pending"
   | "payment_cancelled"
   | "payment_method_selected"
+  | "sdk_message"
   | "error"
   | (string & {});
 

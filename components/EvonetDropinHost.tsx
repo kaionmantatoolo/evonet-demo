@@ -28,6 +28,25 @@ export function EvonetDropinHost({
   const dropInInstanceRef = useRef<unknown>(null);
   const [scriptLoaded, setScriptLoaded] = useState(false);
 
+  // Capture any postMessage traffic from the Drop-in iframe so we can
+  // surface raw SDK messages in the host page event log.
+  useEffect(() => {
+    const handler = (event: MessageEvent) => {
+      onEvent?.({
+        type: "sdk_message",
+        payload: {
+          origin: event.origin,
+          data: event.data,
+        },
+      });
+    };
+
+    window.addEventListener("message", handler);
+    return () => {
+      window.removeEventListener("message", handler);
+    };
+  }, [onEvent]);
+
   useEffect(() => {
     const existing = document.querySelector<HTMLScriptElement>(
       'script[data-evonet-dropin="true"]'
@@ -102,9 +121,19 @@ export function EvonetDropinHost({
       envMap[config.environment] ?? config.environment;
 
     const handlePaymentMethodSelected = (payload: unknown) => {
+      // High-level event for the host UI.
       onEvent?.({
         type: "payment_method_selected",
         payload,
+      });
+
+      // Also surface this as a raw SDK message for easier debugging.
+      onEvent?.({
+        type: "sdk_message",
+        payload: {
+          source: "payment_method_selected",
+          data: payload,
+        },
       });
 
       const p = payload as { verificationID?: string } | undefined;
