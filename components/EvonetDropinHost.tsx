@@ -150,7 +150,8 @@ export function EvonetDropinHost({
       if (typeof callback === "function") {
         callback({
           msg: "",
-          isVaild: "true",
+          // Follow Evonet docs: https://developer.evonetonline.com/docs/card-bin-verification
+          isValid: true,
           id: verificationID,
         });
       }
@@ -163,7 +164,12 @@ export function EvonetDropinHost({
       locale: config.language ?? "en",
       mode: config.mode,
       environment: sdkEnvironment as EvonetDropinSdkOptions["environment"],
+      // Keep legacy root flag for compatibility, but also send verifyOption
+      // as per Evonet docs.
       isVerifyPaymentBrand: Boolean(config.isVerifyPaymentBrand),
+      verifyOption: {
+        isVerifyPaymentBrand: Boolean(config.isVerifyPaymentBrand),
+      },
       appearance: {
         colorBackground: "#ffffff",
       },

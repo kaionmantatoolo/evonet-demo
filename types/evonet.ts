@@ -53,6 +53,10 @@ export interface EvonetDropinSdkOptions {
   mode: EvonetDropinMode;
   environment: EvonetEnvironment;
   isVerifyPaymentBrand?: boolean;
+  verifyOption?: {
+    isVerifyPaymentBrand?: boolean;
+    [key: string]: unknown;
+  };
   appearance?: {
     colorBackground?: string;
     [key: string]: unknown;
