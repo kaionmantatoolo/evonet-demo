@@ -25,6 +25,7 @@ export function EvonetDropinHost({
   onEvent,
 }: EvonetDropinHostProps) {
   const containerIdRef = useRef<string>("evonet-dropin-root");
+  const dropInInstanceRef = useRef<unknown>(null);
   const [scriptLoaded, setScriptLoaded] = useState(false);
 
   useEffect(() => {
@@ -100,6 +101,32 @@ export function EvonetDropinHost({
     const sdkEnvironment =
       envMap[config.environment] ?? config.environment;
 
+    const handlePaymentMethodSelected = (payload: unknown) => {
+      onEvent?.({
+        type: "payment_method_selected",
+        payload,
+      });
+
+      const p = payload as { verificationID?: string } | undefined;
+      const verificationID = p?.verificationID;
+      if (!verificationID) return;
+
+      const inst = dropInInstanceRef.current as any;
+      const callback =
+        inst?.value?.callbackVerification ??
+        inst?.callbackVerification ??
+        inst?.value?.callbackVerify ??
+        inst?.callbackVerify;
+
+      if (typeof callback === "function") {
+        callback({
+          msg: "",
+          isVaild: "true",
+          id: verificationID,
+        });
+      }
+    };
+
     const options: EvonetDropinSdkOptions = {
       id: `#${containerIdRef.current}`,
       type: "payment",
@@ -107,9 +134,12 @@ export function EvonetDropinHost({
       locale: config.language ?? "en",
       mode: config.mode,
       environment: sdkEnvironment as EvonetDropinSdkOptions["environment"],
+      isVerifyPaymentBrand: Boolean(config.isVerifyPaymentBrand),
       appearance: {
         colorBackground: "#ffffff",
       },
+      payment_method_select: handlePaymentMethodSelected,
+      payment_method_selected: handlePaymentMethodSelected,
       payment_completed: (payload: unknown) => {
         onEvent?.({
           type: "payment_success",
@@ -138,7 +168,7 @@ export function EvonetDropinHost({
 
     try {
       // eslint-disable-next-line no-new
-      new SdkCtor(options);
+      dropInInstanceRef.current = new SdkCtor(options);
     } catch (error) {
       onEvent?.({
         type: "error",
@@ -147,6 +177,7 @@ export function EvonetDropinHost({
     }
 
     return () => {
+      dropInInstanceRef.current = null;
       const c = document.getElementById(containerIdRef.current);
       if (c) {
         c.innerHTML = "";

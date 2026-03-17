@@ -52,10 +52,13 @@ export interface EvonetDropinSdkOptions {
   locale: string;
   mode: EvonetDropinMode;
   environment: EvonetEnvironment;
+  isVerifyPaymentBrand?: boolean;
   appearance?: {
     colorBackground?: string;
     [key: string]: unknown;
   };
+  payment_method_select?: (event: unknown) => void;
+  payment_method_selected?: (event: unknown) => void;
   payment_completed?: (event: unknown) => void;
   payment_failed?: (event: unknown) => void;
   payment_not_preformed?: (event: unknown) => void;
