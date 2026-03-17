@@ -734,6 +734,8 @@ export default function EvonetDropinTestPage() {
                   color: "grey.100",
                   p: { xs: 2, lg: 3 },
                   borderRadius: 3,
+                  display: "flex",
+                  flexDirection: "column",
                 }}
               >
                 <Stack
@@ -766,7 +768,9 @@ export default function EvonetDropinTestPage() {
                     borderColor: "grey.800",
                     borderRadius: 2,
                     p: 2,
-                    maxHeight: 224,
+                    mt: 1,
+                    flex: 1,
+                    minHeight: 0,
                     overflow: "auto",
                   }}
                 >
@@ -802,8 +806,6 @@ export default function EvonetDropinTestPage() {
                               sx={{
                                 mt: 1,
                                 mb: 0,
-                                maxHeight: 96,
-                                overflow: "auto",
                                 whiteSpace: "pre-wrap",
                                 wordBreak: "break-word",
                                 fontSize: 10,
