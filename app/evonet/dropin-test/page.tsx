@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 import {
   Alert,
   Box,
@@ -37,7 +36,6 @@ const DEFAULT_CURRENCY =
   process.env.NEXT_PUBLIC_EVONET_DEFAULT_CURRENCY ?? "HKD";
 
 export default function EvonetDropinTestPage() {
-  const router = useRouter();
   const [amount, setAmount] = useState<string>("10.00");
   const [currency, setCurrency] = useState<string>(DEFAULT_CURRENCY);
   const [orderId, setOrderId] = useState<string>(
@@ -71,6 +69,15 @@ export default function EvonetDropinTestPage() {
   const [configVersion, setConfigVersion] = useState<number>(0);
   const [events, setEvents] = useState<EvonetDropinEvent[]>([]);
   const [userAgent, setUserAgent] = useState<string>("Detecting user agent…");
+  const [lastResult, setLastResult] = useState<{
+    type: "payment_success" | "payment_fail" | "payment_cancelled" | null;
+    payload?: {
+      merchantTransID?: string;
+      sessionID?: string;
+      code?: string;
+      message?: string;
+    };
+  }>({ type: null });
 
   const config: EvonetDropinConfig = useMemo(
     () => ({
@@ -141,22 +148,15 @@ export default function EvonetDropinTestPage() {
         }
       | undefined;
 
-    const toQuery = (status: string) => {
-      const params = new URLSearchParams();
-      if (payload?.merchantTransID) params.set("merchantTransID", payload.merchantTransID);
-      if (payload?.sessionID) params.set("sessionID", payload.sessionID);
-      if (payload?.code) params.set("code", payload.code);
-      if (payload?.message) params.set("message", payload.message);
-      params.set("status", status);
-      return params.toString();
-    };
-
-    if (event.type === "payment_success") {
-      router.push(`/evonet/result/success?${toQuery("success")}`);
-    } else if (event.type === "payment_fail") {
-      router.push(`/evonet/result/failed?${toQuery("failed")}`);
-    } else if (event.type === "payment_cancelled") {
-      router.push(`/evonet/result/cancelled?${toQuery("cancelled")}`);
+    if (
+      event.type === "payment_success" ||
+      event.type === "payment_fail" ||
+      event.type === "payment_cancelled"
+    ) {
+      setLastResult({
+        type: event.type as "payment_success" | "payment_fail" | "payment_cancelled",
+        payload,
+      });
     }
   }, []);
 
@@ -256,6 +256,34 @@ export default function EvonetDropinTestPage() {
                   user agent.
                 </Typography>
               </Box>
+
+              {lastResult.type && (
+                <Alert
+                  severity={
+                    lastResult.type === "payment_success"
+                      ? "success"
+                      : lastResult.type === "payment_fail"
+                      ? "error"
+                      : "warning"
+                  }
+                  variant="outlined"
+                >
+                  <Typography variant="subtitle2" fontWeight={700}>
+                    {lastResult.type === "payment_success"
+                      ? "Payment successful"
+                      : lastResult.type === "payment_fail"
+                      ? "Payment failed"
+                      : "Payment cancelled"}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {lastResult.payload?.merchantTransID
+                      ? `merchantTransID: ${lastResult.payload.merchantTransID}`
+                      : lastResult.payload?.code
+                      ? `code: ${lastResult.payload.code}`
+                      : "See the event log below for details."}
+                  </Typography>
+                </Alert>
+              )}
 
               <Paper variant="outlined" sx={{ p: { xs: 2, lg: 3 } }}>
                 <Stack spacing={3}>
