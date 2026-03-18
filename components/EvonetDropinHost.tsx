@@ -138,18 +138,38 @@ export function EvonetDropinHost({
 
       const p = payload as {
         verificationID?: string;
+        verificationId?: string;
         paymentBrand?: string;
         [key: string]: unknown;
       } | undefined;
-      const verificationID = p?.verificationID;
-      if (!verificationID) return;
+      const verificationID =
+        p?.verificationID ?? p?.verificationId ?? (p as any)?.verification_id;
+      if (!verificationID) {
+        onEvent?.({
+          type: "error",
+          payload: {
+            message:
+              "payment_method_selected missing verificationID; cannot enable Pay button",
+            rawPayload: p,
+          },
+        });
+        return;
+      }
 
-      const inst = dropInInstanceRef.current as any;
+      const inst = dropInInstanceRef.current as Record<string, unknown> | null;
+      const base = (inst?.value ?? inst) as Record<string, unknown> | null;
       const callback =
-        inst?.value?.callbackVerification ??
-        inst?.callbackVerification ??
-        inst?.value?.callbackVerify ??
-        inst?.callbackVerify;
+        (typeof base?.callbackVerification === "function"
+          ? base.callbackVerification
+          : typeof (inst as any)?.callbackVerification === "function"
+            ? (inst as any).callbackVerification
+            : typeof base?.callbackVerify === "function"
+              ? base.callbackVerify
+              : null) as ((params: {
+                  msg: string;
+                  isValid: boolean;
+                  id: string;
+                }) => void) | null;
 
       const action = config.binVerifyAction ?? "approve";
       const brand = p?.paymentBrand ?? "your card issuer";
@@ -157,16 +177,39 @@ export function EvonetDropinHost({
         config.binApprovalMessage ??
         "Nice card you have from {{paymentBrand}}";
       const approvalMsgResolved = approvalMsg
-        .replace(/\{\{paymentBrand\}\}/gi, brand)
-        .replace(/\{\{Card Issuer\}\}/gi, brand);
+        .replace(/\{\{paymentBrand\}\}/gi, String(brand))
+        .replace(/\{\{Card Issuer\}\}/gi, String(brand));
       const rejectMsg =
         config.binRejectMessage ?? "This card number is not supported.";
 
+      const params = {
+        msg: action === "approve" ? approvalMsgResolved : rejectMsg,
+        isValid: action === "approve",
+        id: String(verificationID),
+      };
+
       if (typeof callback === "function") {
-        callback({
-          msg: action === "approve" ? approvalMsgResolved : rejectMsg,
-          isValid: action === "approve",
-          id: verificationID,
+        try {
+          callback(params);
+        } catch (err) {
+          onEvent?.({
+            type: "error",
+            payload: {
+              message: "callbackVerification threw",
+              error: err,
+              params,
+            },
+          });
+        }
+      } else {
+        onEvent?.({
+          type: "error",
+          payload: {
+            message:
+              "callbackVerification not found on Drop-in instance; Pay button will stay disabled. Check SDK structure.",
+            instanceKeys: inst ? Object.keys(inst) : [],
+            baseKeys: base ? Object.keys(base) : [],
+          },
         });
       }
     };

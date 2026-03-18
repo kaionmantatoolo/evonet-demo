@@ -584,7 +584,9 @@ export default function EvonetDropinTestPage() {
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
                           If enabled, Drop-in may emit payment_method_selected
-                          events when card brand is verified.
+                          events when card brand is verified. Click outside the
+                          card number field after entering it to trigger BIN
+                          verification and enable the Pay button.
                         </Typography>
                       </Box>
                       <Switch
