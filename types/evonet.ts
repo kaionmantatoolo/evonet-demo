@@ -1,10 +1,10 @@
 export interface BinRule {
   /** First 6 digits of the card number to match */
   first6No: string;
-  /** Whether to approve this card */
-  isValid: boolean;
-  /** Message shown inside Drop-in UI (only rendered by SDK when isValid=false) */
-  msg: string;
+  /** Host-page message shown when this BIN matches */
+  trueMessage?: string;
+  /** Drop-in rejection message shown when no BIN matches */
+  falseMessage?: string;
 }
 
 export type EvonetEnvironment =
@@ -36,12 +36,8 @@ export interface EvonetDropinConfig {
   shippingPostalCode?: string;
   language?: string;
   isVerifyPaymentBrand?: boolean;
-  /** BIN rules: checked in order against first6No. First match wins. */
+  /** BIN conditions: checked in order against first6No. First match wins. */
   binRules?: BinRule[];
-  /** Default action when no BIN rule matches */
-  binDefaultAction?: "approve" | "reject";
-  /** Default reject message when no BIN rule matches and default is reject */
-  binDefaultRejectMessage?: string;
   [key: string]: unknown;
 }
 

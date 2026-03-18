@@ -3,7 +3,6 @@
 import { Alert, Box } from "@mui/material";
 import { useEffect, useRef, useState } from "react";
 import type {
-  BinRule,
   EvonetDropinConfig,
   EvonetDropinEvent,
   EvonetDropinSdkOptions,
@@ -189,7 +188,7 @@ export function EvonetDropinHost({
               }) => void)
             : null;
 
-      // --- BIN rules logic (mirrors boss's pattern) ---
+      // --- BIN rules logic ---
       const first6No = String(p?.first6No ?? "");
       const rules = config.binRules ?? [];
       const matchedRule = rules.find((r) => r.first6No === first6No);
@@ -198,19 +197,17 @@ export function EvonetDropinHost({
       let msg: string;
 
       if (matchedRule) {
-        isValid = matchedRule.isValid;
-        // SDK only shows msg when isValid=false; send empty string on approval
-        msg = matchedRule.isValid ? "" : matchedRule.msg;
-      } else if (rules.length > 0) {
-        // Rules exist but nothing matched → use the default action
-        const defaultAction = config.binDefaultAction ?? "approve";
-        isValid = defaultAction === "approve";
-        msg = isValid
-          ? ""
-          : (config.binDefaultRejectMessage ??
-              "This card number is not supported.");
+        isValid = true;
+        msg = "";
+      } else if (rules.some((rule) => rule.first6No.trim().length > 0)) {
+        // If merchant configured BIN rules, unmatched cards are rejected.
+        // Empty falseMessage lets the SDK use its documented default message.
+        isValid = false;
+        msg =
+          rules.find((rule) => (rule.falseMessage ?? "").trim().length > 0)
+            ?.falseMessage ?? "";
       } else {
-        // No rules configured → approve everything (original behaviour)
+        // No BIN configured → use SDK's normal behavior with no custom filter.
         isValid = true;
         msg = "";
       }
