@@ -26,6 +26,7 @@ export function EvonetDropinHost({
 }: EvonetDropinHostProps) {
   const containerIdRef = useRef<string>("evonet-dropin-root");
   const dropInInstanceRef = useRef<unknown>(null);
+  const handledVerificationIdsRef = useRef<Set<string>>(new Set());
   const [scriptLoaded, setScriptLoaded] = useState(false);
 
   // Capture any postMessage traffic from the Drop-in iframe so we can
@@ -156,20 +157,36 @@ export function EvonetDropinHost({
         return;
       }
 
-      const inst = dropInInstanceRef.current as Record<string, unknown> | null;
-      const base = (inst?.value ?? inst) as Record<string, unknown> | null;
-      const callback =
-        (typeof base?.callbackVerification === "function"
-          ? base.callbackVerification
-          : typeof (inst as any)?.callbackVerification === "function"
-            ? (inst as any).callbackVerification
-            : typeof base?.callbackVerify === "function"
-              ? base.callbackVerify
-              : null) as ((params: {
-                  msg: string;
-                  isValid: boolean;
-                  id: string;
-                }) => void) | null;
+      const verificationIdStr = String(verificationID);
+      if (handledVerificationIdsRef.current.has(verificationIdStr)) {
+        onEvent?.({
+          type: "sdk_message",
+          payload: {
+            source: "payment_method_selected",
+            note: "duplicate verificationID ignored",
+            verificationID: verificationIdStr,
+          },
+        });
+        return;
+      }
+      handledVerificationIdsRef.current.add(verificationIdStr);
+
+      const inst = dropInInstanceRef.current as any;
+      const base = inst?.value ?? inst;
+      const callbackVerification =
+        typeof base?.callbackVerification === "function"
+          ? (base.callbackVerification as (params: {
+              msg: string;
+              isValid: boolean;
+              id: string;
+            }) => void)
+          : typeof inst?.callbackVerification === "function"
+            ? (inst.callbackVerification as (params: {
+                msg: string;
+                isValid: boolean;
+                id: string;
+              }) => void)
+            : null;
 
       const action = config.binVerifyAction ?? "approve";
       const brand = p?.paymentBrand ?? "your card issuer";
@@ -182,16 +199,36 @@ export function EvonetDropinHost({
       const rejectMsg =
         config.binRejectMessage ?? "This card number is not supported.";
 
+      // Docs indicate msg is displayed only when isValid=false.
+      // Sending a non-empty msg on approval has caused some SDK builds to reject the response.
+      // Keep the approval message for our logs, but send msg="" for approvals.
+      onEvent?.({
+        type: "sdk_message",
+        payload: {
+          source: "bin_verification_decision",
+          decision: action,
+          message: action === "approve" ? approvalMsgResolved : rejectMsg,
+          verificationID: verificationIdStr,
+          paymentBrand: brand,
+        },
+      });
+
       const params = {
-        msg: action === "approve" ? approvalMsgResolved : rejectMsg,
+        msg: action === "approve" ? "" : rejectMsg,
         isValid: action === "approve",
-        id: String(verificationID),
+        id: verificationIdStr,
       };
 
-      if (typeof callback === "function") {
+      if (typeof callbackVerification === "function") {
         try {
-          callback(params);
+          // Call as a method to preserve expected `this` binding in older SDK builds.
+          if (typeof base?.callbackVerification === "function") {
+            base.callbackVerification(params);
+          } else {
+            inst.callbackVerification(params);
+          }
         } catch (err) {
+          handledVerificationIdsRef.current.delete(verificationIdStr);
           onEvent?.({
             type: "error",
             payload: {
@@ -202,6 +239,7 @@ export function EvonetDropinHost({
           });
         }
       } else {
+        handledVerificationIdsRef.current.delete(verificationIdStr);
         onEvent?.({
           type: "error",
           payload: {
@@ -261,6 +299,7 @@ export function EvonetDropinHost({
     try {
       // eslint-disable-next-line no-new
       dropInInstanceRef.current = new SdkCtor(options);
+      handledVerificationIdsRef.current = new Set();
     } catch (error) {
       onEvent?.({
         type: "error",
