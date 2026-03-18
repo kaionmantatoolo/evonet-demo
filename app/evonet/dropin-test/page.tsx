@@ -21,6 +21,7 @@ import {
 } from "@mui/material";
 import { EvonetDropinHost } from "../../../components/EvonetDropinHost";
 import type {
+  BinRule,
   EvonetDropinConfig,
   EvonetDropinEvent,
 } from "../../../types/evonet";
@@ -59,15 +60,21 @@ export default function EvonetDropinTestPage() {
   const [mode, setMode] = useState<EvonetDropinConfig["mode"]>("embedded");
   const [language, setLanguage] = useState<string>("en");
   const [verifyPaymentBrand, setVerifyPaymentBrand] = useState<boolean>(true);
-  const [binVerifyAction, setBinVerifyAction] = useState<"approve" | "reject">(
-    "approve"
+  const [binRules, setBinRules] = useState<BinRule[]>([
+    {
+      first6No: "552343",
+      isValid: true,
+      msg: "This card is eligible for the promotion with SC Double Fun points",
+    },
+  ]);
+  const [binDefaultAction, setBinDefaultAction] = useState<"approve" | "reject">("reject");
+  const [binDefaultRejectMessage, setBinDefaultRejectMessage] = useState<string>(
+    "Please apply the SC Cards to enjoy the promotion"
   );
-  const [binApprovalMessage, setBinApprovalMessage] = useState<string>(
-    "Nice card you have from {{paymentBrand}}"
-  );
-  const [binRejectMessage, setBinRejectMessage] = useState<string>(
-    "Unsupported card"
-  );
+  // Transient state for the "add rule" form row
+  const [newRuleFirst6, setNewRuleFirst6] = useState<string>("");
+  const [newRuleIsValid, setNewRuleIsValid] = useState<boolean>(true);
+  const [newRuleMsg, setNewRuleMsg] = useState<string>("");
 
   const [sessionId, setSessionId] = useState<string>(DEFAULT_SESSION_ID);
 
@@ -78,6 +85,7 @@ export default function EvonetDropinTestPage() {
   const [configVersion, setConfigVersion] = useState<number>(0);
   const [events, setEvents] = useState<EvonetDropinEvent[]>([]);
   const [userAgent, setUserAgent] = useState<string>("Detecting user agent…");
+  const [binPromoMessage, setBinPromoMessage] = useState<string | null>(null);
   const [lastResult, setLastResult] = useState<{
     type: "payment_success" | "payment_fail" | "payment_cancelled" | null;
     payload?: {
@@ -109,9 +117,9 @@ export default function EvonetDropinTestPage() {
       shippingPostalCode,
       language,
       isVerifyPaymentBrand: verifyPaymentBrand,
-      binVerifyAction,
-      binApprovalMessage,
-      binRejectMessage,
+      binRules,
+      binDefaultAction,
+      binDefaultRejectMessage,
     }),
     [
       amount,
@@ -132,9 +140,9 @@ export default function EvonetDropinTestPage() {
       shippingCountry,
       shippingPostalCode,
       verifyPaymentBrand,
-      binVerifyAction,
-      binApprovalMessage,
-      binRejectMessage,
+      binRules,
+      binDefaultAction,
+      binDefaultRejectMessage,
     ]
   );
 
@@ -154,14 +162,22 @@ export default function EvonetDropinTestPage() {
   const handleEvent = useCallback((event: EvonetDropinEvent) => {
     setEvents((prev) => [event, ...prev].slice(0, 50));
 
-    const payload = event.payload as
-      | {
-          merchantTransID?: string;
-          sessionID?: string;
-          code?: string;
-          message?: string;
-        }
-      | undefined;
+    const payload = event.payload as any;
+
+    const maybeFirst6 =
+      event.type === "payment_method_selected"
+        ? (payload?.first6No as string | undefined)
+        : event.type === "sdk_message" && payload?.source === "payment_method_selected"
+          ? (payload?.data?.first6No as string | undefined)
+          : undefined;
+
+    if (maybeFirst6 === "460517") {
+      setBinPromoMessage(
+        "Your Crypto.com Card is eligible for a 50% discount."
+      );
+    } else if (event.type === "payment_method_selected") {
+      setBinPromoMessage(null);
+    }
 
     if (
       event.type === "payment_success" ||
@@ -572,6 +588,8 @@ export default function EvonetDropinTestPage() {
                     >
                       Options
                     </Typography>
+
+                    {/* BIN verification toggle */}
                     <Stack
                       direction="row"
                       spacing={2}
@@ -583,10 +601,9 @@ export default function EvonetDropinTestPage() {
                           Verify payment brand (BIN)
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
-                          If enabled, Drop-in may emit payment_method_selected
-                          events when card brand is verified. Click outside the
-                          card number field after entering it to trigger BIN
-                          verification and enable the Pay button.
+                          When enabled, each card BIN is checked against the
+                          rules below. Click outside the card number field to
+                          trigger verification.
                         </Typography>
                       </Box>
                       <Switch
@@ -597,61 +614,140 @@ export default function EvonetDropinTestPage() {
                     </Stack>
 
                     {verifyPaymentBrand && (
-                      <Stack spacing={2} sx={{ mt: 2, pl: 1 }}>
-                        <FormControl size="small" fullWidth>
-                          <InputLabel id="bin-action-label">
-                            BIN verification result
-                          </InputLabel>
-                          <Select
-                            labelId="bin-action-label"
-                            label="BIN verification result"
-                            value={binVerifyAction}
-                            onChange={(e) =>
-                              setBinVerifyAction(
-                                e.target.value as "approve" | "reject"
-                              )
-                            }
-                          >
-                            <MenuItem value="approve">Approve</MenuItem>
-                            <MenuItem value="reject">Reject</MenuItem>
-                          </Select>
-                        </FormControl>
-                        {binVerifyAction === "approve" ? (
-                          <TextField
-                            label="Approval message"
-                            value={binApprovalMessage}
-                            onChange={(e) =>
-                              setBinApprovalMessage(e.target.value)
-                            }
-                            size="small"
-                            fullWidth
-                            helperText='Use {{paymentBrand}} or {{Card Issuer}} for the card brand (e.g. Visa, Mastercard)'
-                          />
-                        ) : (
-                          <FormControl size="small" fullWidth>
-                            <InputLabel id="bin-reject-label">
-                              Rejection message
-                            </InputLabel>
+                      <Stack spacing={2} sx={{ mt: 2 }}>
+                        {/* Default action when no rule matches */}
+                        <Stack direction="row" spacing={1} alignItems="flex-start">
+                          <FormControl size="small" sx={{ minWidth: 130 }}>
+                            <InputLabel id="bin-default-label">Default</InputLabel>
                             <Select
-                              labelId="bin-reject-label"
-                              label="Rejection message"
-                              value={binRejectMessage}
+                              labelId="bin-default-label"
+                              label="Default"
+                              value={binDefaultAction}
                               onChange={(e) =>
-                                setBinRejectMessage(e.target.value)
+                                setBinDefaultAction(
+                                  e.target.value as "approve" | "reject"
+                                )
                               }
                             >
-                              <MenuItem value="Unsupported card">
-                                Unsupported card
-                              </MenuItem>
-                              <MenuItem value="Card number rejected">
-                                Card number rejected
-                              </MenuItem>
-                              <MenuItem value="This card number is not supported.">
-                                This card number is not supported.
-                              </MenuItem>
+                              <MenuItem value="approve">Approve all</MenuItem>
+                              <MenuItem value="reject">Reject all</MenuItem>
                             </Select>
                           </FormControl>
-                        )}
+                          {binDefaultAction === "reject" && (
+                            <TextField
+                              label="Default rejection message"
+                              value={binDefaultRejectMessage}
+                              onChange={(e) =>
+                                setBinDefaultRejectMessage(e.target.value)
+                              }
+                              size="small"
+                              fullWidth
+                              helperText="Shown inside Drop-in when no BIN rule matches"
+                            />
+                          )}
+                        </Stack>
+
+                        {/* BIN rules table */}
+                        <Box>
+                          <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 1 }}>
+                            BIN rules — first match wins
+                          </Typography>
+                          <Stack spacing={1}>
+                            {binRules.map((rule, i) => (
+                              <Stack key={i} direction="row" spacing={1} alignItems="center">
+                                <Chip
+                                  size="small"
+                                  label={rule.first6No}
+                                  sx={{ fontFamily: "monospace", fontWeight: 700 }}
+                                />
+                                <Chip
+                                  size="small"
+                                  label={rule.isValid ? "Approve" : "Reject"}
+                                  color={rule.isValid ? "success" : "error"}
+                                  variant="outlined"
+                                />
+                                <Typography
+                                  variant="caption"
+                                  color="text.secondary"
+                                  sx={{ flex: 1, fontStyle: rule.msg ? "normal" : "italic" }}
+                                >
+                                  {rule.msg || (rule.isValid ? "(no message — Pay button enabled)" : "(default reject msg)")}
+                                </Typography>
+                                <Button
+                                  size="small"
+                                  color="error"
+                                  sx={{ minWidth: 0, px: 0.5, textTransform: "none" }}
+                                  onClick={() =>
+                                    setBinRules((prev) =>
+                                      prev.filter((_, idx) => idx !== i)
+                                    )
+                                  }
+                                >
+                                  ✕
+                                </Button>
+                              </Stack>
+                            ))}
+
+                            {/* Add new rule */}
+                            <Stack direction="row" spacing={1} alignItems="flex-start" sx={{ pt: 1 }}>
+                              <TextField
+                                label="BIN (first 6)"
+                                value={newRuleFirst6}
+                                onChange={(e) =>
+                                  setNewRuleFirst6(
+                                    e.target.value.replace(/\D/g, "").slice(0, 6)
+                                  )
+                                }
+                                size="small"
+                                sx={{ width: 120 }}
+                                inputProps={{ maxLength: 6, style: { fontFamily: "monospace" } }}
+                              />
+                              <FormControl size="small" sx={{ minWidth: 110 }}>
+                                <InputLabel id="new-rule-valid-label">Decision</InputLabel>
+                                <Select
+                                  labelId="new-rule-valid-label"
+                                  label="Decision"
+                                  value={newRuleIsValid ? "approve" : "reject"}
+                                  onChange={(e) =>
+                                    setNewRuleIsValid(e.target.value === "approve")
+                                  }
+                                >
+                                  <MenuItem value="approve">Approve</MenuItem>
+                                  <MenuItem value="reject">Reject</MenuItem>
+                                </Select>
+                              </FormControl>
+                              <TextField
+                                label="Message (shown when rejected)"
+                                value={newRuleMsg}
+                                onChange={(e) => setNewRuleMsg(e.target.value)}
+                                size="small"
+                                fullWidth
+                                disabled={newRuleIsValid}
+                              />
+                              <Button
+                                variant="outlined"
+                                size="small"
+                                sx={{ textTransform: "none", whiteSpace: "nowrap" }}
+                                disabled={newRuleFirst6.length !== 6}
+                                onClick={() => {
+                                  setBinRules((prev) => [
+                                    ...prev,
+                                    {
+                                      first6No: newRuleFirst6,
+                                      isValid: newRuleIsValid,
+                                      msg: newRuleIsValid ? "" : newRuleMsg,
+                                    },
+                                  ]);
+                                  setNewRuleFirst6("");
+                                  setNewRuleMsg("");
+                                  setNewRuleIsValid(true);
+                                }}
+                              >
+                                Add rule
+                              </Button>
+                            </Stack>
+                          </Stack>
+                        </Box>
                       </Stack>
                     )}
                   </Box>
@@ -794,6 +890,13 @@ export default function EvonetDropinTestPage() {
                     />
                   </Stack>
                 </Box>
+                {binPromoMessage && (
+                  <Box sx={{ px: { xs: 2, lg: 3 }, pt: 2 }}>
+                    <Alert severity="info" variant="outlined">
+                      {binPromoMessage}
+                    </Alert>
+                  </Box>
+                )}
                 <Box>
                   <EvonetDropinHost
                     config={config}

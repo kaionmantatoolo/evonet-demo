@@ -3,6 +3,7 @@
 import { Alert, Box } from "@mui/material";
 import { useEffect, useRef, useState } from "react";
 import type {
+  BinRule,
   EvonetDropinConfig,
   EvonetDropinEvent,
   EvonetDropinSdkOptions,
@@ -188,34 +189,48 @@ export function EvonetDropinHost({
               }) => void)
             : null;
 
-      const action = config.binVerifyAction ?? "approve";
-      const brand = p?.paymentBrand ?? "your card issuer";
-      const approvalMsg =
-        config.binApprovalMessage ??
-        "Nice card you have from {{paymentBrand}}";
-      const approvalMsgResolved = approvalMsg
-        .replace(/\{\{paymentBrand\}\}/gi, String(brand))
-        .replace(/\{\{Card Issuer\}\}/gi, String(brand));
-      const rejectMsg =
-        config.binRejectMessage ?? "This card number is not supported.";
+      // --- BIN rules logic (mirrors boss's pattern) ---
+      const first6No = String(p?.first6No ?? "");
+      const rules = config.binRules ?? [];
+      const matchedRule = rules.find((r) => r.first6No === first6No);
 
-      // Docs indicate msg is displayed only when isValid=false.
-      // Sending a non-empty msg on approval has caused some SDK builds to reject the response.
-      // Keep the approval message for our logs, but send msg="" for approvals.
+      let isValid: boolean;
+      let msg: string;
+
+      if (matchedRule) {
+        isValid = matchedRule.isValid;
+        // SDK only shows msg when isValid=false; send empty string on approval
+        msg = matchedRule.isValid ? "" : matchedRule.msg;
+      } else if (rules.length > 0) {
+        // Rules exist but nothing matched → use the default action
+        const defaultAction = config.binDefaultAction ?? "approve";
+        isValid = defaultAction === "approve";
+        msg = isValid
+          ? ""
+          : (config.binDefaultRejectMessage ??
+              "This card number is not supported.");
+      } else {
+        // No rules configured → approve everything (original behaviour)
+        isValid = true;
+        msg = "";
+      }
+
       onEvent?.({
         type: "sdk_message",
         payload: {
           source: "bin_verification_decision",
-          decision: action,
-          message: action === "approve" ? approvalMsgResolved : rejectMsg,
+          first6No,
+          matchedRule: matchedRule ?? null,
+          isValid,
+          msg,
           verificationID: verificationIdStr,
-          paymentBrand: brand,
+          paymentBrand: p?.paymentBrand ?? "",
         },
       });
 
       const params = {
-        msg: action === "approve" ? "" : rejectMsg,
-        isValid: action === "approve",
+        msg,
+        isValid,
         id: verificationIdStr,
       };
 

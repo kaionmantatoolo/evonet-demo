@@ -1,3 +1,12 @@
+export interface BinRule {
+  /** First 6 digits of the card number to match */
+  first6No: string;
+  /** Whether to approve this card */
+  isValid: boolean;
+  /** Message shown inside Drop-in UI (only rendered by SDK when isValid=false) */
+  msg: string;
+}
+
 export type EvonetEnvironment =
   | "HKG_prod"
   | "HKG_test"
@@ -27,12 +36,12 @@ export interface EvonetDropinConfig {
   shippingPostalCode?: string;
   language?: string;
   isVerifyPaymentBrand?: boolean;
-  /** When BIN verify approves: message template, {{paymentBrand}} or {{Card Issuer}} replaced with card brand */
-  binApprovalMessage?: string;
-  /** When BIN verify rejects: one of the predefined messages or custom string */
-  binRejectMessage?: string;
-  /** For testing: approve or reject the card on payment_method_selected */
-  binVerifyAction?: "approve" | "reject";
+  /** BIN rules: checked in order against first6No. First match wins. */
+  binRules?: BinRule[];
+  /** Default action when no BIN rule matches */
+  binDefaultAction?: "approve" | "reject";
+  /** Default reject message when no BIN rule matches and default is reject */
+  binDefaultRejectMessage?: string;
   [key: string]: unknown;
 }
 
