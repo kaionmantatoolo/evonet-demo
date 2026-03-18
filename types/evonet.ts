@@ -27,6 +27,12 @@ export interface EvonetDropinConfig {
   shippingPostalCode?: string;
   language?: string;
   isVerifyPaymentBrand?: boolean;
+  /** When BIN verify approves: message template, {{paymentBrand}} or {{Card Issuer}} replaced with card brand */
+  binApprovalMessage?: string;
+  /** When BIN verify rejects: one of the predefined messages or custom string */
+  binRejectMessage?: string;
+  /** For testing: approve or reject the card on payment_method_selected */
+  binVerifyAction?: "approve" | "reject";
   [key: string]: unknown;
 }
 

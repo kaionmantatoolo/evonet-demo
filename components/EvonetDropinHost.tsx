@@ -136,7 +136,11 @@ export function EvonetDropinHost({
         },
       });
 
-      const p = payload as { verificationID?: string } | undefined;
+      const p = payload as {
+        verificationID?: string;
+        paymentBrand?: string;
+        [key: string]: unknown;
+      } | undefined;
       const verificationID = p?.verificationID;
       if (!verificationID) return;
 
@@ -147,11 +151,21 @@ export function EvonetDropinHost({
         inst?.value?.callbackVerify ??
         inst?.callbackVerify;
 
+      const action = config.binVerifyAction ?? "approve";
+      const brand = p?.paymentBrand ?? "your card issuer";
+      const approvalMsg =
+        config.binApprovalMessage ??
+        "Nice card you have from {{paymentBrand}}";
+      const approvalMsgResolved = approvalMsg
+        .replace(/\{\{paymentBrand\}\}/gi, brand)
+        .replace(/\{\{Card Issuer\}\}/gi, brand);
+      const rejectMsg =
+        config.binRejectMessage ?? "This card number is not supported.";
+
       if (typeof callback === "function") {
         callback({
-          msg: "",
-          // Follow Evonet docs: https://developer.evonetonline.com/docs/card-bin-verification
-          isValid: true,
+          msg: action === "approve" ? approvalMsgResolved : rejectMsg,
+          isValid: action === "approve",
           id: verificationID,
         });
       }

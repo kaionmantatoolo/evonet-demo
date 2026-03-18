@@ -58,7 +58,16 @@ export default function EvonetDropinTestPage() {
   const [environment, setEnvironment] = useState<string>(DEFAULT_ENVIRONMENT);
   const [mode, setMode] = useState<EvonetDropinConfig["mode"]>("embedded");
   const [language, setLanguage] = useState<string>("en");
-  const [verifyPaymentBrand, setVerifyPaymentBrand] = useState<boolean>(false);
+  const [verifyPaymentBrand, setVerifyPaymentBrand] = useState<boolean>(true);
+  const [binVerifyAction, setBinVerifyAction] = useState<"approve" | "reject">(
+    "approve"
+  );
+  const [binApprovalMessage, setBinApprovalMessage] = useState<string>(
+    "Nice card you have from {{paymentBrand}}"
+  );
+  const [binRejectMessage, setBinRejectMessage] = useState<string>(
+    "Unsupported card"
+  );
 
   const [sessionId, setSessionId] = useState<string>(DEFAULT_SESSION_ID);
 
@@ -100,6 +109,9 @@ export default function EvonetDropinTestPage() {
       shippingPostalCode,
       language,
       isVerifyPaymentBrand: verifyPaymentBrand,
+      binVerifyAction,
+      binApprovalMessage,
+      binRejectMessage,
     }),
     [
       amount,
@@ -120,6 +132,9 @@ export default function EvonetDropinTestPage() {
       shippingCountry,
       shippingPostalCode,
       verifyPaymentBrand,
+      binVerifyAction,
+      binApprovalMessage,
+      binRejectMessage,
     ]
   );
 
@@ -578,6 +593,65 @@ export default function EvonetDropinTestPage() {
                         inputProps={{ "aria-label": "Verify payment brand" }}
                       />
                     </Stack>
+
+                    {verifyPaymentBrand && (
+                      <Stack spacing={2} sx={{ mt: 2, pl: 1 }}>
+                        <FormControl size="small" fullWidth>
+                          <InputLabel id="bin-action-label">
+                            BIN verification result
+                          </InputLabel>
+                          <Select
+                            labelId="bin-action-label"
+                            label="BIN verification result"
+                            value={binVerifyAction}
+                            onChange={(e) =>
+                              setBinVerifyAction(
+                                e.target.value as "approve" | "reject"
+                              )
+                            }
+                          >
+                            <MenuItem value="approve">Approve</MenuItem>
+                            <MenuItem value="reject">Reject</MenuItem>
+                          </Select>
+                        </FormControl>
+                        {binVerifyAction === "approve" ? (
+                          <TextField
+                            label="Approval message"
+                            value={binApprovalMessage}
+                            onChange={(e) =>
+                              setBinApprovalMessage(e.target.value)
+                            }
+                            size="small"
+                            fullWidth
+                            helperText='Use {{paymentBrand}} or {{Card Issuer}} for the card brand (e.g. Visa, Mastercard)'
+                          />
+                        ) : (
+                          <FormControl size="small" fullWidth>
+                            <InputLabel id="bin-reject-label">
+                              Rejection message
+                            </InputLabel>
+                            <Select
+                              labelId="bin-reject-label"
+                              label="Rejection message"
+                              value={binRejectMessage}
+                              onChange={(e) =>
+                                setBinRejectMessage(e.target.value)
+                              }
+                            >
+                              <MenuItem value="Unsupported card">
+                                Unsupported card
+                              </MenuItem>
+                              <MenuItem value="Card number rejected">
+                                Card number rejected
+                              </MenuItem>
+                              <MenuItem value="This card number is not supported.">
+                                This card number is not supported.
+                              </MenuItem>
+                            </Select>
+                          </FormControl>
+                        )}
+                      </Stack>
+                    )}
                   </Box>
 
                   <Divider />
