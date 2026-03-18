@@ -738,6 +738,7 @@ export default function EvonetDropinTestPage() {
                   flexDirection: "column",
                 }}
               >
+                {/* Header */}
                 <Stack
                   direction="row"
                   alignItems="center"
@@ -761,65 +762,147 @@ export default function EvonetDropinTestPage() {
                     Clear
                   </Button>
                 </Stack>
-                <Box
-                  sx={{
-                    bgcolor: "rgba(2, 6, 23, 0.7)",
-                    border: "1px solid",
-                    borderColor: "grey.800",
-                    borderRadius: 2,
-                    p: 2,
-                    mt: 1,
-                    flex: 1,
-                    minHeight: 0,
-                    overflow: "auto",
-                  }}
-                >
-                  {events.length === 0 ? (
-                    <Typography variant="caption" color="grey.400">
-                      No events yet. After initializing Drop-in and performing a
-                      transaction, events such as payment_success,
-                      payment_fail, or payment_method_selected will appear here.
+
+                {/* Two-column log area */}
+                <Grid container spacing={2} sx={{ flex: 1, minHeight: 0 }}>
+                  {/* Left: recognised high-level events */}
+                  <Grid item xs={12} md={6} sx={{ display: "flex", flexDirection: "column", minHeight: 0 }}>
+                    <Typography
+                      variant="overline"
+                      sx={{ color: "grey.400", display: "block", mb: 0.5, lineHeight: 1.8 }}
+                    >
+                      Recognised events
                     </Typography>
-                  ) : (
-                    <Stack spacing={1} component="ul" sx={{ m: 0, p: 0 }}>
-                      {events.map((event, index) => (
-                        <Box
-                          key={index}
-                          component="li"
-                          sx={{
-                            listStyle: "none",
-                            bgcolor: "grey.900",
-                            borderRadius: 1.5,
-                            px: 1.5,
-                            py: 1,
-                          }}
-                        >
-                          <Typography
-                            variant="caption"
-                            sx={{ fontFamily: "monospace", color: "success.light" }}
-                          >
-                            {event.type}
-                          </Typography>
-                          {event.payload != null && (
-                            <Box
-                              component="pre"
-                              sx={{
-                                mt: 1,
-                                mb: 0,
-                                whiteSpace: "pre-wrap",
-                                wordBreak: "break-word",
-                                fontSize: 10,
-                                color: "grey.200",
-                              }}
-                            >
-                              {JSON.stringify(event.payload, null, 2)}
-                            </Box>
-                          )}
-                        </Box>
-                      ))}
-                    </Stack>
-                  )}
-                </Box>
+                    <Box
+                      sx={{
+                        bgcolor: "rgba(2, 6, 23, 0.7)",
+                        border: "1px solid",
+                        borderColor: "grey.800",
+                        borderRadius: 2,
+                        p: 2,
+                        flex: 1,
+                        minHeight: 200,
+                        overflow: "auto",
+                      }}
+                    >
+                      {events.filter((e) => e.type !== "sdk_message").length === 0 ? (
+                        <Typography variant="caption" color="grey.500">
+                          No recognised events yet. payment_success, payment_fail,
+                          payment_method_selected etc. will appear here.
+                        </Typography>
+                      ) : (
+                        <Stack spacing={1} component="ul" sx={{ m: 0, p: 0 }}>
+                          {events
+                            .filter((e) => e.type !== "sdk_message")
+                            .map((event, index) => (
+                              <Box
+                                key={index}
+                                component="li"
+                                sx={{
+                                  listStyle: "none",
+                                  bgcolor: "grey.900",
+                                  borderRadius: 1.5,
+                                  px: 1.5,
+                                  py: 1,
+                                }}
+                              >
+                                <Typography
+                                  variant="caption"
+                                  sx={{ fontFamily: "monospace", color: "success.light" }}
+                                >
+                                  {event.type}
+                                </Typography>
+                                {event.payload != null && (
+                                  <Box
+                                    component="pre"
+                                    sx={{
+                                      mt: 1,
+                                      mb: 0,
+                                      whiteSpace: "pre-wrap",
+                                      wordBreak: "break-word",
+                                      fontSize: 10,
+                                      color: "grey.200",
+                                    }}
+                                  >
+                                    {JSON.stringify(event.payload, null, 2)}
+                                  </Box>
+                                )}
+                              </Box>
+                            ))}
+                        </Stack>
+                      )}
+                    </Box>
+                  </Grid>
+
+                  {/* Right: raw SDK / postMessage traffic */}
+                  <Grid item xs={12} md={6} sx={{ display: "flex", flexDirection: "column", minHeight: 0 }}>
+                    <Typography
+                      variant="overline"
+                      sx={{ color: "grey.400", display: "block", mb: 0.5, lineHeight: 1.8 }}
+                    >
+                      Raw SDK messages
+                    </Typography>
+                    <Box
+                      sx={{
+                        bgcolor: "rgba(2, 6, 23, 0.7)",
+                        border: "1px solid",
+                        borderColor: "grey.800",
+                        borderRadius: 2,
+                        p: 2,
+                        flex: 1,
+                        minHeight: 200,
+                        overflow: "auto",
+                      }}
+                    >
+                      {events.filter((e) => e.type === "sdk_message").length === 0 ? (
+                        <Typography variant="caption" color="grey.500">
+                          No raw SDK messages yet. postMessage frames from the
+                          Drop-in iframe will appear here.
+                        </Typography>
+                      ) : (
+                        <Stack spacing={1} component="ul" sx={{ m: 0, p: 0 }}>
+                          {events
+                            .filter((e) => e.type === "sdk_message")
+                            .map((event, index) => (
+                              <Box
+                                key={index}
+                                component="li"
+                                sx={{
+                                  listStyle: "none",
+                                  bgcolor: "grey.900",
+                                  borderRadius: 1.5,
+                                  px: 1.5,
+                                  py: 1,
+                                }}
+                              >
+                                <Typography
+                                  variant="caption"
+                                  sx={{ fontFamily: "monospace", color: "info.light" }}
+                                >
+                                  sdk_message
+                                </Typography>
+                                {event.payload != null && (
+                                  <Box
+                                    component="pre"
+                                    sx={{
+                                      mt: 1,
+                                      mb: 0,
+                                      whiteSpace: "pre-wrap",
+                                      wordBreak: "break-word",
+                                      fontSize: 10,
+                                      color: "grey.200",
+                                    }}
+                                  >
+                                    {JSON.stringify(event.payload, null, 2)}
+                                  </Box>
+                                )}
+                              </Box>
+                            ))}
+                        </Stack>
+                      )}
+                    </Box>
+                  </Grid>
+                </Grid>
               </Paper>
             </Stack>
           </Grid>
