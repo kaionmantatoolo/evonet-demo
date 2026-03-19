@@ -155,21 +155,26 @@ export default function EvonetDropinTestPage() {
 
     const payload = event.payload as any;
 
-    const maybeFirst6 =
-      event.type === "payment_method_selected"
-        ? (payload?.first6No as string | undefined)
-        : event.type === "sdk_message" && payload?.source === "payment_method_selected"
-          ? (payload?.data?.first6No as string | undefined)
-          : undefined;
-
-    if (maybeFirst6) {
-      const matchedRule = binRules.find((rule) => rule.first6No === maybeFirst6);
-      setBinPromoMessage(matchedRule?.trueMessage?.trim() || null);
-    } else if (
-      event.type === "payment_method_selected" ||
-      (event.type === "sdk_message" && payload?.source === "payment_method_selected")
+    if (
+      event.type === "sdk_message" &&
+      payload?.source === "bin_verification_decision"
     ) {
-      setBinPromoMessage(null);
+      const matchedRule = payload?.matchedRule as BinRule | null | undefined;
+      const isValid = Boolean(payload?.isValid);
+
+      setBinPromoMessage(
+        isValid ? matchedRule?.trueMessage?.trim() || null : null
+      );
+    } else if (event.type === "payment_method_selected") {
+      const maybeFirst6 = payload?.first6No as string | undefined;
+      if (maybeFirst6) {
+        const matchedRule = binRules.find(
+          (rule) => rule.first6No === maybeFirst6
+        );
+        setBinPromoMessage(matchedRule?.trueMessage?.trim() || null);
+      } else {
+        setBinPromoMessage(null);
+      }
     }
 
     if (

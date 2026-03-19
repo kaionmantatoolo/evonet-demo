@@ -225,11 +225,16 @@ export function EvonetDropinHost({
         },
       });
 
-      const params = {
-        msg,
+      // Important: docs say `msg` is optional and should only be shown when `isValid=false`.
+      // If the operator leaves FALSE message empty, we must omit `msg` so Evonet
+      // can show its default unsupported-card message.
+      const params: { isValid: boolean; id: string; msg?: string } = {
         isValid,
         id: verificationIdStr,
       };
+      if (!isValid && msg.trim().length > 0) {
+        params.msg = msg;
+      }
 
       if (typeof callbackVerification === "function") {
         try {
