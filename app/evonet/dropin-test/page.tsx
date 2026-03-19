@@ -619,7 +619,9 @@ export default function EvonetDropinTestPage() {
                         <Stack spacing={1.5}>
                           {binRules.map((rule, index) => (
                             <Paper
-                              key={`${rule.first6No}-${index}`}
+                              // Keep key stable while user types; otherwise React remounts
+                              // the row (key changes with `first6No`) and the input loses focus.
+                              key={index}
                               variant="outlined"
                               sx={{ p: 1.5 }}
                             >
