@@ -188,29 +188,14 @@ export function EvonetDropinHost({
               }) => void)
             : null;
 
-      // --- BIN rules logic ---
+      // --- BIN verification response ---
+      // We keep Evonet's intended behavior: BIN verification is used to *notify* us (first6No),
+      // but we do not block payments at this layer. Promotions are shown on the host page.
       const first6No = String(p?.first6No ?? "");
       const rules = config.binRules ?? [];
       const matchedRule = rules.find((r) => r.first6No === first6No);
 
-      let isValid: boolean;
-      let msg: string;
-
-      if (matchedRule) {
-        isValid = true;
-        msg = "";
-      } else if (rules.some((rule) => rule.first6No.trim().length > 0)) {
-        // If merchant configured BIN rules, unmatched cards are rejected.
-        // Empty falseMessage lets the SDK use its documented default message.
-        isValid = false;
-        msg =
-          rules.find((rule) => (rule.falseMessage ?? "").trim().length > 0)
-            ?.falseMessage ?? "";
-      } else {
-        // No BIN configured → use SDK's normal behavior with no custom filter.
-        isValid = true;
-        msg = "";
-      }
+      const isValid = true;
 
       onEvent?.({
         type: "sdk_message",
@@ -219,22 +204,16 @@ export function EvonetDropinHost({
           first6No,
           matchedRule: matchedRule ?? null,
           isValid,
-          msg,
+          msg: "",
           verificationID: verificationIdStr,
           paymentBrand: p?.paymentBrand ?? "",
         },
       });
 
-      // Important: docs say `msg` is optional and should only be shown when `isValid=false`.
-      // If the operator leaves FALSE message empty, we must omit `msg` so Evonet
-      // can show its default unsupported-card message.
-      const params: { isValid: boolean; id: string; msg?: string } = {
-        isValid,
+      const params: { isValid: boolean; id: string } = {
+        isValid: true,
         id: verificationIdStr,
       };
-      if (!isValid && msg.trim().length > 0) {
-        params.msg = msg;
-      }
 
       if (typeof callbackVerification === "function") {
         try {

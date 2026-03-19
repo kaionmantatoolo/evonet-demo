@@ -63,13 +63,11 @@ export default function EvonetDropinTestPage() {
   const [binRules, setBinRules] = useState<BinRule[]>([
     {
       first6No: "552343",
-      trueMessage: "This card is eligible for the promotion with SC Double Fun points",
-      falseMessage: "Please apply the SC Cards to enjoy the promotion",
+      message: "This card is eligible for the promotion with SC Double Fun points",
     },
   ]);
   const [newRuleFirst6, setNewRuleFirst6] = useState<string>("");
-  const [newRuleTrueMessage, setNewRuleTrueMessage] = useState<string>("");
-  const [newRuleFalseMessage, setNewRuleFalseMessage] = useState<string>("");
+  const [newRuleMessage, setNewRuleMessage] = useState<string>("");
 
   const [sessionId, setSessionId] = useState<string>(DEFAULT_SESSION_ID);
 
@@ -163,7 +161,7 @@ export default function EvonetDropinTestPage() {
       const isValid = Boolean(payload?.isValid);
 
       setBinPromoMessage(
-        isValid ? matchedRule?.trueMessage?.trim() || null : null
+        isValid ? matchedRule?.message?.trim() || null : null
       );
     } else if (event.type === "payment_method_selected") {
       const maybeFirst6 = payload?.first6No as string | undefined;
@@ -171,7 +169,7 @@ export default function EvonetDropinTestPage() {
         const matchedRule = binRules.find(
           (rule) => rule.first6No === maybeFirst6
         );
-        setBinPromoMessage(matchedRule?.trueMessage?.trim() || null);
+        setBinPromoMessage(matchedRule?.message?.trim() || null);
       } else {
         setBinPromoMessage(null);
       }
@@ -614,11 +612,8 @@ export default function EvonetDropinTestPage() {
                     {verifyPaymentBrand && (
                       <Stack spacing={2} sx={{ mt: 2 }}>
                         <Typography variant="caption" color="text.secondary">
-                          Each condition approves the matching BIN. `TRUE message`
-                          is shown on this page when the BIN matches. `FALSE
-                          message` is shown inside Drop-in when no BIN matches.
-                          If `FALSE message` is left empty, Evonet uses its
-                          default unsupported-card message.
+                          Add BIN conditions to show a promotion message above the
+                          Drop-in. BIN verification will not block Pay.
                         </Typography>
 
                         <Stack spacing={1.5}>
@@ -676,35 +671,19 @@ export default function EvonetDropinTestPage() {
                                 />
 
                                 <TextField
-                                  label="TRUE message"
-                                  value={rule.trueMessage ?? ""}
+                                  label="Promotion message"
+                                  value={rule.message ?? ""}
                                   onChange={(e) =>
                                     setBinRules((prev) =>
                                       prev.map((item, idx) =>
                                         idx === index
-                                          ? { ...item, trueMessage: e.target.value }
+                                          ? { ...item, message: e.target.value }
                                           : item
                                       )
                                     )
                                   }
                                   size="small"
-                                  helperText="Shown on the host page when this BIN matches"
-                                />
-
-                                <TextField
-                                  label="FALSE message"
-                                  value={rule.falseMessage ?? ""}
-                                  onChange={(e) =>
-                                    setBinRules((prev) =>
-                                      prev.map((item, idx) =>
-                                        idx === index
-                                          ? { ...item, falseMessage: e.target.value }
-                                          : item
-                                      )
-                                    )
-                                  }
-                                  size="small"
-                                  helperText="Shown inside Drop-in when no BIN matches; leave empty to use Evonet's default"
+                                  helperText="Shown above Drop-in when this BIN matches"
                                 />
                               </Stack>
                             </Paper>
@@ -731,15 +710,9 @@ export default function EvonetDropinTestPage() {
                               }}
                             />
                             <TextField
-                              label="TRUE message"
-                              value={newRuleTrueMessage}
-                              onChange={(e) => setNewRuleTrueMessage(e.target.value)}
-                              size="small"
-                            />
-                            <TextField
-                              label="FALSE message"
-                              value={newRuleFalseMessage}
-                              onChange={(e) => setNewRuleFalseMessage(e.target.value)}
+                              label="Promotion message"
+                              value={newRuleMessage}
+                              onChange={(e) => setNewRuleMessage(e.target.value)}
                               size="small"
                             />
                             <Button
@@ -752,13 +725,11 @@ export default function EvonetDropinTestPage() {
                                   ...prev,
                                   {
                                     first6No: newRuleFirst6,
-                                    trueMessage: newRuleTrueMessage,
-                                    falseMessage: newRuleFalseMessage,
+                                    message: newRuleMessage,
                                   },
                                 ]);
                                 setNewRuleFirst6("");
-                                setNewRuleTrueMessage("");
-                                setNewRuleFalseMessage("");
+                                setNewRuleMessage("");
                               }}
                             >
                               Add condition

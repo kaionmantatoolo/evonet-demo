@@ -1,10 +1,8 @@
 export interface BinRule {
   /** First 6 digits of the card number to match */
   first6No: string;
-  /** Host-page message shown when this BIN matches */
-  trueMessage?: string;
-  /** Drop-in rejection message shown when no BIN matches */
-  falseMessage?: string;
+  /** Promotion message shown on host page when this BIN matches */
+  message?: string;
 }
 
 export type EvonetEnvironment =
