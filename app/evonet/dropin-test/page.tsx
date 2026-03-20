@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Accordion,
   AccordionDetails,
@@ -21,7 +21,10 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { EvonetDropinHost } from "../../../components/EvonetDropinHost";
+import {
+  EvonetDropinHost,
+  type SdkInitAppliedInfo,
+} from "../../../components/EvonetDropinHost";
 import type {
   BinRule,
   EvonetDropinConfig,
@@ -46,6 +49,32 @@ function generateOrderId(): string {
       ? crypto.randomUUID().slice(0, 8)
       : Math.random().toString(36).slice(2, 10);
   return `EVT-${Date.now()}-${suffix}`;
+}
+
+/** Stable JSON fingerprint for DropInSDK-facing options (live-apply + auto-start). */
+function buildDropinSdkFingerprint(parts: {
+  sessionID: string;
+  environment: string;
+  mode: string;
+  locale: string;
+  verifyPaymentBrand: boolean;
+  maxWaitTime: string;
+  sdkUiOption: EvonetSdkUiOption;
+  sdkAppearance: EvonetSdkAppearance;
+}): string {
+  const verifyOpt = parts.verifyPaymentBrand
+    ? { maxWaitTime: parts.maxWaitTime.trim() || "10" }
+    : undefined;
+  return JSON.stringify({
+    sessionID: parts.sessionID,
+    environment: parts.environment,
+    mode: parts.mode,
+    locale: parts.locale,
+    isVerifyPaymentBrand: parts.verifyPaymentBrand,
+    verifyOption: verifyOpt,
+    uiOption: parts.sdkUiOption,
+    appearance: parts.sdkAppearance,
+  });
 }
 
 export default function EvonetDropinTestPage() {
@@ -117,8 +146,22 @@ export default function EvonetDropinTestPage() {
   const [isCreatingSession, setIsCreatingSession] = useState(false);
   const [sessionError, setSessionError] = useState<string | null>(null);
 
-  // Drop-in should only initialize when user explicitly clicks Initialize.
-  const [configVersion, setConfigVersion] = useState<number>(0);
+  /**
+   * Each increment re-runs `new DropInSDK(...)` with the latest `config` (read from a ref inside the host).
+   * Use debounced bumps for live parameter tweaks so the iframe reflects uiOption / appearance / locale, etc.
+   */
+  const [sdkInitGeneration, setSdkInitGeneration] = useState(0);
+  /** When true, changing SDK-facing parameters (fingerprint) re-inits Drop-in after a short debounce. */
+  const [liveApplySdk, setLiveApplySdk] = useState(true);
+  const prevSdkFingerprintRef = useRef<string>("");
+
+  const [lastSdkInitInfo, setLastSdkInitInfo] = useState<SdkInitAppliedInfo | null>(
+    null
+  );
+  const [copySdkPayloadHint, setCopySdkPayloadHint] = useState<string | null>(
+    null
+  );
+
   const [events, setEvents] = useState<EvonetDropinEvent[]>([]);
   const [userAgent, setUserAgent] = useState<string>("Detecting user agent…");
   const [binPromoMessage, setBinPromoMessage] = useState<string | null>(null);
@@ -210,6 +253,31 @@ export default function EvonetDropinTestPage() {
     logoPosition,
   ]);
 
+  /** Only fields that are passed into `DropInSDK` — used for live re-init + debug diff. */
+  const sdkOptionsFingerprint = useMemo(
+    () =>
+      buildDropinSdkFingerprint({
+        sessionID: sessionId,
+        environment,
+        mode,
+        locale,
+        verifyPaymentBrand,
+        maxWaitTime,
+        sdkUiOption,
+        sdkAppearance,
+      }),
+    [
+      environment,
+      locale,
+      maxWaitTime,
+      mode,
+      sdkAppearance,
+      sdkUiOption,
+      sessionId,
+      verifyPaymentBrand,
+    ]
+  );
+
   const config: EvonetDropinConfig = useMemo(
     () => ({
       type: "payment",
@@ -275,8 +343,44 @@ export default function EvonetDropinTestPage() {
     }
     setOrderId(generateOrderId());
     setEvents([]);
-    setConfigVersion((v) => v + 1);
+    prevSdkFingerprintRef.current = buildDropinSdkFingerprint({
+      sessionID: sessionId,
+      environment,
+      mode,
+      locale,
+      verifyPaymentBrand,
+      maxWaitTime,
+      sdkUiOption,
+      sdkAppearance,
+    });
+    setSdkInitGeneration((g) => g + 1);
   };
+
+  /** Re-run Drop-in with current SDK-facing params (no new orderId). */
+  const handleApplySdkParamsNow = () => {
+    if (sdkInitGeneration < 1) {
+      alert(
+        "Initialize Drop-in at least once using “Initialize / Re-init Drop-in” before applying parameters."
+      );
+      return;
+    }
+    prevSdkFingerprintRef.current = sdkOptionsFingerprint;
+    setSdkInitGeneration((g) => g + 1);
+  };
+
+  useEffect(() => {
+    if (!liveApplySdk || sdkInitGeneration < 1) {
+      return;
+    }
+    if (prevSdkFingerprintRef.current === sdkOptionsFingerprint) {
+      return;
+    }
+    const id = window.setTimeout(() => {
+      prevSdkFingerprintRef.current = sdkOptionsFingerprint;
+      setSdkInitGeneration((g) => g + 1);
+    }, 500);
+    return () => window.clearTimeout(id);
+  }, [liveApplySdk, sdkInitGeneration, sdkOptionsFingerprint]);
 
   const handleEvent = useCallback((event: EvonetDropinEvent) => {
     setEvents((prev) => [event, ...prev].slice(0, 50));
@@ -390,15 +494,143 @@ export default function EvonetDropinTestPage() {
     }
   };
 
+  // On first load: create session via interaction API, then initialize Drop-in (client-only).
+  useEffect(() => {
+    const ac = new AbortController();
+    let cancelled = false;
+
+    const snap = {
+      amount,
+      currency,
+      description,
+      environment,
+      locale,
+      mode,
+      verifyPaymentBrand,
+      maxWaitTime,
+      sdkUiOption,
+      sdkAppearance,
+    };
+
+    void (async () => {
+      setSessionError(null);
+      const numericAmount = parseFloat(snap.amount);
+      if (Number.isNaN(numericAmount) || numericAmount <= 0) {
+        setSessionError(
+          "Auto-start: enter a valid amount to create a session, then use Create session ID."
+        );
+        return;
+      }
+      if (!snap.currency?.trim()) {
+        setSessionError(
+          "Auto-start: currency is required. Set currency and refresh."
+        );
+        return;
+      }
+
+      setIsCreatingSession(true);
+      const newOrderId = generateOrderId();
+      setOrderId(newOrderId);
+
+      try {
+        const response = await fetch("/api/evonet/session", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            amount: numericAmount,
+            currency: snap.currency,
+            orderId: newOrderId,
+            description: snap.description,
+            environment: snap.environment,
+            locale: snap.locale,
+          }),
+          signal: ac.signal,
+        });
+
+        const data = await response.json();
+
+        if (cancelled) {
+          return;
+        }
+
+        if (!response.ok) {
+          const err =
+            data?.error ??
+            "Failed to create sessionID via Evonet interaction API.";
+          const details = data?.details;
+          const detailStr =
+            details && typeof details === "object"
+              ? ` — ${JSON.stringify(details).slice(0, 400)}`
+              : "";
+          setSessionError(`${err}${detailStr}`);
+          return;
+        }
+
+        if (!data?.sessionId) {
+          setSessionError(
+            "Interaction API did not return sessionId. Check server logs and Evonet docs."
+          );
+          return;
+        }
+
+        const sid = data.sessionId as string;
+        prevSdkFingerprintRef.current = buildDropinSdkFingerprint({
+          sessionID: sid,
+          environment: snap.environment,
+          mode: snap.mode,
+          locale: snap.locale,
+          verifyPaymentBrand: snap.verifyPaymentBrand,
+          maxWaitTime: snap.maxWaitTime,
+          sdkUiOption: snap.sdkUiOption,
+          sdkAppearance: snap.sdkAppearance,
+        });
+        setSessionId(sid);
+        setEvents([]);
+        setSdkInitGeneration((g) => g + 1);
+      } catch (error) {
+        if ((error as Error)?.name === "AbortError") {
+          return;
+        }
+        if (!cancelled) {
+          setSessionError(
+            error instanceof Error
+              ? error.message
+              : "Unexpected error creating sessionID (auto-start)."
+          );
+        }
+      } finally {
+        // Always clear spinner (including React Strict Mode abort) so a follow-up run can show it again.
+        setIsCreatingSession(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      ac.abort();
+    };
+    // Intentionally run once on mount with initial form defaults (React Strict Mode may abort & retry).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
     <Box sx={{ minHeight: "100vh", bgcolor: "background.default" }}>
-      <Container maxWidth="lg" sx={{ py: { xs: 3, lg: 5 } }}>
+      <Container maxWidth="xl" sx={{ py: { xs: 3, lg: 5 } }}>
         <Grid container spacing={3}>
-          <Grid item xs={12} lg={5}>
+          <Grid item xs={12} lg={4}>
             <Stack spacing={2}>
               <Alert severity="error" variant="outlined">
                 You are configuring a PROD-like Evonet Drop-in test page. Ensure
                 you use sandbox credentials or very small live amounts.
+              </Alert>
+
+              <Alert severity="info" variant="outlined">
+                On load, this page automatically calls the interaction API to
+                create a <strong>sessionID</strong> and then initializes Drop-in
+                in the browser. If auto-start fails, fix the error below and use
+                <strong> Create session ID</strong> /{" "}
+                <strong>Initialize / Re-init Drop-in</strong> manually.
               </Alert>
 
               <Box>
@@ -507,6 +739,42 @@ export default function EvonetDropinTestPage() {
                           Create session uses your server credentials (interaction API). Initialize runs
                           in this browser with your real user agent.
                         </Typography>
+                        <Paper variant="outlined" sx={{ mt: 2, p: 1.5, bgcolor: "action.hover" }}>
+                          <Typography variant="caption" fontWeight={700} color="text.secondary" sx={{ display: "block", mb: 1 }}>
+                            Developer: SDK parameter apply
+                          </Typography>
+                          <Stack spacing={1.25}>
+                            <Stack direction="row" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={1}>
+                              <Box>
+                                <Typography variant="body2" fontWeight={600}>
+                                  Auto-apply (500ms debounce)
+                                </Typography>
+                                <Typography variant="caption" color="text.secondary">
+                                  When locale, uiOption, appearance, verifyOption, etc. change, Drop-in re-initializes automatically so you can compare the UI.
+                                </Typography>
+                              </Box>
+                              <Switch
+                                checked={liveApplySdk}
+                                onChange={() => setLiveApplySdk((v) => !v)}
+                                inputProps={{ "aria-label": "Auto-apply SDK parameter changes" }}
+                              />
+                            </Stack>
+                            <Button
+                              type="button"
+                              variant="outlined"
+                              size="small"
+                              sx={{ alignSelf: "flex-start", textTransform: "none" }}
+                              onClick={handleApplySdkParamsNow}
+                              disabled={sdkInitGeneration < 1}
+                            >
+                              Manual apply parameters to drop-in now
+                            </Button>
+                            <Typography variant="caption" color="text.secondary" sx={{ fontFamily: "monospace", wordBreak: "break-all" }}>
+                              initGeneration: {sdkInitGeneration} · fingerprint len {sdkOptionsFingerprint.length}
+                              {sdkInitGeneration < 1 ? " · not initialized yet" : ""}
+                            </Typography>
+                          </Stack>
+                        </Paper>
                         {sessionError && (
                           <Alert severity="error" sx={{ mt: 1.5 }}>
                             {sessionError}
@@ -1135,15 +1403,13 @@ export default function EvonetDropinTestPage() {
             </Stack>
           </Grid>
 
-          <Grid item xs={12} lg={7} sx={{ alignSelf: "flex-start" }}>
+          {/* Center: Drop-in only */}
+          <Grid item xs={12} lg={4}>
             <Stack spacing={2} sx={{ height: "100%" }}>
               <Paper
                 variant="outlined"
                 sx={{
                   overflow: "hidden",
-                  position: { lg: "sticky" },
-                  top: { lg: 16 },
-                  zIndex: 1,
                 }}
               >
                 <Box
@@ -1165,8 +1431,8 @@ export default function EvonetDropinTestPage() {
                         Drop-in preview
                       </Typography>
                       <Typography variant="caption" color="text.secondary">
-                        This is the embedded Evonet Drop-in container. After you
-                        initialize, it should render the hosted payment UI here.
+                        Embedded Evonet Drop-in. Initialize from the control panel
+                        (first column).
                       </Typography>
                     </Box>
                     <Chip
@@ -1196,10 +1462,139 @@ export default function EvonetDropinTestPage() {
                 <Box>
                   <EvonetDropinHost
                     config={config}
-                    configVersion={configVersion}
+                    initGeneration={sdkInitGeneration}
                     onEvent={handleEvent}
+                    onSdkInitApplied={setLastSdkInitInfo}
                   />
                 </Box>
+              </Paper>
+            </Stack>
+          </Grid>
+
+          {/* Right: developer debug + event logs */}
+          <Grid item xs={12} lg={4}>
+            <Stack spacing={2} sx={{ height: "100%" }}>
+              <Paper
+                sx={{
+                  p: { xs: 2, lg: 2 },
+                  bgcolor: "grey.900",
+                  color: "grey.100",
+                  borderRadius: 3,
+                }}
+              >
+                <Stack
+                  direction="column"
+                  spacing={1}
+                  sx={{ mb: 1 }}
+                >
+                  <Stack
+                    direction="row"
+                    alignItems="center"
+                    justifyContent="space-between"
+                    flexWrap="wrap"
+                    gap={1}
+                  >
+                    <Typography variant="subtitle2" fontWeight={700} sx={{ color: "grey.100" }}>
+                      Developer debug: last options passed to DropInSDK
+                    </Typography>
+                    <Button
+                      type="button"
+                      size="small"
+                      variant="outlined"
+                      sx={{
+                        textTransform: "none",
+                        color: "grey.100",
+                        borderColor: "grey.700",
+                        "&.Mui-disabled": {
+                          color: "grey.600",
+                          borderColor: "grey.800",
+                        },
+                      }}
+                      disabled={!lastSdkInitInfo}
+                      onClick={async () => {
+                        if (!lastSdkInitInfo) return;
+                        try {
+                          await navigator.clipboard.writeText(
+                            JSON.stringify(
+                              lastSdkInitInfo.debugPayload,
+                              null,
+                              2
+                            )
+                          );
+                          setCopySdkPayloadHint("JSON copied");
+                          window.setTimeout(() => setCopySdkPayloadHint(null), 2500);
+                        } catch {
+                          setCopySdkPayloadHint("Copy failed");
+                          window.setTimeout(() => setCopySdkPayloadHint(null), 2500);
+                        }
+                      }}
+                    >
+                      Copy JSON
+                    </Button>
+                  </Stack>
+                  {copySdkPayloadHint && (
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        color:
+                          copySdkPayloadHint === "Copy failed"
+                            ? "error.light"
+                            : "success.light",
+                      }}
+                    >
+                      {copySdkPayloadHint}
+                    </Typography>
+                  )}
+                </Stack>
+                {lastSdkInitInfo ? (
+                  <>
+                    <Stack direction="row" spacing={1} flexWrap="wrap" sx={{ mb: 1 }}>
+                      <Chip
+                        size="small"
+                        label={`#${lastSdkInitInfo.initGeneration}`}
+                        sx={{
+                          bgcolor: "grey.800",
+                          color: "grey.100",
+                        }}
+                      />
+                      <Chip
+                        size="small"
+                        variant="outlined"
+                        label={lastSdkInitInfo.appliedAt}
+                        sx={{
+                          color: "grey.300",
+                          borderColor: "grey.700",
+                        }}
+                      />
+                    </Stack>
+                    <Box
+                      component="pre"
+                      sx={{
+                        m: 0,
+                        p: 2,
+                        borderRadius: 2,
+                        bgcolor: "rgba(2, 6, 23, 0.7)",
+                        border: "1px solid",
+                        borderColor: "grey.800",
+                        color: "grey.100",
+                        fontSize: 10,
+                        maxHeight: { xs: 220, lg: 260 },
+                        overflow: "auto",
+                        whiteSpace: "pre-wrap",
+                        wordBreak: "break-word",
+                      }}
+                    >
+                      {JSON.stringify(lastSdkInitInfo.debugPayload, null, 2)}
+                    </Box>
+                    <Typography variant="caption" sx={{ display: "block", mt: 1, color: "grey.400" }}>
+                      Excludes payment_* callbacks; other fields match the constructor. With auto-apply on, control panel changes re-init after ~0.5s and refresh this panel.
+                    </Typography>
+                  </>
+                ) : (
+                  <Typography variant="body2" sx={{ color: "grey.500" }}>
+                    Not initialized yet. Use “Initialize / Re-init Drop-in” in the control panel first; full JSON appears after the SDK instance is created.
+                  </Typography>
+                )}
               </Paper>
 
               <Paper
@@ -1207,13 +1602,13 @@ export default function EvonetDropinTestPage() {
                   flex: 1,
                   bgcolor: "grey.900",
                   color: "grey.100",
-                  p: { xs: 2, lg: 3 },
+                  p: { xs: 2, lg: 2 },
                   borderRadius: 3,
                   display: "flex",
                   flexDirection: "column",
+                  minHeight: 320,
                 }}
               >
-                {/* Header */}
                 <Stack
                   direction="row"
                   alignItems="center"
@@ -1238,10 +1633,8 @@ export default function EvonetDropinTestPage() {
                   </Button>
                 </Stack>
 
-                {/* Two-column log area */}
                 <Grid container spacing={2} sx={{ flex: 1, minHeight: 0 }}>
-                  {/* Left: recognised high-level events */}
-                  <Grid item xs={12} md={6} sx={{ display: "flex", flexDirection: "column", minHeight: 0 }}>
+                  <Grid item xs={12} sx={{ display: "flex", flexDirection: "column", minHeight: 0 }}>
                     <Typography
                       variant="overline"
                       sx={{ color: "grey.400", display: "block", mb: 0.5, lineHeight: 1.8 }}
@@ -1309,8 +1702,7 @@ export default function EvonetDropinTestPage() {
                     </Box>
                   </Grid>
 
-                  {/* Right: raw SDK / postMessage traffic */}
-                  <Grid item xs={12} md={6} sx={{ display: "flex", flexDirection: "column", minHeight: 0 }}>
+                  <Grid item xs={12} sx={{ display: "flex", flexDirection: "column", minHeight: 0 }}>
                     <Typography
                       variant="overline"
                       sx={{ color: "grey.400", display: "block", mb: 0.5, lineHeight: 1.8 }}

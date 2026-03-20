@@ -13,27 +13,71 @@ const DEFAULT_SCRIPT_SRC =
   process.env.NEXT_PUBLIC_EVONET_DROPIN_SCRIPT_URL ??
   "https://cdn.evonetonline.com/sdk/evonet-dropin.js";
 
+/** Strip callbacks so developers can copy/paste the exact SDK init object shape. */
+function sdkOptionsToDebugPayload(
+  options: EvonetDropinSdkOptions
+): Record<string, unknown> {
+  const {
+    payment_method_select: _ps,
+    payment_method_selected: _pss,
+    payment_completed: _pc,
+    payment_failed: _pf,
+    payment_not_preformed: _pn,
+    payment_cancelled: _pnc,
+    ...rest
+  } = options;
+  return {
+    ...rest,
+    _note:
+      "payment_method_select, payment_method_selected, payment_completed, payment_failed, payment_not_preformed, payment_cancelled are registered but omitted from JSON.",
+  };
+}
+
+export interface SdkInitAppliedInfo {
+  /** Monotonic counter from the host page (each successful DropInSDK construction). */
+  initGeneration: number;
+  /** ISO timestamp when DropInSDK was constructed. */
+  appliedAt: string;
+  /** JSON-safe view of options passed to `new DropInSDK(...)`. */
+  debugPayload: Record<string, unknown>;
+}
+
 interface EvonetDropinHostProps {
   config: EvonetDropinConfig;
-  configVersion: number;
+  /**
+   * Increment to (re)construct DropInSDK. First meaningful init should use 1+.
+   * Parameter-only tweaks should bump this via the parent (debounced) without
+   * changing unrelated `config` identity semantics.
+   */
+  initGeneration: number;
   onEvent?: (event: EvonetDropinEvent) => void;
+  /** Called after each successful `new DropInSDK(...)` with a serializable payload. */
+  onSdkInitApplied?: (info: SdkInitAppliedInfo) => void;
 }
 
 export function EvonetDropinHost({
   config,
-  configVersion,
+  initGeneration,
   onEvent,
+  onSdkInitApplied,
 }: EvonetDropinHostProps) {
   const containerIdRef = useRef<string>("evonet-dropin-root");
   const dropInInstanceRef = useRef<unknown>(null);
   const handledVerificationIdsRef = useRef<Set<string>>(new Set());
   const [scriptLoaded, setScriptLoaded] = useState(false);
 
-  // Capture any postMessage traffic from the Drop-in iframe so we can
-  // surface raw SDK messages in the host page event log.
+  const configRef = useRef(config);
+  configRef.current = config;
+
+  const onEventRef = useRef(onEvent);
+  onEventRef.current = onEvent;
+
+  const onSdkInitAppliedRef = useRef(onSdkInitApplied);
+  onSdkInitAppliedRef.current = onSdkInitApplied;
+
   useEffect(() => {
     const handler = (event: MessageEvent) => {
-      onEvent?.({
+      onEventRef.current?.({
         type: "sdk_message",
         payload: {
           origin: event.origin,
@@ -46,7 +90,7 @@ export function EvonetDropinHost({
     return () => {
       window.removeEventListener("message", handler);
     };
-  }, [onEvent]);
+  }, []);
 
   useEffect(() => {
     const existing = document.querySelector<HTMLScriptElement>(
@@ -74,7 +118,7 @@ export function EvonetDropinHost({
       "error",
       () => {
         setScriptLoaded(false);
-        onEvent?.({
+        onEventRef.current?.({
           type: "error",
           payload: { message: "Failed to load Evonet Drop-in script" },
         });
@@ -82,22 +126,23 @@ export function EvonetDropinHost({
       { once: true }
     );
     document.body.appendChild(script);
-  }, [onEvent]);
+  }, []);
 
   useEffect(() => {
     if (!scriptLoaded) {
       return;
     }
-    // Only initialize after explicit user action from the host page.
-    if (configVersion < 1) {
+    if (initGeneration < 1) {
       return;
     }
+
+    const cfg = configRef.current;
 
     const win = window as unknown as EvonetWindow;
 
     const SdkCtor = win.DropInSDK;
     if (!SdkCtor) {
-      onEvent?.({
+      onEventRef.current?.({
         type: "error",
         payload: {
           message:
@@ -118,18 +163,15 @@ export function EvonetDropinHost({
       TEST: "UAT",
       test: "UAT",
     };
-    const sdkEnvironment =
-      envMap[config.environment] ?? config.environment;
+    const sdkEnvironment = envMap[cfg.environment] ?? cfg.environment;
 
     const handlePaymentMethodSelected = (payload: unknown) => {
-      // High-level event for the host UI.
-      onEvent?.({
+      onEventRef.current?.({
         type: "payment_method_selected",
         payload,
       });
 
-      // Also surface this as a raw SDK message for easier debugging.
-      onEvent?.({
+      onEventRef.current?.({
         type: "sdk_message",
         payload: {
           source: "payment_method_selected",
@@ -146,7 +188,7 @@ export function EvonetDropinHost({
       const verificationID =
         p?.verificationID ?? p?.verificationId ?? (p as any)?.verification_id;
       if (!verificationID) {
-        onEvent?.({
+        onEventRef.current?.({
           type: "error",
           payload: {
             message:
@@ -159,7 +201,7 @@ export function EvonetDropinHost({
 
       const verificationIdStr = String(verificationID);
       if (handledVerificationIdsRef.current.has(verificationIdStr)) {
-        onEvent?.({
+        onEventRef.current?.({
           type: "sdk_message",
           payload: {
             source: "payment_method_selected",
@@ -188,16 +230,14 @@ export function EvonetDropinHost({
               }) => void)
             : null;
 
-      // --- BIN verification response ---
-      // We keep Evonet's intended behavior: BIN verification is used to *notify* us (first6No),
-      // but we do not block payments at this layer. Promotions are shown on the host page.
+      const latest = configRef.current;
       const first6No = String(p?.first6No ?? "");
-      const rules = config.binRules ?? [];
+      const rules = latest.binRules ?? [];
       const matchedRule = rules.find((r) => r.first6No === first6No);
 
       const isValid = true;
 
-      onEvent?.({
+      onEventRef.current?.({
         type: "sdk_message",
         payload: {
           source: "bin_verification_decision",
@@ -217,7 +257,6 @@ export function EvonetDropinHost({
 
       if (typeof callbackVerification === "function") {
         try {
-          // Call as a method to preserve expected `this` binding in older SDK builds.
           if (typeof base?.callbackVerification === "function") {
             base.callbackVerification(params);
           } else {
@@ -225,7 +264,7 @@ export function EvonetDropinHost({
           }
         } catch (err) {
           handledVerificationIdsRef.current.delete(verificationIdStr);
-          onEvent?.({
+          onEventRef.current?.({
             type: "error",
             payload: {
               message: "callbackVerification threw",
@@ -236,7 +275,7 @@ export function EvonetDropinHost({
         }
       } else {
         handledVerificationIdsRef.current.delete(verificationIdStr);
-        onEvent?.({
+        onEventRef.current?.({
           type: "error",
           payload: {
             message:
@@ -248,57 +287,55 @@ export function EvonetDropinHost({
       }
     };
 
-    const verifyBrand = Boolean(config.isVerifyPaymentBrand);
+    const verifyBrand = Boolean(cfg.isVerifyPaymentBrand);
     const verifyOption = {
-      ...config.verifyOption,
+      ...cfg.verifyOption,
       isVerifyPaymentBrand: Boolean(
-        config.verifyOption?.isVerifyPaymentBrand ?? verifyBrand
+        cfg.verifyOption?.isVerifyPaymentBrand ?? verifyBrand
       ),
     };
 
     const appearanceDefaults = { colorBackground: "#ffffff" };
     const appearance = {
       ...appearanceDefaults,
-      ...(config.appearance ?? {}),
+      ...(cfg.appearance ?? {}),
     };
 
     const options: EvonetDropinSdkOptions = {
       id: `#${containerIdRef.current}`,
       type: "payment",
-      sessionID: config.sessionID,
-      locale: config.language ?? "en-US",
-      mode: config.mode,
+      sessionID: cfg.sessionID,
+      locale: cfg.language ?? "en-US",
+      mode: cfg.mode,
       environment: sdkEnvironment as EvonetDropinSdkOptions["environment"],
-      // Keep legacy root flag for compatibility, but also send verifyOption
-      // as per Evonet docs.
       isVerifyPaymentBrand: verifyBrand,
       verifyOption,
-      ...(config.uiOption && Object.keys(config.uiOption).length > 0
-        ? { uiOption: config.uiOption }
+      ...(cfg.uiOption && Object.keys(cfg.uiOption).length > 0
+        ? { uiOption: cfg.uiOption }
         : {}),
       appearance,
       payment_method_select: handlePaymentMethodSelected,
       payment_method_selected: handlePaymentMethodSelected,
       payment_completed: (payload: unknown) => {
-        onEvent?.({
+        onEventRef.current?.({
           type: "payment_success",
           payload,
         });
       },
       payment_failed: (payload: unknown) => {
-        onEvent?.({
+        onEventRef.current?.({
           type: "payment_fail",
           payload,
         });
       },
       payment_not_preformed: (payload: unknown) => {
-        onEvent?.({
+        onEventRef.current?.({
           type: "payment_pending",
           payload,
         });
       },
       payment_cancelled: (payload: unknown) => {
-        onEvent?.({
+        onEventRef.current?.({
           type: "payment_cancelled",
           payload,
         });
@@ -306,11 +343,18 @@ export function EvonetDropinHost({
     };
 
     try {
+      const debugPayload = sdkOptionsToDebugPayload(options);
       // eslint-disable-next-line no-new
       dropInInstanceRef.current = new SdkCtor(options);
       handledVerificationIdsRef.current = new Set();
+
+      onSdkInitAppliedRef.current?.({
+        initGeneration,
+        appliedAt: new Date().toISOString(),
+        debugPayload,
+      });
     } catch (error) {
-      onEvent?.({
+      onEventRef.current?.({
         type: "error",
         payload: { message: "Failed to initialize DropInSDK", error },
       });
@@ -323,7 +367,7 @@ export function EvonetDropinHost({
         c.innerHTML = "";
       }
     };
-  }, [config, configVersion, scriptLoaded, onEvent]);
+  }, [initGeneration, scriptLoaded]);
 
   return (
     <Box sx={{ width: "100%" }}>
