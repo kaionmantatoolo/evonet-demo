@@ -248,22 +248,35 @@ export function EvonetDropinHost({
       }
     };
 
+    const verifyBrand = Boolean(config.isVerifyPaymentBrand);
+    const verifyOption = {
+      ...config.verifyOption,
+      isVerifyPaymentBrand: Boolean(
+        config.verifyOption?.isVerifyPaymentBrand ?? verifyBrand
+      ),
+    };
+
+    const appearanceDefaults = { colorBackground: "#ffffff" };
+    const appearance = {
+      ...appearanceDefaults,
+      ...(config.appearance ?? {}),
+    };
+
     const options: EvonetDropinSdkOptions = {
       id: `#${containerIdRef.current}`,
       type: "payment",
       sessionID: config.sessionID,
-      locale: config.language ?? "en",
+      locale: config.language ?? "en-US",
       mode: config.mode,
       environment: sdkEnvironment as EvonetDropinSdkOptions["environment"],
       // Keep legacy root flag for compatibility, but also send verifyOption
       // as per Evonet docs.
-      isVerifyPaymentBrand: Boolean(config.isVerifyPaymentBrand),
-      verifyOption: {
-        isVerifyPaymentBrand: Boolean(config.isVerifyPaymentBrand),
-      },
-      appearance: {
-        colorBackground: "#ffffff",
-      },
+      isVerifyPaymentBrand: verifyBrand,
+      verifyOption,
+      ...(config.uiOption && Object.keys(config.uiOption).length > 0
+        ? { uiOption: config.uiOption }
+        : {}),
+      appearance,
       payment_method_select: handlePaymentMethodSelected,
       payment_method_selected: handlePaymentMethodSelected,
       payment_completed: (payload: unknown) => {

@@ -12,7 +12,46 @@ export type EvonetEnvironment =
   | "TEST"
   | (string & {});
 
-export type EvonetDropinMode = "embedded" | "fullPage";
+export type EvonetDropinMode = "embedded" | "fullPage" | "bottomUp";
+
+/** Step 4 SDK `uiOption` (see Evonet SDK Parameter Reference). */
+export interface EvonetSdkUiOption {
+  showSaveImage?: boolean;
+  card?: {
+    showCardHolderName?: boolean;
+    CVVForSavedCard?: boolean;
+    showScanCardButton?: boolean;
+    autoInvokeCardScanner?: boolean;
+  };
+  TnC?: {
+    showTnC?: boolean;
+    mode?: "checkbox" | "click2accept";
+    url?: string;
+  };
+  /** Two-column layout (per SDK examples). */
+  Columns?: boolean;
+}
+
+/** Layout / styling; hex strings per Evonet docs. */
+export interface EvonetSdkAppearance {
+  colorAction?: string;
+  colorBackground?: string;
+  colorBoxStroke?: string;
+  colorDisabled?: string;
+  colorError?: string;
+  colorFormBackground?: string;
+  colorFormBorder?: string;
+  colorInverse?: string;
+  colorBoxFillingOutline?: string;
+  colorPlaceholder?: string;
+  colorPrimary?: string;
+  colorSecondary?: string;
+  logoPosition?: "left" | "middle" | "right";
+  /** Corner radii [r1, r2, r3, r4]. */
+  borderRadius?: number[];
+  Columns?: boolean;
+  [key: string]: unknown;
+}
 
 export interface EvonetDropinConfig {
   type: "payment";
@@ -32,8 +71,16 @@ export interface EvonetDropinConfig {
   shippingCountry?: string;
   shippingCity?: string;
   shippingPostalCode?: string;
+  /** BCP 47 locale sent to SDK `locale` (e.g. en-US, zh-TW). */
   language?: string;
   isVerifyPaymentBrand?: boolean;
+  verifyOption?: {
+    isVerifyPaymentBrand?: boolean;
+    maxWaitTime?: string;
+    [key: string]: unknown;
+  };
+  uiOption?: EvonetSdkUiOption;
+  appearance?: EvonetSdkAppearance;
   /** BIN conditions: checked in order against first6No. First match wins. */
   binRules?: BinRule[];
   [key: string]: unknown;
@@ -64,12 +111,11 @@ export interface EvonetDropinSdkOptions {
   isVerifyPaymentBrand?: boolean;
   verifyOption?: {
     isVerifyPaymentBrand?: boolean;
+    maxWaitTime?: string;
     [key: string]: unknown;
   };
-  appearance?: {
-    colorBackground?: string;
-    [key: string]: unknown;
-  };
+  uiOption?: EvonetSdkUiOption;
+  appearance?: EvonetSdkAppearance;
   payment_method_select?: (event: unknown) => void;
   payment_method_selected?: (event: unknown) => void;
   payment_completed?: (event: unknown) => void;

@@ -2,12 +2,14 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  Accordion,
+  AccordionDetails,
+  AccordionSummary,
   Alert,
   Box,
   Button,
   Chip,
   Container,
-  Divider,
   FormControl,
   Grid,
   InputLabel,
@@ -24,6 +26,8 @@ import type {
   BinRule,
   EvonetDropinConfig,
   EvonetDropinEvent,
+  EvonetSdkAppearance,
+  EvonetSdkUiOption,
 } from "../../../types/evonet";
 
 const DEFAULT_ENVIRONMENT =
@@ -35,6 +39,14 @@ const DEFAULT_SESSION_ID =
 
 const DEFAULT_CURRENCY =
   process.env.NEXT_PUBLIC_EVONET_DEFAULT_CURRENCY ?? "HKD";
+
+function generateOrderId(): string {
+  const suffix =
+    typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+      ? crypto.randomUUID().slice(0, 8)
+      : Math.random().toString(36).slice(2, 10);
+  return `EVT-${Date.now()}-${suffix}`;
+}
 
 export default function EvonetDropinTestPage() {
   const [amount, setAmount] = useState<string>("10.00");
@@ -58,8 +70,39 @@ export default function EvonetDropinTestPage() {
 
   const [environment, setEnvironment] = useState<string>(DEFAULT_ENVIRONMENT);
   const [mode, setMode] = useState<EvonetDropinConfig["mode"]>("embedded");
-  const [language, setLanguage] = useState<string>("en");
+  /** SDK / interaction API locale (Evonet: en-US, zh-CN, zh-TW, …). */
+  const [locale, setLocale] = useState<string>("en-US");
   const [verifyPaymentBrand, setVerifyPaymentBrand] = useState<boolean>(true);
+  const [maxWaitTime, setMaxWaitTime] = useState<string>("10");
+
+  const [showSaveImage, setShowSaveImage] = useState(false);
+  const [showCardHolderName, setShowCardHolderName] = useState(true);
+  const [cvvForSavedCard, setCvvForSavedCard] = useState(true);
+  const [showScanCardButton, setShowScanCardButton] = useState(false);
+  const [autoInvokeCardScanner, setAutoInvokeCardScanner] = useState(false);
+  const [showTnC, setShowTnC] = useState(false);
+  const [tncMode, setTncMode] = useState<"checkbox" | "click2accept">(
+    "click2accept"
+  );
+  const [tncUrl, setTncUrl] = useState("");
+  const [columnsLayout, setColumnsLayout] = useState(false);
+
+  const [colorAction, setColorAction] = useState("");
+  const [colorBackground, setColorBackground] = useState("#ffffff");
+  const [colorBoxStroke, setColorBoxStroke] = useState("");
+  const [colorDisabled, setColorDisabled] = useState("");
+  const [colorError, setColorError] = useState("");
+  const [colorFormBackground, setColorFormBackground] = useState("");
+  const [colorFormBorder, setColorFormBorder] = useState("");
+  const [colorInverse, setColorInverse] = useState("");
+  const [colorBoxFillingOutline, setColorBoxFillingOutline] = useState("");
+  const [colorPlaceholder, setColorPlaceholder] = useState("");
+  const [colorPrimary, setColorPrimary] = useState("");
+  const [colorSecondary, setColorSecondary] = useState("");
+  const [logoPosition, setLogoPosition] = useState<
+    "left" | "middle" | "right"
+  >("left");
+  const [borderRadiusInput, setBorderRadiusInput] = useState("");
   const [binRules, setBinRules] = useState<BinRule[]>([
     {
       first6No: "552343",
@@ -89,6 +132,84 @@ export default function EvonetDropinTestPage() {
     };
   }>({ type: null });
 
+  const sdkUiOption: EvonetSdkUiOption = useMemo(
+    () => ({
+      showSaveImage,
+      Columns: columnsLayout,
+      card: {
+        showCardHolderName,
+        CVVForSavedCard: cvvForSavedCard,
+        showScanCardButton,
+        autoInvokeCardScanner,
+      },
+      TnC: {
+        showTnC,
+        mode: tncMode,
+        url: showTnC ? tncUrl : "",
+      },
+    }),
+    [
+      autoInvokeCardScanner,
+      columnsLayout,
+      cvvForSavedCard,
+      showCardHolderName,
+      showSaveImage,
+      showScanCardButton,
+      showTnC,
+      tncMode,
+      tncUrl,
+    ]
+  );
+
+  const sdkAppearance: EvonetSdkAppearance = useMemo(() => {
+    const a: EvonetSdkAppearance = {
+      colorBackground: colorBackground.trim() || "#ffffff",
+    };
+    const put = (key: keyof EvonetSdkAppearance, value: string) => {
+      const t = value.trim();
+      if (t) {
+        (a as Record<string, unknown>)[key as string] = t;
+      }
+    };
+    put("colorAction", colorAction);
+    put("colorBoxStroke", colorBoxStroke);
+    put("colorDisabled", colorDisabled);
+    put("colorError", colorError);
+    put("colorFormBackground", colorFormBackground);
+    put("colorFormBorder", colorFormBorder);
+    put("colorInverse", colorInverse);
+    put("colorBoxFillingOutline", colorBoxFillingOutline);
+    put("colorPlaceholder", colorPlaceholder);
+    put("colorPrimary", colorPrimary);
+    put("colorSecondary", colorSecondary);
+    if (logoPosition !== "left") {
+      a.logoPosition = logoPosition;
+    }
+    const br = borderRadiusInput
+      .split(",")
+      .map((s) => parseInt(s.trim(), 10))
+      .filter((n) => !Number.isNaN(n));
+    if (br.length === 4) {
+      a.borderRadius = br;
+    }
+    return a;
+  }, [
+    borderRadiusInput,
+    colorAction,
+    colorBackground,
+    colorBoxFillingOutline,
+    colorBoxStroke,
+    colorDisabled,
+    colorError,
+    colorFormBackground,
+    colorFormBorder,
+    colorInverse,
+    colorPlaceholder,
+    colorPrimary,
+    colorSecondary,
+    logoPosition,
+  ]);
+
   const config: EvonetDropinConfig = useMemo(
     () => ({
       type: "payment",
@@ -108,8 +229,13 @@ export default function EvonetDropinTestPage() {
       shippingCountry,
       shippingCity,
       shippingPostalCode,
-      language,
+      language: locale,
       isVerifyPaymentBrand: verifyPaymentBrand,
+      verifyOption: verifyPaymentBrand
+        ? { maxWaitTime: maxWaitTime.trim() || "10" }
+        : undefined,
+      uiOption: sdkUiOption,
+      appearance: sdkAppearance,
       binRules,
     }),
     [
@@ -123,9 +249,12 @@ export default function EvonetDropinTestPage() {
       customerPhone,
       description,
       environment,
-      language,
+      locale,
+      maxWaitTime,
       mode,
       orderId,
+      sdkAppearance,
+      sdkUiOption,
       sessionId,
       shippingCity,
       shippingCountry,
@@ -144,6 +273,7 @@ export default function EvonetDropinTestPage() {
       alert("Please enter a valid amount.");
       return;
     }
+    setOrderId(generateOrderId());
     setEvents([]);
     setConfigVersion((v) => v + 1);
   };
@@ -207,10 +337,8 @@ export default function EvonetDropinTestPage() {
       return;
     }
 
-    if (!orderId) {
-      setSessionError("Order ID is required.");
-      return;
-    }
+    const newOrderId = generateOrderId();
+    setOrderId(newOrderId);
 
     setIsCreatingSession(true);
     try {
@@ -222,10 +350,10 @@ export default function EvonetDropinTestPage() {
         body: JSON.stringify({
           amount: numericAmount,
           currency,
-          orderId,
+          orderId: newOrderId,
           description,
           environment,
-          locale: language,
+          locale,
         }),
       });
 
@@ -319,7 +447,21 @@ export default function EvonetDropinTestPage() {
                       variant="subtitle2"
                       sx={{ mb: 2, fontWeight: 600 }}
                     >
-                      Environment & basics
+                      Session &amp; SDK basics
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 1.5 }}>
+                      Create a session, then initialize Drop-in here — no need to scroll to the bottom.
+                      See{" "}
+                      <Box
+                        component="a"
+                        href="https://developer.evonetonline.com/docs/sdk"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        sx={{ color: "primary.main" }}
+                      >
+                        SDK Parameter Reference
+                      </Box>
+                      .
                     </Typography>
                     <Grid container spacing={2}>
                       <Grid item xs={12}>
@@ -332,10 +474,11 @@ export default function EvonetDropinTestPage() {
                           fullWidth
                         />
                         <Stack
-                          direction="column"
-                          spacing={0.75}
+                          direction={{ xs: "column", sm: "row" }}
+                          spacing={1}
                           sx={{ mt: 1.5 }}
-                          alignItems="flex-start"
+                          alignItems={{ sm: "center" }}
+                          flexWrap="wrap"
                         >
                           <Button
                             type="button"
@@ -345,15 +488,25 @@ export default function EvonetDropinTestPage() {
                             size="small"
                             sx={{ textTransform: "none" }}
                           >
-                            {isCreatingSession ? "Creating session ID…" : "Create session ID"}
+                            {isCreatingSession
+                              ? "Creating session ID…"
+                              : "Create session ID"}
                           </Button>
-                          <Typography variant="caption" color="text.secondary">
-                            Uses your server-side credentials to call Evonet&apos;s
-                            interaction API and return a session ID. If you see
-                            &quot;store not found&quot;, add EVONET_STORE_ID to
-                            .env.local (from Evonet Portal) or contact Evonet.
-                          </Typography>
+                          <Button
+                            type="button"
+                            onClick={handleInitialize}
+                            variant="contained"
+                            color="secondary"
+                            size="small"
+                            sx={{ textTransform: "none" }}
+                          >
+                            Initialize / Re-init Drop-in
+                          </Button>
                         </Stack>
+                        <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 1 }}>
+                          Create session uses your server credentials (interaction API). Initialize runs
+                          in this browser with your real user agent.
+                        </Typography>
                         {sessionError && (
                           <Alert severity="error" sx={{ mt: 1.5 }}>
                             {sessionError}
@@ -368,16 +521,16 @@ export default function EvonetDropinTestPage() {
                           onChange={(e) => setEnvironment(e.target.value)}
                           size="small"
                           fullWidth
-                          helperText="Example: HKG_prod, UAT, TEST."
+                          helperText="e.g. HKG_prod, BKK_prod, UAT"
                         />
                       </Grid>
 
                       <Grid item xs={12} sm={6}>
                         <FormControl size="small" fullWidth>
-                          <InputLabel id="mode-label">Mode</InputLabel>
+                          <InputLabel id="mode-label">mode</InputLabel>
                           <Select
                             labelId="mode-label"
-                            label="Mode"
+                            label="mode"
                             value={mode}
                             onChange={(e) =>
                               setMode(
@@ -387,205 +540,189 @@ export default function EvonetDropinTestPage() {
                           >
                             <MenuItem value="embedded">embedded</MenuItem>
                             <MenuItem value="fullPage">fullPage</MenuItem>
+                            <MenuItem value="bottomUp">bottomUp</MenuItem>
                           </Select>
                         </FormControl>
                       </Grid>
 
-                      <Grid item xs={12} sm={6}>
+                      <Grid item xs={12}>
                         <FormControl size="small" fullWidth>
-                          <InputLabel id="language-label">Language</InputLabel>
+                          <InputLabel id="locale-label">locale (SDK)</InputLabel>
                           <Select
-                            labelId="language-label"
-                            label="Language"
-                            value={language}
-                            onChange={(e) => setLanguage(e.target.value)}
+                            labelId="locale-label"
+                            label="locale (SDK)"
+                            value={locale}
+                            onChange={(e) => setLocale(e.target.value)}
                           >
-                            <MenuItem value="en">en</MenuItem>
-                            <MenuItem value="zh-Hant">zh-Hant</MenuItem>
-                            <MenuItem value="zh-Hans">zh-Hans</MenuItem>
-                            <MenuItem value="ja">ja</MenuItem>
-                            <MenuItem value="ko">ko</MenuItem>
-                            <MenuItem value="th">th</MenuItem>
-                            <MenuItem value="vi">vi</MenuItem>
-                            <MenuItem value="id">id</MenuItem>
+                            <MenuItem value="en-US">English (en-US)</MenuItem>
+                            <MenuItem value="zh-CN">Chinese Simplified (zh-CN)</MenuItem>
+                            <MenuItem value="zh-TW">Traditional Chinese (zh-TW)</MenuItem>
+                            <MenuItem value="ja-JP">Japanese (ja-JP)</MenuItem>
+                            <MenuItem value="ko-KR">Korean (ko-KR)</MenuItem>
+                            <MenuItem value="th-TH">Thai (th-TH)</MenuItem>
                           </Select>
                         </FormControl>
                       </Grid>
                     </Grid>
                   </Box>
 
-                  <Box>
-                    <Typography
-                      variant="subtitle2"
-                      sx={{ mb: 2, fontWeight: 600 }}
-                    >
-                      Order details
-                    </Typography>
-                    <Grid container spacing={2}>
-                      <Grid item xs={12} sm={6}>
+                  <Accordion defaultExpanded disableGutters sx={{ border: "1px solid", borderColor: "divider", borderRadius: 1, "&:before": { display: "none" } }}>
+                    <AccordionSummary sx={{ px: 2, minHeight: 48 }}>
+                      <Typography variant="subtitle2" fontWeight={600}>
+                        SDK: Payment workflow (uiOption)
+                      </Typography>
+                    </AccordionSummary>
+                    <AccordionDetails sx={{ pt: 0, px: 2, pb: 2 }}>
+                      <Stack spacing={2}>
+                        <Stack direction="row" alignItems="center" justifyContent="space-between">
+                          <Box>
+                            <Typography variant="body2" fontWeight={600}>showSaveImage</Typography>
+                            <Typography variant="caption" color="text.secondary">Allow saving QR to device</Typography>
+                          </Box>
+                          <Switch checked={showSaveImage} onChange={() => setShowSaveImage((v) => !v)} inputProps={{ "aria-label": "showSaveImage" }} />
+                        </Stack>
+                        <Stack direction="row" alignItems="center" justifyContent="space-between">
+                          <Box>
+                            <Typography variant="body2" fontWeight={600}>Columns (two-column layout)</Typography>
+                            <Typography variant="caption" color="text.secondary">uiOption.Columns</Typography>
+                          </Box>
+                          <Switch checked={columnsLayout} onChange={() => setColumnsLayout((v) => !v)} inputProps={{ "aria-label": "Columns" }} />
+                        </Stack>
+                        <Typography variant="caption" fontWeight={700} color="text.secondary">Card (uiOption.card)</Typography>
+                        <Stack direction="row" alignItems="center" justifyContent="space-between">
+                          <Typography variant="body2">showCardHolderName</Typography>
+                          <Switch checked={showCardHolderName} onChange={() => setShowCardHolderName((v) => !v)} inputProps={{ "aria-label": "showCardHolderName" }} />
+                        </Stack>
+                        <Stack direction="row" alignItems="center" justifyContent="space-between">
+                          <Typography variant="body2">CVVForSavedCard</Typography>
+                          <Switch checked={cvvForSavedCard} onChange={() => setCvvForSavedCard((v) => !v)} inputProps={{ "aria-label": "CVVForSavedCard" }} />
+                        </Stack>
+                        <Stack direction="row" alignItems="center" justifyContent="space-between">
+                          <Typography variant="body2">showScanCardButton</Typography>
+                          <Switch checked={showScanCardButton} onChange={() => setShowScanCardButton((v) => !v)} inputProps={{ "aria-label": "showScanCardButton" }} />
+                        </Stack>
+                        <Stack direction="row" alignItems="center" justifyContent="space-between">
+                          <Typography variant="body2">autoInvokeCardScanner</Typography>
+                          <Switch checked={autoInvokeCardScanner} onChange={() => setAutoInvokeCardScanner((v) => !v)} inputProps={{ "aria-label": "autoInvokeCardScanner" }} />
+                        </Stack>
+                        <Typography variant="caption" fontWeight={700} color="text.secondary">Terms &amp; Conditions (uiOption.TnC)</Typography>
+                        <Stack direction="row" alignItems="center" justifyContent="space-between">
+                          <Typography variant="body2">showTnC</Typography>
+                          <Switch checked={showTnC} onChange={() => setShowTnC((v) => !v)} inputProps={{ "aria-label": "showTnC" }} />
+                        </Stack>
+                        <FormControl size="small" fullWidth disabled={!showTnC}>
+                          <InputLabel id="tnc-mode-label">TnC mode</InputLabel>
+                          <Select
+                            labelId="tnc-mode-label"
+                            label="TnC mode"
+                            value={tncMode}
+                            onChange={(e) =>
+                              setTncMode(e.target.value as "checkbox" | "click2accept")
+                            }
+                          >
+                            <MenuItem value="click2accept">click2accept</MenuItem>
+                            <MenuItem value="checkbox">checkbox</MenuItem>
+                          </Select>
+                        </FormControl>
                         <TextField
-                          label="Amount"
-                          type="number"
-                          inputProps={{ min: 0, step: "0.01" }}
-                          value={amount}
-                          onChange={(e) => setAmount(e.target.value)}
+                          label="TnC url (required if showTnC)"
+                          value={tncUrl}
+                          onChange={(e) => setTncUrl(e.target.value)}
                           size="small"
                           fullWidth
+                          disabled={!showTnC}
+                          helperText="Mandatory in docs when showTnC is true"
                         />
-                      </Grid>
-                      <Grid item xs={12} sm={6}>
-                        <TextField
-                          label="Currency"
-                          value={currency}
-                          onChange={(e) =>
-                            setCurrency(e.target.value.toUpperCase())
-                          }
-                          size="small"
-                          fullWidth
-                        />
-                      </Grid>
-                      <Grid item xs={12}>
-                        <TextField
-                          label="Order ID"
-                          value={orderId}
-                          onChange={(e) => setOrderId(e.target.value)}
-                          size="small"
-                          fullWidth
-                        />
-                      </Grid>
-                      <Grid item xs={12}>
-                        <TextField
-                          label="Description"
-                          value={description}
-                          onChange={(e) => setDescription(e.target.value)}
-                          size="small"
-                          fullWidth
-                        />
-                      </Grid>
-                    </Grid>
-                  </Box>
+                      </Stack>
+                    </AccordionDetails>
+                  </Accordion>
 
-                  <Box>
-                    <Typography
-                      variant="subtitle2"
-                      sx={{ mb: 2, fontWeight: 600 }}
-                    >
-                      Customer
-                    </Typography>
-                    <Grid container spacing={2}>
-                      <Grid item xs={12}>
-                        <TextField
-                          label="Name"
-                          value={customerName}
-                          onChange={(e) => setCustomerName(e.target.value)}
-                          size="small"
-                          fullWidth
-                        />
+                  <Accordion defaultExpanded={false} disableGutters sx={{ border: "1px solid", borderColor: "divider", borderRadius: 1, "&:before": { display: "none" } }}>
+                    <AccordionSummary sx={{ px: 2, minHeight: 48 }}>
+                      <Typography variant="subtitle2" fontWeight={600}>
+                        SDK: Appearance (hex colors &amp; layout)
+                      </Typography>
+                    </AccordionSummary>
+                    <AccordionDetails sx={{ pt: 0, px: 2, pb: 2 }}>
+                      <Grid container spacing={2}>
+                        <Grid item xs={12} sm={6}>
+                          <TextField label="colorBackground" value={colorBackground} onChange={(e) => setColorBackground(e.target.value)} size="small" fullWidth placeholder="#ffffff" />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                          <TextField label="colorPrimary" value={colorPrimary} onChange={(e) => setColorPrimary(e.target.value)} size="small" fullWidth placeholder="#000000" />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                          <TextField label="colorSecondary" value={colorSecondary} onChange={(e) => setColorSecondary(e.target.value)} size="small" fullWidth />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                          <TextField label="colorAction" value={colorAction} onChange={(e) => setColorAction(e.target.value)} size="small" fullWidth />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                          <TextField label="colorError" value={colorError} onChange={(e) => setColorError(e.target.value)} size="small" fullWidth />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                          <TextField label="colorDisabled" value={colorDisabled} onChange={(e) => setColorDisabled(e.target.value)} size="small" fullWidth />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                          <TextField label="colorFormBackground" value={colorFormBackground} onChange={(e) => setColorFormBackground(e.target.value)} size="small" fullWidth />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                          <TextField label="colorFormBorder" value={colorFormBorder} onChange={(e) => setColorFormBorder(e.target.value)} size="small" fullWidth />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                          <TextField label="colorBoxStroke" value={colorBoxStroke} onChange={(e) => setColorBoxStroke(e.target.value)} size="small" fullWidth />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                          <TextField label="colorBoxFillingOutline" value={colorBoxFillingOutline} onChange={(e) => setColorBoxFillingOutline(e.target.value)} size="small" fullWidth />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                          <TextField label="colorPlaceholder" value={colorPlaceholder} onChange={(e) => setColorPlaceholder(e.target.value)} size="small" fullWidth />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                          <TextField label="colorInverse" value={colorInverse} onChange={(e) => setColorInverse(e.target.value)} size="small" fullWidth />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                          <FormControl size="small" fullWidth>
+                            <InputLabel id="logo-pos-label">logoPosition</InputLabel>
+                            <Select
+                              labelId="logo-pos-label"
+                              label="logoPosition"
+                              value={logoPosition}
+                              onChange={(e) =>
+                                setLogoPosition(e.target.value as "left" | "middle" | "right")
+                              }
+                            >
+                              <MenuItem value="left">left</MenuItem>
+                              <MenuItem value="middle">middle</MenuItem>
+                              <MenuItem value="right">right</MenuItem>
+                            </Select>
+                          </FormControl>
+                        </Grid>
+                        <Grid item xs={12}>
+                          <TextField
+                            label="borderRadius [r1,r2,r3,r4]"
+                            value={borderRadiusInput}
+                            onChange={(e) => setBorderRadiusInput(e.target.value)}
+                            size="small"
+                            fullWidth
+                            placeholder="e.g. 8,8,12,12"
+                            helperText="Four comma-separated numbers"
+                          />
+                        </Grid>
                       </Grid>
-                      <Grid item xs={12} sm={6}>
-                        <TextField
-                          label="Email"
-                          type="email"
-                          value={customerEmail}
-                          onChange={(e) => setCustomerEmail(e.target.value)}
-                          size="small"
-                          fullWidth
-                        />
-                      </Grid>
-                      <Grid item xs={12} sm={6}>
-                        <TextField
-                          label="Phone"
-                          type="tel"
-                          value={customerPhone}
-                          onChange={(e) => setCustomerPhone(e.target.value)}
-                          size="small"
-                          fullWidth
-                        />
-                      </Grid>
-                    </Grid>
-                  </Box>
+                      <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 1 }}>
+                        Font objects (button/font, heading/font, …) are not exposed here; add via Evonet UX customization if needed.
+                      </Typography>
+                    </AccordionDetails>
+                  </Accordion>
 
-                  <Box>
-                    <Typography
-                      variant="subtitle2"
-                      sx={{ mb: 2, fontWeight: 600 }}
-                    >
-                      Billing & Shipping
-                    </Typography>
-                    <Grid container spacing={2}>
-                      <Grid item xs={12} sm={4}>
-                        <TextField
-                          label="Billing Country"
-                          value={billingCountry}
-                          onChange={(e) =>
-                            setBillingCountry(e.target.value.toUpperCase())
-                          }
-                          size="small"
-                          fullWidth
-                        />
-                      </Grid>
-                      <Grid item xs={12} sm={4}>
-                        <TextField
-                          label="Billing City"
-                          value={billingCity}
-                          onChange={(e) => setBillingCity(e.target.value)}
-                          size="small"
-                          fullWidth
-                        />
-                      </Grid>
-                      <Grid item xs={12} sm={4}>
-                        <TextField
-                          label="Billing Postal Code"
-                          value={billingPostalCode}
-                          onChange={(e) => setBillingPostalCode(e.target.value)}
-                          size="small"
-                          fullWidth
-                        />
-                      </Grid>
-
-                      <Grid item xs={12} sm={4}>
-                        <TextField
-                          label="Shipping Country"
-                          value={shippingCountry}
-                          onChange={(e) =>
-                            setShippingCountry(e.target.value.toUpperCase())
-                          }
-                          size="small"
-                          fullWidth
-                        />
-                      </Grid>
-                      <Grid item xs={12} sm={4}>
-                        <TextField
-                          label="Shipping City"
-                          value={shippingCity}
-                          onChange={(e) => setShippingCity(e.target.value)}
-                          size="small"
-                          fullWidth
-                        />
-                      </Grid>
-                      <Grid item xs={12} sm={4}>
-                        <TextField
-                          label="Shipping Postal Code"
-                          value={shippingPostalCode}
-                          onChange={(e) =>
-                            setShippingPostalCode(e.target.value)
-                          }
-                          size="small"
-                          fullWidth
-                        />
-                      </Grid>
-                    </Grid>
-                  </Box>
-
-                  <Box>
-                    <Typography
-                      variant="subtitle2"
-                      sx={{ mb: 2, fontWeight: 600 }}
-                    >
-                      Options
-                    </Typography>
-
-                    {/* BIN verification toggle */}
+                  <Accordion defaultExpanded disableGutters sx={{ border: "1px solid", borderColor: "divider", borderRadius: 1, "&:before": { display: "none" } }}>
+                    <AccordionSummary sx={{ px: 2, minHeight: 48 }}>
+                      <Typography variant="subtitle2" fontWeight={600}>
+                        SDK: BIN verification (verifyOption + host rules)
+                      </Typography>
+                    </AccordionSummary>
+                    <AccordionDetails sx={{ pt: 0, px: 2, pb: 2 }}>
                     <Stack
                       direction="row"
                       spacing={2}
@@ -594,12 +731,10 @@ export default function EvonetDropinTestPage() {
                     >
                       <Box>
                         <Typography variant="body2" fontWeight={600}>
-                          Verify payment brand (BIN)
+                          isVerifyPaymentBrand
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
-                          When enabled, each card BIN is checked against the
-                          rules below. Click outside the card number field to
-                          trigger verification.
+                          When enabled, BIN is processed and returned in SDK events. Host rules below only affect promo text.
                         </Typography>
                       </Box>
                       <Switch
@@ -608,6 +743,18 @@ export default function EvonetDropinTestPage() {
                         inputProps={{ "aria-label": "Verify payment brand" }}
                       />
                     </Stack>
+
+                    {verifyPaymentBrand && (
+                      <TextField
+                        label="verifyOption.maxWaitTime (seconds)"
+                        value={maxWaitTime}
+                        onChange={(e) => setMaxWaitTime(e.target.value)}
+                        size="small"
+                        fullWidth
+                        sx={{ mt: 2 }}
+                        helperText="Default per docs: 10"
+                      />
+                    )}
 
                     {verifyPaymentBrand && (
                       <Stack spacing={2} sx={{ mt: 2 }}>
@@ -738,28 +885,170 @@ export default function EvonetDropinTestPage() {
                         </Paper>
                       </Stack>
                     )}
-                  </Box>
+                    </AccordionDetails>
+                  </Accordion>
 
-                  <Divider />
-
-                  <Box>
-                    <Button
-                      type="button"
-                      onClick={handleInitialize}
-                      variant="contained"
-                    >
-                      Initialize / Re-initialize Drop-in
-                    </Button>
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      sx={{ display: "block", mt: 1 }}
-                    >
-                      Initialization always runs in the browser, using your real
-                      navigator.userAgent. No Node/cURL calls are used for Drop-in
-                      itself.
-                    </Typography>
-                  </Box>
+                  <Accordion defaultExpanded={false} disableGutters sx={{ border: "1px solid", borderColor: "divider", borderRadius: 1, "&:before": { display: "none" } }}>
+                    <AccordionSummary sx={{ px: 2, minHeight: 48 }}>
+                      <Typography variant="subtitle2" fontWeight={600}>
+                        Order &amp; customer (metadata for this page)
+                      </Typography>
+                    </AccordionSummary>
+                    <AccordionDetails sx={{ pt: 0, px: 2, pb: 2 }}>
+                      <Stack spacing={3}>
+                        <Box>
+                          <Typography variant="caption" fontWeight={700} color="text.secondary" sx={{ display: "block", mb: 1 }}>
+                            Order details
+                          </Typography>
+                          <Grid container spacing={2}>
+                            <Grid item xs={12} sm={6}>
+                              <TextField
+                                label="Amount"
+                                type="number"
+                                inputProps={{ min: 0, step: "0.01" }}
+                                value={amount}
+                                onChange={(e) => setAmount(e.target.value)}
+                                size="small"
+                                fullWidth
+                              />
+                            </Grid>
+                            <Grid item xs={12} sm={6}>
+                              <TextField
+                                label="Currency"
+                                value={currency}
+                                onChange={(e) =>
+                                  setCurrency(e.target.value.toUpperCase())
+                                }
+                                size="small"
+                                fullWidth
+                              />
+                            </Grid>
+                            <Grid item xs={12}>
+                              <TextField
+                                label="Order ID"
+                                value={orderId}
+                                onChange={(e) => setOrderId(e.target.value)}
+                                size="small"
+                                fullWidth
+                              />
+                            </Grid>
+                            <Grid item xs={12}>
+                              <TextField
+                                label="Description"
+                                value={description}
+                                onChange={(e) => setDescription(e.target.value)}
+                                size="small"
+                                fullWidth
+                              />
+                            </Grid>
+                          </Grid>
+                        </Box>
+                        <Box>
+                          <Typography variant="caption" fontWeight={700} color="text.secondary" sx={{ display: "block", mb: 1 }}>
+                            Customer
+                          </Typography>
+                          <Grid container spacing={2}>
+                            <Grid item xs={12}>
+                              <TextField
+                                label="Name"
+                                value={customerName}
+                                onChange={(e) => setCustomerName(e.target.value)}
+                                size="small"
+                                fullWidth
+                              />
+                            </Grid>
+                            <Grid item xs={12} sm={6}>
+                              <TextField
+                                label="Email"
+                                type="email"
+                                value={customerEmail}
+                                onChange={(e) => setCustomerEmail(e.target.value)}
+                                size="small"
+                                fullWidth
+                              />
+                            </Grid>
+                            <Grid item xs={12} sm={6}>
+                              <TextField
+                                label="Phone"
+                                type="tel"
+                                value={customerPhone}
+                                onChange={(e) => setCustomerPhone(e.target.value)}
+                                size="small"
+                                fullWidth
+                              />
+                            </Grid>
+                          </Grid>
+                        </Box>
+                        <Box>
+                          <Typography variant="caption" fontWeight={700} color="text.secondary" sx={{ display: "block", mb: 1 }}>
+                            Billing &amp; shipping
+                          </Typography>
+                          <Grid container spacing={2}>
+                            <Grid item xs={12} sm={4}>
+                              <TextField
+                                label="Billing Country"
+                                value={billingCountry}
+                                onChange={(e) =>
+                                  setBillingCountry(e.target.value.toUpperCase())
+                                }
+                                size="small"
+                                fullWidth
+                              />
+                            </Grid>
+                            <Grid item xs={12} sm={4}>
+                              <TextField
+                                label="Billing City"
+                                value={billingCity}
+                                onChange={(e) => setBillingCity(e.target.value)}
+                                size="small"
+                                fullWidth
+                              />
+                            </Grid>
+                            <Grid item xs={12} sm={4}>
+                              <TextField
+                                label="Billing Postal Code"
+                                value={billingPostalCode}
+                                onChange={(e) => setBillingPostalCode(e.target.value)}
+                                size="small"
+                                fullWidth
+                              />
+                            </Grid>
+                            <Grid item xs={12} sm={4}>
+                              <TextField
+                                label="Shipping Country"
+                                value={shippingCountry}
+                                onChange={(e) =>
+                                  setShippingCountry(e.target.value.toUpperCase())
+                                }
+                                size="small"
+                                fullWidth
+                              />
+                            </Grid>
+                            <Grid item xs={12} sm={4}>
+                              <TextField
+                                label="Shipping City"
+                                value={shippingCity}
+                                onChange={(e) => setShippingCity(e.target.value)}
+                                size="small"
+                                fullWidth
+                              />
+                            </Grid>
+                            <Grid item xs={12} sm={4}>
+                              <TextField
+                                label="Shipping Postal Code"
+                                value={shippingPostalCode}
+                                onChange={(e) =>
+                                  setShippingPostalCode(e.target.value)
+                                }
+                                size="small"
+                                fullWidth
+                              />
+                            </Grid>
+                          </Grid>
+                        </Box>
+                      </Stack>
+                    </AccordionDetails>
+                  </Accordion>
                 </Stack>
               </Paper>
 
@@ -787,7 +1076,7 @@ export default function EvonetDropinTestPage() {
                   />
                 </Stack>
                 <Grid container spacing={2}>
-                  <Grid item xs={12} sm={6}>
+                  <Grid item xs={12} sm={4}>
                     <Typography
                       variant="overline"
                       sx={{ color: "grey.400", display: "block" }}
@@ -801,7 +1090,7 @@ export default function EvonetDropinTestPage() {
                       {environment}
                     </Typography>
                   </Grid>
-                  <Grid item xs={12} sm={6}>
+                  <Grid item xs={12} sm={4}>
                     <Typography
                       variant="overline"
                       sx={{ color: "grey.400", display: "block" }}
@@ -810,6 +1099,17 @@ export default function EvonetDropinTestPage() {
                     </Typography>
                     <Typography variant="body2" sx={{ color: "success.light" }}>
                       {mode}
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={4}>
+                    <Typography
+                      variant="overline"
+                      sx={{ color: "grey.400", display: "block" }}
+                    >
+                      locale (SDK)
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: "success.light" }}>
+                      {locale}
                     </Typography>
                   </Grid>
                 </Grid>
@@ -835,9 +1135,17 @@ export default function EvonetDropinTestPage() {
             </Stack>
           </Grid>
 
-          <Grid item xs={12} lg={7}>
+          <Grid item xs={12} lg={7} sx={{ alignSelf: "flex-start" }}>
             <Stack spacing={2} sx={{ height: "100%" }}>
-              <Paper variant="outlined" sx={{ overflow: "hidden" }}>
+              <Paper
+                variant="outlined"
+                sx={{
+                  overflow: "hidden",
+                  position: { lg: "sticky" },
+                  top: { lg: 16 },
+                  zIndex: 1,
+                }}
+              >
                 <Box
                   sx={{
                     borderBottom: "1px solid",
