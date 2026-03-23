@@ -70,6 +70,57 @@ function serializeCaught(value: unknown): Record<string, unknown> {
   return { errorString: String(value) };
 }
 
+/**
+ * Tear down a previous Drop-in instance before clearing DOM or constructing a new
+ * one. Evonet may expose destroy/dispose/unmount on the instance or on `.value`.
+ * Skipping this can leave Stencil (cil-dropin-components) holding stale nodes when
+ * `innerHTML` is cleared — multiple inits then race on the same container.
+ */
+function safelyDestroyDropInInstance(instance: unknown): void {
+  if (instance == null) {
+    return;
+  }
+  const candidates: unknown[] = [instance];
+  const wrapped = (instance as { value?: unknown }).value;
+  if (wrapped != null && wrapped !== instance) {
+    candidates.push(wrapped);
+  }
+
+  const methodNames = [
+    "destroy",
+    "dispose",
+    "unmount",
+    "teardown",
+    "remove",
+    "close",
+    "stop",
+  ] as const;
+
+  for (const target of candidates) {
+    if (target == null || typeof target !== "object") {
+      continue;
+    }
+    const o = target as Record<string, unknown>;
+    for (const name of methodNames) {
+      const fn = o[name];
+      if (typeof fn === "function") {
+        try {
+          (fn as () => void).call(target);
+        } catch {
+          /* best-effort */
+        }
+      }
+    }
+  }
+}
+
+function clearDropInContainer(containerId: string): void {
+  const el = document.getElementById(containerId);
+  if (el) {
+    el.innerHTML = "";
+  }
+}
+
 export interface SdkInitAppliedInfo {
   /** Monotonic counter from the host page (each successful DropInSDK construction). */
   initGeneration: number;
@@ -190,10 +241,9 @@ export function EvonetDropinHost({
       return;
     }
 
-    const container = document.getElementById(containerIdRef.current);
-    if (container) {
-      container.innerHTML = "";
-    }
+    safelyDestroyDropInInstance(dropInInstanceRef.current);
+    dropInInstanceRef.current = null;
+    clearDropInContainer(containerIdRef.current);
 
     const handlePaymentMethodSelected = (payload: unknown) => {
       onEventRef.current?.({
@@ -402,6 +452,10 @@ export function EvonetDropinHost({
       };
 
       try {
+        safelyDestroyDropInInstance(dropInInstanceRef.current);
+        dropInInstanceRef.current = null;
+        clearDropInContainer(containerIdRef.current);
+
         const debugPayload = sdkOptionsToDebugPayload(options);
         // eslint-disable-next-line no-new
         dropInInstanceRef.current = new SdkCtor(options);
@@ -452,11 +506,9 @@ export function EvonetDropinHost({
     return () => {
       aborted = true;
       cancelAnimationFrame(raf1);
+      safelyDestroyDropInInstance(dropInInstanceRef.current);
       dropInInstanceRef.current = null;
-      const c = document.getElementById(containerIdRef.current);
-      if (c) {
-        c.innerHTML = "";
-      }
+      clearDropInContainer(containerIdRef.current);
     };
   }, [initGeneration, scriptLoaded]);
 

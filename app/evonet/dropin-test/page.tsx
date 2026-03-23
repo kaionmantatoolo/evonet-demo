@@ -51,7 +51,7 @@ function generateOrderId(): string {
   return `EVT-${Date.now()}-${suffix}`;
 }
 
-/** Stable JSON fingerprint for DropInSDK-facing options (live-apply). */
+/** Stable JSON fingerprint for DropInSDK-facing options (live-apply + auto-start init). */
 function buildDropinSdkFingerprint(parts: {
   sessionID: string;
   environment: string;
@@ -496,7 +496,7 @@ export default function EvonetDropinTestPage() {
     }
   };
 
-  // On first load: create session via interaction API only (no Drop-in init — use Initialize when ready).
+  // On first load: create session via interaction API, then initialize Drop-in (host destroys old instance before re-init).
   useEffect(() => {
     const ac = new AbortController();
     let cancelled = false;
@@ -507,6 +507,11 @@ export default function EvonetDropinTestPage() {
       description,
       environment,
       locale,
+      mode,
+      verifyPaymentBrand,
+      maxWaitTime,
+      sdkUiOption,
+      sdkAppearance,
     };
 
     void (async () => {
@@ -573,7 +578,19 @@ export default function EvonetDropinTestPage() {
         }
 
         const sid = data.sessionId as string;
+        prevSdkFingerprintRef.current = buildDropinSdkFingerprint({
+          sessionID: sid,
+          environment: snap.environment,
+          mode: snap.mode,
+          locale: snap.locale,
+          verifyPaymentBrand: snap.verifyPaymentBrand,
+          maxWaitTime: snap.maxWaitTime,
+          sdkUiOption: snap.sdkUiOption,
+          sdkAppearance: snap.sdkAppearance,
+        });
         setSessionId(sid);
+        setEvents([]);
+        setSdkInitGeneration((g) => g + 1);
       } catch (error) {
         if ((error as Error)?.name === "AbortError") {
           return;
@@ -611,12 +628,12 @@ export default function EvonetDropinTestPage() {
               </Alert>
 
               <Alert severity="info" variant="outlined">
-                On load, this page may automatically request a{" "}
-                <strong>sessionID</strong> from the interaction API. Adjust SDK
-                options first, then click{" "}
-                <strong>Initialize / Re-init Drop-in</strong> when you are ready.
-                You can also use <strong>Create session ID</strong> to refresh
-                the session after changing amount or environment.
+                On load, this page automatically requests a{" "}
+                <strong>sessionID</strong> and then <strong>initializes Drop-in</strong>{" "}
+                in the browser. The host tears down any previous instance before
+                re-init to avoid DOM conflicts. After changing amount or
+                environment, use <strong>Create session ID</strong>; tweak SDK
+                options with <strong>auto-apply</strong> on/off as needed.
               </Alert>
 
               <Box>
