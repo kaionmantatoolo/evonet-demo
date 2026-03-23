@@ -51,7 +51,7 @@ function generateOrderId(): string {
   return `EVT-${Date.now()}-${suffix}`;
 }
 
-/** Stable JSON fingerprint for DropInSDK-facing options (live-apply + auto-start). */
+/** Stable JSON fingerprint for DropInSDK-facing options (live-apply). */
 function buildDropinSdkFingerprint(parts: {
   sessionID: string;
   environment: string;
@@ -496,7 +496,7 @@ export default function EvonetDropinTestPage() {
     }
   };
 
-  // On first load: create session via interaction API, then initialize Drop-in (client-only).
+  // On first load: create session via interaction API only (no Drop-in init — use Initialize when ready).
   useEffect(() => {
     const ac = new AbortController();
     let cancelled = false;
@@ -507,11 +507,6 @@ export default function EvonetDropinTestPage() {
       description,
       environment,
       locale,
-      mode,
-      verifyPaymentBrand,
-      maxWaitTime,
-      sdkUiOption,
-      sdkAppearance,
     };
 
     void (async () => {
@@ -578,19 +573,7 @@ export default function EvonetDropinTestPage() {
         }
 
         const sid = data.sessionId as string;
-        prevSdkFingerprintRef.current = buildDropinSdkFingerprint({
-          sessionID: sid,
-          environment: snap.environment,
-          mode: snap.mode,
-          locale: snap.locale,
-          verifyPaymentBrand: snap.verifyPaymentBrand,
-          maxWaitTime: snap.maxWaitTime,
-          sdkUiOption: snap.sdkUiOption,
-          sdkAppearance: snap.sdkAppearance,
-        });
         setSessionId(sid);
-        setEvents([]);
-        setSdkInitGeneration((g) => g + 1);
       } catch (error) {
         if ((error as Error)?.name === "AbortError") {
           return;
@@ -628,11 +611,12 @@ export default function EvonetDropinTestPage() {
               </Alert>
 
               <Alert severity="info" variant="outlined">
-                On load, this page automatically calls the interaction API to
-                create a <strong>sessionID</strong> and then initializes Drop-in
-                in the browser. If auto-start fails, fix the error below and use
-                <strong> Create session ID</strong> /{" "}
-                <strong>Initialize / Re-init Drop-in</strong> manually.
+                On load, this page may automatically request a{" "}
+                <strong>sessionID</strong> from the interaction API. Adjust SDK
+                options first, then click{" "}
+                <strong>Initialize / Re-init Drop-in</strong> when you are ready.
+                You can also use <strong>Create session ID</strong> to refresh
+                the session after changing amount or environment.
               </Alert>
 
               <Box>
