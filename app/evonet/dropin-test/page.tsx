@@ -182,8 +182,10 @@ export default function EvonetDropinTestPage() {
       card: {
         showCardHolderName,
         CVVForSavedCard: cvvForSavedCard,
-        showScanCardButton,
-        autoInvokeCardScanner,
+        // Evonet defaults are false; omit when off so strict SDK validators don’t break.
+        // When true, init may still fail without HTTPS / camera-capable context.
+        ...(showScanCardButton ? { showScanCardButton: true } : {}),
+        ...(autoInvokeCardScanner ? { autoInvokeCardScanner: true } : {}),
       },
       TnC: {
         showTnC,
@@ -873,6 +875,11 @@ export default function EvonetDropinTestPage() {
                           <Typography variant="body2">autoInvokeCardScanner</Typography>
                           <Switch checked={autoInvokeCardScanner} onChange={() => setAutoInvokeCardScanner((v) => !v)} inputProps={{ "aria-label": "autoInvokeCardScanner" }} />
                         </Stack>
+                        <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: -0.5 }}>
+                          Scan options often need <strong>HTTPS</strong> and a supported mobile/browser context.
+                          Some Evonet Drop-in builds throw on init when scanning is enabled but the environment
+                          is unsupported—check the event log for <code>errorMessage</code> / <code>scanHint</code>.
+                        </Typography>
                         <Typography variant="caption" fontWeight={700} color="text.secondary">Terms &amp; Conditions (uiOption.TnC)</Typography>
                         <Stack direction="row" alignItems="center" justifyContent="space-between">
                           <Typography variant="body2">showTnC</Typography>

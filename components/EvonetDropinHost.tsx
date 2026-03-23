@@ -33,6 +33,43 @@ function sdkOptionsToDebugPayload(
   };
 }
 
+/**
+ * Evonet / browser throws are often `Error` instances; `JSON.stringify` in logs
+ * yields `{}`. Also handles strings and plain objects.
+ */
+function serializeCaught(value: unknown): Record<string, unknown> {
+  if (value instanceof Error) {
+    return {
+      errorName: value.name,
+      errorMessage: value.message,
+      errorStack: value.stack,
+    };
+  }
+  if (value === null || value === undefined) {
+    return { errorDetail: String(value) };
+  }
+  const t = typeof value;
+  if (t === "string" || t === "number" || t === "boolean") {
+    return { errorDetail: value };
+  }
+  if (t === "object") {
+    try {
+      const s = JSON.stringify(value);
+      if (s && s !== "{}") {
+        return { errorJSON: s };
+      }
+    } catch {
+      /* ignore */
+    }
+    const o = value as Record<string, unknown>;
+    if (o.message != null) {
+      return { errorMessage: String(o.message) };
+    }
+    return { errorString: String(value) };
+  }
+  return { errorString: String(value) };
+}
+
 export interface SdkInitAppliedInfo {
   /** Monotonic counter from the host page (each successful DropInSDK construction). */
   initGeneration: number;
@@ -354,9 +391,21 @@ export function EvonetDropinHost({
         debugPayload,
       });
     } catch (error) {
+      const card = cfg.uiOption?.card;
+      const payload: Record<string, unknown> = {
+        message: "Failed to initialize DropInSDK",
+        ...serializeCaught(error),
+      };
+      if (card && Object.keys(card).length > 0) {
+        payload.uiOptionCardSnapshot = card;
+      }
+      if (card?.showScanCardButton === true) {
+        payload.scanHint =
+          "showScanCardButton is enabled: many SDK builds require HTTPS and a supported browser for card scanning; try disabling this option or testing on HTTPS / Safari if init keeps failing.";
+      }
       onEventRef.current?.({
         type: "error",
-        payload: { message: "Failed to initialize DropInSDK", error },
+        payload,
       });
     }
 
