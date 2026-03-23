@@ -151,6 +151,10 @@ export default function EvonetDropinTestPage() {
    * Use debounced bumps for live parameter tweaks so the iframe reflects uiOption / appearance / locale, etc.
    */
   const [sdkInitGeneration, setSdkInitGeneration] = useState(0);
+  /** Proves the Initialize button handler ran (not blocked by validation alerts). */
+  const [lastInitializeClickAt, setLastInitializeClickAt] = useState<
+    string | null
+  >(null);
   /** When true, changing SDK-facing parameters (fingerprint) re-inits Drop-in after a short debounce. */
   const [liveApplySdk, setLiveApplySdk] = useState(true);
   const prevSdkFingerprintRef = useRef<string>("");
@@ -343,6 +347,7 @@ export default function EvonetDropinTestPage() {
       alert("Please enter a valid amount.");
       return;
     }
+    setLastInitializeClickAt(new Date().toISOString());
     setOrderId(generateOrderId());
     setEvents([]);
     prevSdkFingerprintRef.current = buildDropinSdkFingerprint({
@@ -741,6 +746,46 @@ export default function EvonetDropinTestPage() {
                         <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 1 }}>
                           Create session uses your server credentials (interaction API). Initialize runs
                           in this browser with your real user agent.
+                        </Typography>
+                        <Typography
+                          variant="caption"
+                          color={
+                            lastInitializeClickAt ? "success.main" : "text.secondary"
+                          }
+                          sx={{ display: "block", mt: 0.75 }}
+                          component="div"
+                        >
+                          {lastInitializeClickAt ? (
+                            <>
+                              Last 「Initialize / Re-init」click recorded at{" "}
+                              <Box component="span" sx={{ fontFamily: "monospace" }}>
+                                {lastInitializeClickAt}
+                              </Box>
+                              . If the event log shows{" "}
+                              <Box component="span" sx={{ fontFamily: "monospace" }}>
+                                source: dropin_host
+                              </Box>{" "}
+                              phases ending with{" "}
+                              <Box component="span" sx={{ fontFamily: "monospace" }}>
+                                before_new_dropinsdk
+                              </Box>{" "}
+                              then{" "}
+                              <Box component="span" sx={{ fontFamily: "monospace" }}>
+                                construct_threw
+                              </Box>
+                              , the button and React pipeline are working — the SDK
+                              constructor is failing.
+                            </>
+                          ) : (
+                            <>
+                              After a successful click (no alert), you should see
+                              dropin_host phases in the event list and{" "}
+                              <Box component="span" sx={{ fontFamily: "monospace" }}>
+                                initGeneration
+                              </Box>{" "}
+                              increase below.
+                            </>
+                          )}
                         </Typography>
                         <Paper variant="outlined" sx={{ mt: 2, p: 1.5, bgcolor: "action.hover" }}>
                           <Typography variant="caption" fontWeight={700} color="text.secondary" sx={{ display: "block", mb: 1 }}>

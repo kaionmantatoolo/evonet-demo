@@ -241,8 +241,33 @@ export function EvonetDropinHost({
       return;
     }
 
+    const capturedGen = initGeneration;
+    let aborted = false;
+
+    /** Lets the demo page see explicit destroy / clear / construct steps in the event list. */
+    const emitHostPhase = (phase: string, extra?: Record<string, unknown>) => {
+      onEventRef.current?.({
+        type: "sdk_message",
+        payload: {
+          source: "dropin_host",
+          phase,
+          initGeneration: capturedGen,
+          ...extra,
+        },
+      });
+    };
+
+    emitHostPhase("effect_enter");
+
+    emitHostPhase("sync_destroy_previous_instance", {
+      hadPreviousRef: dropInInstanceRef.current != null,
+    });
     safelyDestroyDropInInstance(dropInInstanceRef.current);
     dropInInstanceRef.current = null;
+
+    emitHostPhase("sync_clear_container", {
+      containerId: containerIdRef.current,
+    });
     clearDropInContainer(containerIdRef.current);
 
     const handlePaymentMethodSelected = (payload: unknown) => {
@@ -367,9 +392,6 @@ export function EvonetDropinHost({
       }
     };
 
-    const capturedGen = initGeneration;
-    let aborted = false;
-
     /**
      * Evonet bundles Stencil (cil-dropin-components). Enabling scan adds UI that
      * can throw `dynamicChildren` if we call `new DropInSDK` in the same tick as
@@ -378,13 +400,24 @@ export function EvonetDropinHost({
     const deferScanUi =
       configRef.current.uiOption?.card?.showScanCardButton === true;
 
+    emitHostPhase("sync_teardown_complete", {
+      deferScanUi,
+      next: deferScanUi ? "raf_then_setTimeout_runMount" : "raf_then_runMount",
+    });
+
     const runMount = () => {
       if (aborted) {
         return;
       }
       if (initGenRef.current !== capturedGen) {
+        emitHostPhase("runMount_skipped_stale_generation", {
+          currentGen: initGenRef.current,
+          capturedGen,
+        });
         return;
       }
+
+      emitHostPhase("runMount_start");
 
       const cfg = configRef.current;
 
@@ -452,9 +485,20 @@ export function EvonetDropinHost({
       };
 
       try {
+        emitHostPhase("runMount_destroy_previous_instance", {
+          hadPreviousRef: dropInInstanceRef.current != null,
+        });
         safelyDestroyDropInInstance(dropInInstanceRef.current);
         dropInInstanceRef.current = null;
+
+        emitHostPhase("runMount_clear_container", {
+          containerId: containerIdRef.current,
+        });
         clearDropInContainer(containerIdRef.current);
+
+        emitHostPhase("before_new_dropinsdk", {
+          containerSelector: `#${containerIdRef.current}`,
+        });
 
         const debugPayload = sdkOptionsToDebugPayload(options);
         // eslint-disable-next-line no-new
@@ -465,6 +509,10 @@ export function EvonetDropinHost({
           initGeneration: capturedGen,
           appliedAt: new Date().toISOString(),
           debugPayload,
+        });
+
+        emitHostPhase("construct_ok", {
+          note: "new DropInSDK(...) returned; instance ref set",
         });
       } catch (error) {
         const card = cfg.uiOption?.card;
@@ -483,8 +531,13 @@ export function EvonetDropinHost({
           type: "error",
           payload,
         });
+        emitHostPhase("construct_threw", {
+          errorMessage: payload.errorMessage,
+        });
       }
     };
+
+    emitHostPhase("raf_scheduled");
 
     let raf1 = 0;
     raf1 = requestAnimationFrame(() => {
@@ -506,8 +559,26 @@ export function EvonetDropinHost({
     return () => {
       aborted = true;
       cancelAnimationFrame(raf1);
+      onEventRef.current?.({
+        type: "sdk_message",
+        payload: {
+          source: "dropin_host",
+          phase: "effect_cleanup_destroy_previous_instance",
+          initGeneration: capturedGen,
+          hadPreviousRef: dropInInstanceRef.current != null,
+        },
+      });
       safelyDestroyDropInInstance(dropInInstanceRef.current);
       dropInInstanceRef.current = null;
+      onEventRef.current?.({
+        type: "sdk_message",
+        payload: {
+          source: "dropin_host",
+          phase: "effect_cleanup_clear_container",
+          initGeneration: capturedGen,
+          containerId: containerIdRef.current,
+        },
+      });
       clearDropInContainer(containerIdRef.current);
     };
   }, [initGeneration, scriptLoaded]);
