@@ -112,6 +112,9 @@ export function EvonetDropinHost({
   const onSdkInitAppliedRef = useRef(onSdkInitApplied);
   onSdkInitAppliedRef.current = onSdkInitApplied;
 
+  const initGenRef = useRef(initGeneration);
+  initGenRef.current = initGeneration;
+
   useEffect(() => {
     const handler = (event: MessageEvent) => {
       onEventRef.current?.({
@@ -173,8 +176,6 @@ export function EvonetDropinHost({
       return;
     }
 
-    const cfg = configRef.current;
-
     const win = window as unknown as EvonetWindow;
 
     const SdkCtor = win.DropInSDK;
@@ -193,14 +194,6 @@ export function EvonetDropinHost({
     if (container) {
       container.innerHTML = "";
     }
-
-    const envMap: Record<string, string> = {
-      PROD: "HKG_prod",
-      prod: "HKG_prod",
-      TEST: "UAT",
-      test: "UAT",
-    };
-    const sdkEnvironment = envMap[cfg.environment] ?? cfg.environment;
 
     const handlePaymentMethodSelected = (payload: unknown) => {
       onEventRef.current?.({
@@ -324,92 +317,141 @@ export function EvonetDropinHost({
       }
     };
 
-    const verifyBrand = Boolean(cfg.isVerifyPaymentBrand);
-    const verifyOption = {
-      ...cfg.verifyOption,
-      isVerifyPaymentBrand: Boolean(
-        cfg.verifyOption?.isVerifyPaymentBrand ?? verifyBrand
-      ),
-    };
+    const capturedGen = initGeneration;
+    let aborted = false;
 
-    const appearanceDefaults = { colorBackground: "#ffffff" };
-    const appearance = {
-      ...appearanceDefaults,
-      ...(cfg.appearance ?? {}),
-    };
+    /**
+     * Evonet bundles Stencil (cil-dropin-components). Enabling scan adds UI that
+     * can throw `dynamicChildren` if we call `new DropInSDK` in the same tick as
+     * `innerHTML = ""` or while React/StrictMode is re-running effects. Defer below.
+     */
+    const deferScanUi =
+      configRef.current.uiOption?.card?.showScanCardButton === true;
 
-    const options: EvonetDropinSdkOptions = {
-      id: `#${containerIdRef.current}`,
-      type: "payment",
-      sessionID: cfg.sessionID,
-      locale: cfg.language ?? "en-US",
-      mode: cfg.mode,
-      environment: sdkEnvironment as EvonetDropinSdkOptions["environment"],
-      isVerifyPaymentBrand: verifyBrand,
-      verifyOption,
-      ...(cfg.uiOption && Object.keys(cfg.uiOption).length > 0
-        ? { uiOption: cfg.uiOption }
-        : {}),
-      appearance,
-      payment_method_select: handlePaymentMethodSelected,
-      payment_method_selected: handlePaymentMethodSelected,
-      payment_completed: (payload: unknown) => {
-        onEventRef.current?.({
-          type: "payment_success",
-          payload,
-        });
-      },
-      payment_failed: (payload: unknown) => {
-        onEventRef.current?.({
-          type: "payment_fail",
-          payload,
-        });
-      },
-      payment_not_preformed: (payload: unknown) => {
-        onEventRef.current?.({
-          type: "payment_pending",
-          payload,
-        });
-      },
-      payment_cancelled: (payload: unknown) => {
-        onEventRef.current?.({
-          type: "payment_cancelled",
-          payload,
-        });
-      },
-    };
+    const runMount = () => {
+      if (aborted) {
+        return;
+      }
+      if (initGenRef.current !== capturedGen) {
+        return;
+      }
 
-    try {
-      const debugPayload = sdkOptionsToDebugPayload(options);
-      // eslint-disable-next-line no-new
-      dropInInstanceRef.current = new SdkCtor(options);
-      handledVerificationIdsRef.current = new Set();
+      const cfg = configRef.current;
 
-      onSdkInitAppliedRef.current?.({
-        initGeneration,
-        appliedAt: new Date().toISOString(),
-        debugPayload,
-      });
-    } catch (error) {
-      const card = cfg.uiOption?.card;
-      const payload: Record<string, unknown> = {
-        message: "Failed to initialize DropInSDK",
-        ...serializeCaught(error),
+      const envMap: Record<string, string> = {
+        PROD: "HKG_prod",
+        prod: "HKG_prod",
+        TEST: "UAT",
+        test: "UAT",
       };
-      if (card && Object.keys(card).length > 0) {
-        payload.uiOptionCardSnapshot = card;
+      const sdkEnvironment = envMap[cfg.environment] ?? cfg.environment;
+
+      const verifyBrand = Boolean(cfg.isVerifyPaymentBrand);
+      const verifyOption = {
+        ...cfg.verifyOption,
+        isVerifyPaymentBrand: Boolean(
+          cfg.verifyOption?.isVerifyPaymentBrand ?? verifyBrand
+        ),
+      };
+
+      const appearanceDefaults = { colorBackground: "#ffffff" };
+      const appearance = {
+        ...appearanceDefaults,
+        ...(cfg.appearance ?? {}),
+      };
+
+      const options: EvonetDropinSdkOptions = {
+        id: `#${containerIdRef.current}`,
+        type: "payment",
+        sessionID: cfg.sessionID,
+        locale: cfg.language ?? "en-US",
+        mode: cfg.mode,
+        environment: sdkEnvironment as EvonetDropinSdkOptions["environment"],
+        isVerifyPaymentBrand: verifyBrand,
+        verifyOption,
+        ...(cfg.uiOption && Object.keys(cfg.uiOption).length > 0
+          ? { uiOption: cfg.uiOption }
+          : {}),
+        appearance,
+        payment_method_select: handlePaymentMethodSelected,
+        payment_method_selected: handlePaymentMethodSelected,
+        payment_completed: (payload: unknown) => {
+          onEventRef.current?.({
+            type: "payment_success",
+            payload,
+          });
+        },
+        payment_failed: (payload: unknown) => {
+          onEventRef.current?.({
+            type: "payment_fail",
+            payload,
+          });
+        },
+        payment_not_preformed: (payload: unknown) => {
+          onEventRef.current?.({
+            type: "payment_pending",
+            payload,
+          });
+        },
+        payment_cancelled: (payload: unknown) => {
+          onEventRef.current?.({
+            type: "payment_cancelled",
+            payload,
+          });
+        },
+      };
+
+      try {
+        const debugPayload = sdkOptionsToDebugPayload(options);
+        // eslint-disable-next-line no-new
+        dropInInstanceRef.current = new SdkCtor(options);
+        handledVerificationIdsRef.current = new Set();
+
+        onSdkInitAppliedRef.current?.({
+          initGeneration: capturedGen,
+          appliedAt: new Date().toISOString(),
+          debugPayload,
+        });
+      } catch (error) {
+        const card = cfg.uiOption?.card;
+        const payload: Record<string, unknown> = {
+          message: "Failed to initialize DropInSDK",
+          ...serializeCaught(error),
+        };
+        if (card && Object.keys(card).length > 0) {
+          payload.uiOptionCardSnapshot = card;
+        }
+        if (card?.showScanCardButton === true) {
+          payload.scanHint =
+            "Scan UI uses cil-dropin-components (Stencil). Errors like dynamicChildren often mean mount ran while the previous tree was still tearing down—this host defers mount with rAF/setTimeout. If it persists: use HTTPS/Safari, avoid @latest if Evonet recommends a pinned SDK, or disable showScanCardButton.";
+        }
+        onEventRef.current?.({
+          type: "error",
+          payload,
+        });
       }
-      if (card?.showScanCardButton === true) {
-        payload.scanHint =
-          "showScanCardButton is enabled: many SDK builds require HTTPS and a supported browser for card scanning; try disabling this option or testing on HTTPS / Safari if init keeps failing.";
+    };
+
+    let raf1 = 0;
+    raf1 = requestAnimationFrame(() => {
+      if (aborted) {
+        return;
       }
-      onEventRef.current?.({
-        type: "error",
-        payload,
+      requestAnimationFrame(() => {
+        if (aborted || initGenRef.current !== capturedGen) {
+          return;
+        }
+        if (deferScanUi) {
+          window.setTimeout(runMount, 0);
+        } else {
+          runMount();
+        }
       });
-    }
+    });
 
     return () => {
+      aborted = true;
+      cancelAnimationFrame(raf1);
       dropInInstanceRef.current = null;
       const c = document.getElementById(containerIdRef.current);
       if (c) {
