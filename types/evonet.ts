@@ -32,6 +32,14 @@ export interface EvonetSdkUiOption {
   Columns?: boolean;
 }
 
+export interface EvonetSdkFontObject {
+  fontFamily?: string;
+  fontSize?: string;
+  fontWeight?: string;
+  letterSpacing?: string;
+  lineHeight?: string;
+}
+
 /** Layout / styling; hex strings per Evonet docs. */
 export interface EvonetSdkAppearance {
   colorAction?: string;
@@ -50,6 +58,14 @@ export interface EvonetSdkAppearance {
   /** Corner radii [r1, r2, r3, r4]. */
   borderRadius?: number[];
   Columns?: boolean;
+  button?: EvonetSdkFontObject;
+  heading?: EvonetSdkFontObject;
+  subHeading?: EvonetSdkFontObject;
+  label?: EvonetSdkFontObject;
+  labelInfo?: EvonetSdkFontObject;
+  inputField?: EvonetSdkFontObject;
+  paragraph?: EvonetSdkFontObject;
+  placeholder?: EvonetSdkFontObject;
   [key: string]: unknown;
 }
 

@@ -30,6 +30,7 @@ import type {
   EvonetDropinConfig,
   EvonetDropinEvent,
   EvonetSdkAppearance,
+  EvonetSdkFontObject,
   EvonetSdkUiOption,
 } from "../../../types/evonet";
 
@@ -75,6 +76,52 @@ function buildDropinSdkFingerprint(parts: {
     uiOption: parts.sdkUiOption,
     appearance: parts.sdkAppearance,
   });
+}
+
+const TYPOGRAPHY_GROUPS = [
+  "button",
+  "heading",
+  "subHeading",
+  "label",
+  "labelInfo",
+  "inputField",
+  "paragraph",
+  "placeholder",
+] as const;
+
+const FONT_FIELDS = [
+  "fontFamily",
+  "fontSize",
+  "fontWeight",
+  "letterSpacing",
+  "lineHeight",
+] as const;
+
+type TypographyGroup = (typeof TYPOGRAPHY_GROUPS)[number];
+type FontField = (typeof FONT_FIELDS)[number];
+type TypographyState = Record<TypographyGroup, EvonetSdkFontObject>;
+
+function emptyFontObject(): EvonetSdkFontObject {
+  return {
+    fontFamily: "",
+    fontSize: "",
+    fontWeight: "",
+    letterSpacing: "",
+    lineHeight: "",
+  };
+}
+
+function createEmptyTypographyState(): TypographyState {
+  return {
+    button: emptyFontObject(),
+    heading: emptyFontObject(),
+    subHeading: emptyFontObject(),
+    label: emptyFontObject(),
+    labelInfo: emptyFontObject(),
+    inputField: emptyFontObject(),
+    paragraph: emptyFontObject(),
+    placeholder: emptyFontObject(),
+  };
 }
 
 export default function EvonetDropinTestPage() {
@@ -128,6 +175,9 @@ export default function EvonetDropinTestPage() {
   const [colorPlaceholder, setColorPlaceholder] = useState("");
   const [colorPrimary, setColorPrimary] = useState("");
   const [colorSecondary, setColorSecondary] = useState("");
+  const [typography, setTypography] = useState<TypographyState>(
+    createEmptyTypographyState
+  );
   const [logoPosition, setLogoPosition] = useState<
     "left" | "middle" | "right"
   >("left");
@@ -241,6 +291,20 @@ export default function EvonetDropinTestPage() {
     if (br.length === 4) {
       a.borderRadius = br;
     }
+    for (const group of TYPOGRAPHY_GROUPS) {
+      const src = typography[group];
+      const sanitized: EvonetSdkFontObject = {};
+      for (const field of FONT_FIELDS) {
+        const raw = src[field];
+        const trimmed = typeof raw === "string" ? raw.trim() : "";
+        if (trimmed) {
+          sanitized[field] = trimmed;
+        }
+      }
+      if (Object.keys(sanitized).length > 0) {
+        a[group] = sanitized;
+      }
+    }
     return a;
   }, [
     borderRadiusInput,
@@ -257,6 +321,7 @@ export default function EvonetDropinTestPage() {
     colorPrimary,
     colorSecondary,
     logoPosition,
+    typography,
   ]);
 
   /** Only fields that are passed into `DropInSDK` — used for live re-init + debug diff. */
@@ -1030,9 +1095,42 @@ export default function EvonetDropinTestPage() {
                             helperText="Four comma-separated numbers"
                           />
                         </Grid>
+                        <Grid item xs={12}>
+                          <Typography variant="caption" fontWeight={700} color="text.secondary" sx={{ display: "block", mb: 1 }}>
+                            Typography (appearance.*.font)
+                          </Typography>
+                        </Grid>
+                        {TYPOGRAPHY_GROUPS.map((group) => (
+                          <Grid item xs={12} key={group}>
+                            <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 1 }}>
+                              {group}
+                            </Typography>
+                            <Grid container spacing={1.5}>
+                              {FONT_FIELDS.map((field) => (
+                                <Grid item xs={12} sm={6} md={4} key={`${group}-${field}`}>
+                                  <TextField
+                                    label={`${group}.${field}`}
+                                    value={typography[group][field] ?? ""}
+                                    onChange={(e) =>
+                                      setTypography((prev) => ({
+                                        ...prev,
+                                        [group]: {
+                                          ...prev[group],
+                                          [field]: e.target.value,
+                                        },
+                                      }))
+                                    }
+                                    size="small"
+                                    fullWidth
+                                  />
+                                </Grid>
+                              ))}
+                            </Grid>
+                          </Grid>
+                        ))}
                       </Grid>
                       <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 1 }}>
-                        Font objects (button/font, heading/font, …) are not exposed here; add via Evonet UX customization if needed.
+                        Typography fields now map into <code>appearance</code>. Actual rendering depends on the Drop-in SDK build and account-side support.
                       </Typography>
                     </AccordionDetails>
                   </Accordion>
