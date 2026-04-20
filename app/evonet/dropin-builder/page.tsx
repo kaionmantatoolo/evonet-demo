@@ -674,7 +674,7 @@ export default function DropinBuilderPage() {
                 Order Info
               </Typography>
               <Grid container spacing={2}>
-                <Grid item xs={12} md={4}>
+                <Grid item xs={12} md={3}>
                   <TextField
                     fullWidth
                     label="Amount"
@@ -684,7 +684,7 @@ export default function DropinBuilderPage() {
                     inputProps={{ "aria-label": "Order amount" }}
                   />
                 </Grid>
-                <Grid item xs={12} md={4}>
+                <Grid item xs={12} md={3}>
                   <TextField
                     fullWidth
                     label="Currency"
@@ -694,7 +694,23 @@ export default function DropinBuilderPage() {
                     inputProps={{ "aria-label": "Order currency" }}
                   />
                 </Grid>
-                <Grid item xs={12} md={4}>
+                <Grid item xs={12} md={3}>
+                  <TextField
+                    fullWidth
+                    select
+                    label="Locale"
+                    value={locale}
+                    onChange={(event) => setLocale(event.target.value)}
+                    helperText="Used for session and Drop-in locale."
+                    inputProps={{ "aria-label": "Session locale" }}
+                  >
+                    <MenuItem value="en-US">en-US</MenuItem>
+                    <MenuItem value="zh-TW">zh-TW</MenuItem>
+                    <MenuItem value="zh-CN">zh-CN</MenuItem>
+                    <MenuItem value="ja-JP">ja-JP</MenuItem>
+                  </TextField>
+                </Grid>
+                <Grid item xs={12} md={3}>
                   <Button
                     fullWidth
                     variant="outlined"
