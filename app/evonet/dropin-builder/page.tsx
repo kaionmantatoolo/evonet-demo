@@ -60,40 +60,28 @@ const FONT_FIELDS = [
 ] as const;
 const POPULAR_FONT_OPTIONS = [
   {
-    label: "System Sans (Recommended)",
-    value: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif',
+    label: "DM Sans",
+    value: '"DM Sans", sans-serif',
   },
   {
-    label: "Roboto",
-    value: 'Roboto, "Segoe UI", Arial, sans-serif',
+    label: "Montserrat",
+    value: "Montserrat, sans-serif",
   },
   {
-    label: "Arial",
-    value: "Arial, sans-serif",
+    label: "Inter",
+    value: "Inter, sans-serif",
   },
   {
-    label: "Helvetica",
-    value: "Helvetica, Arial, sans-serif",
+    label: "Gilda Display",
+    value: '"Gilda Display", serif',
   },
   {
-    label: "Verdana",
-    value: "Verdana, Arial, sans-serif",
+    label: "Noto Serif",
+    value: '"Noto Serif", serif',
   },
   {
-    label: "Georgia",
-    value: "Georgia, serif",
-  },
-  {
-    label: "Times New Roman",
-    value: '"Times New Roman", Times, serif',
-  },
-  {
-    label: "JetBrains Mono",
-    value: '"JetBrains Mono", Menlo, Monaco, Consolas, monospace',
-  },
-  {
-    label: "Courier New",
-    value: '"Courier New", Courier, monospace',
+    label: "Roboto Mono",
+    value: '"Roboto Mono", monospace',
   },
 ] as const;
 const FONT_SIZE_OPTIONS = [
@@ -109,10 +97,11 @@ const FONT_SIZE_OPTIONS = [
   "32px",
 ] as const;
 const FONT_WEIGHT_OPTIONS = [
-  "normal",
+  "300",
   "400",
+  "500",
+  "600",
   "700",
-  "bold",
 ] as const;
 
 type TypographyGroup = (typeof TYPOGRAPHY_GROUPS)[number];
