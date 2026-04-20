@@ -94,6 +94,26 @@ const POPULAR_FONT_OPTIONS = [
     value: '"JetBrains Mono", Menlo, Monaco, Consolas, monospace',
   },
 ] as const;
+const FONT_SIZE_OPTIONS = [
+  "12px",
+  "13px",
+  "14px",
+  "15px",
+  "16px",
+  "18px",
+  "20px",
+  "24px",
+  "28px",
+  "32px",
+] as const;
+const FONT_WEIGHT_OPTIONS = [
+  "300",
+  "400",
+  "500",
+  "600",
+  "700",
+  "800",
+] as const;
 
 type TypographyGroup = (typeof TYPOGRAPHY_GROUPS)[number];
 type FontField = (typeof FONT_FIELDS)[number];
@@ -1155,6 +1175,54 @@ export default function DropinBuilderPage() {
                               {POPULAR_FONT_OPTIONS.map((font) => (
                                 <MenuItem key={font.label} value={font.value}>
                                   {font.label}
+                                </MenuItem>
+                              ))}
+                            </TextField>
+                          ) : field === "fontSize" ? (
+                            <TextField
+                              fullWidth
+                              select
+                              size="small"
+                              label="fontSize"
+                              value={typography[group][field] ?? ""}
+                              onChange={(event) =>
+                                setTypography((prev) => ({
+                                  ...prev,
+                                  [group]: {
+                                    ...prev[group],
+                                    [field]: event.target.value,
+                                  },
+                                }))
+                              }
+                            >
+                              <MenuItem value="">(inherit/default)</MenuItem>
+                              {FONT_SIZE_OPTIONS.map((size) => (
+                                <MenuItem key={size} value={size}>
+                                  {size}
+                                </MenuItem>
+                              ))}
+                            </TextField>
+                          ) : field === "fontWeight" ? (
+                            <TextField
+                              fullWidth
+                              select
+                              size="small"
+                              label="fontWeight"
+                              value={typography[group][field] ?? ""}
+                              onChange={(event) =>
+                                setTypography((prev) => ({
+                                  ...prev,
+                                  [group]: {
+                                    ...prev[group],
+                                    [field]: event.target.value,
+                                  },
+                                }))
+                              }
+                            >
+                              <MenuItem value="">(inherit/default)</MenuItem>
+                              {FONT_WEIGHT_OPTIONS.map((weight) => (
+                                <MenuItem key={weight} value={weight}>
+                                  {weight}
                                 </MenuItem>
                               ))}
                             </TextField>
