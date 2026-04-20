@@ -589,6 +589,10 @@ export default function DropinBuilderPage() {
     setTypography(createEmptyTypographyState());
   };
 
+  const handleResetTypography = () => {
+    setTypography(createEmptyTypographyState());
+  };
+
   useEffect(() => {
     void handleCreateSession();
     // Auto-create once when page loads.
@@ -1142,12 +1146,19 @@ export default function DropinBuilderPage() {
                 bgcolor: "#FFFFFF",
               }}
             >
-              <Typography
-                variant="h6"
-                sx={{ fontWeight: 600, mb: 2, color: "#1F2937" }}
+              <Stack
+                direction="row"
+                alignItems="center"
+                justifyContent="space-between"
+                sx={{ mb: 2 }}
               >
-                Advanced Typography
-              </Typography>
+                <Typography variant="h6" sx={{ fontWeight: 600, color: "#1F2937" }}>
+                  Advanced Typography
+                </Typography>
+                <Button size="small" variant="text" onClick={handleResetTypography}>
+                  Reset Typography
+                </Button>
+              </Stack>
               <Stack spacing={2}>
                 {TYPOGRAPHY_GROUPS.map((group) => (
                   <Paper key={group} variant="outlined" sx={{ p: 2 }}>
