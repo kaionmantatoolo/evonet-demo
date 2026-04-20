@@ -1364,7 +1364,7 @@ export default function DropinBuilderPage() {
                     variant="subtitle1"
                     sx={{ fontWeight: 600, mb: 1.5, color: "#1F2937" }}
                   >
-                    Config JSON
+                    UI Config JSON (UI Options + Appearance only)
                   </Typography>
                   <Stack spacing={1.5}>
                     <Stack spacing={1.25}>
@@ -1375,7 +1375,7 @@ export default function DropinBuilderPage() {
                         justifyContent="space-between"
                       >
                         <Typography variant="subtitle2">
-                          Builder full config JSON
+                          UI options + appearance JSON
                         </Typography>
                         <Button
                           size="small"
