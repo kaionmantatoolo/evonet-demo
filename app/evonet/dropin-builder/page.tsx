@@ -60,38 +60,40 @@ const FONT_FIELDS = [
 ] as const;
 const POPULAR_FONT_OPTIONS = [
   {
-    label: "Inter",
-    value:
-      'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif',
+    label: "System Sans (Recommended)",
+    value: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif',
   },
   {
     label: "Roboto",
-    value:
-      'Roboto, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif',
+    value: 'Roboto, "Segoe UI", Arial, sans-serif',
   },
   {
-    label: "Poppins",
-    value: 'Poppins, "Segoe UI", Roboto, Arial, sans-serif',
+    label: "Arial",
+    value: "Arial, sans-serif",
   },
   {
-    label: "Montserrat",
-    value: 'Montserrat, "Segoe UI", Roboto, Arial, sans-serif',
+    label: "Helvetica",
+    value: "Helvetica, Arial, sans-serif",
   },
   {
-    label: "Nunito",
-    value: 'Nunito, "Segoe UI", Roboto, Arial, sans-serif',
+    label: "Verdana",
+    value: "Verdana, Arial, sans-serif",
   },
   {
-    label: "Raleway",
-    value: 'Raleway, "Segoe UI", Roboto, Arial, sans-serif',
+    label: "Georgia",
+    value: "Georgia, serif",
   },
   {
-    label: "Space Grotesk",
-    value: '"Space Grotesk", "Segoe UI", Roboto, Arial, sans-serif',
+    label: "Times New Roman",
+    value: '"Times New Roman", Times, serif',
   },
   {
     label: "JetBrains Mono",
     value: '"JetBrains Mono", Menlo, Monaco, Consolas, monospace',
+  },
+  {
+    label: "Courier New",
+    value: '"Courier New", Courier, monospace',
   },
 ] as const;
 const FONT_SIZE_OPTIONS = [
@@ -107,12 +109,10 @@ const FONT_SIZE_OPTIONS = [
   "32px",
 ] as const;
 const FONT_WEIGHT_OPTIONS = [
-  "300",
+  "normal",
   "400",
-  "500",
-  "600",
   "700",
-  "800",
+  "bold",
 ] as const;
 
 type TypographyGroup = (typeof TYPOGRAPHY_GROUPS)[number];
@@ -243,6 +243,9 @@ export default function DropinBuilderPage() {
   const [sdkInitGeneration, setSdkInitGeneration] = useState(0);
   const prevSdkFingerprintRef = useRef<string>("");
   const [previewEvents, setPreviewEvents] = useState<EvonetDropinEvent[]>([]);
+  const [previewFallbackBadge, setPreviewFallbackBadge] = useState<string | null>(
+    null
+  );
   const [lastSdkInitInfo, setLastSdkInitInfo] = useState<SdkInitAppliedInfo | null>(
     null
   );
@@ -556,6 +559,7 @@ export default function DropinBuilderPage() {
       }
       setSessionID(data.sessionId);
       prevSdkFingerprintRef.current = "";
+      setPreviewFallbackBadge(null);
       setPreviewEvents([]);
       setSdkInitGeneration((value) => value + 1);
     } catch (error) {
@@ -1300,6 +1304,7 @@ export default function DropinBuilderPage() {
                 <Button
                   variant="contained"
                   onClick={() => {
+                    setPreviewFallbackBadge(null);
                     setPreviewEvents([]);
                     setSdkInitGeneration((value) => value + 1);
                   }}
@@ -1326,12 +1331,37 @@ export default function DropinBuilderPage() {
                   <EvonetDropinHost
                     config={dropinConfigForPreview}
                     initGeneration={sdkInitGeneration}
-                    onEvent={(event) =>
-                      setPreviewEvents((prev) => [event, ...prev].slice(0, 20))
-                    }
+                    onEvent={(event) => {
+                      const payload = event.payload as
+                        | { source?: string; phase?: string }
+                        | undefined;
+                      if (
+                        event.type === "sdk_message" &&
+                        payload?.source === "dropin_host"
+                      ) {
+                        if (payload.phase === "construct_ok_without_font_weight") {
+                          setPreviewFallbackBadge(
+                            "SDK fallback: fontWeight was ignored for compatibility."
+                          );
+                        } else if (
+                          payload.phase === "construct_ok_without_border_radius"
+                        ) {
+                          setPreviewFallbackBadge(
+                            "SDK fallback: borderRadius was ignored for compatibility."
+                          );
+                        }
+                      }
+                      setPreviewEvents((prev) => [event, ...prev].slice(0, 20));
+                    }}
                     onSdkInitApplied={(info) => setLastSdkInitInfo(info)}
                   />
                 </Box>
+
+                {previewFallbackBadge ? (
+                  <Alert severity="info" variant="outlined">
+                    {previewFallbackBadge}
+                  </Alert>
+                ) : null}
 
                 <Stack
                   spacing={0.5}

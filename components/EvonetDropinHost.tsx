@@ -121,6 +121,47 @@ function clearDropInContainer(containerId: string): void {
   }
 }
 
+const APPEARANCE_FONT_GROUP_KEYS = [
+  "button",
+  "heading",
+  "subHeading",
+  "label",
+  "labelInfo",
+  "inputField",
+  "paragraph",
+  "placeholder",
+] as const;
+
+function stripAppearanceTypographyField(
+  appearance: unknown,
+  field: "fontWeight"
+): Record<string, unknown> | null {
+  if (!appearance || typeof appearance !== "object") {
+    return null;
+  }
+  const next: Record<string, unknown> = {
+    ...(appearance as Record<string, unknown>),
+  };
+  let changed = false;
+  for (const key of APPEARANCE_FONT_GROUP_KEYS) {
+    const group = next[key];
+    if (!group || typeof group !== "object") {
+      continue;
+    }
+    const groupObj = { ...(group as Record<string, unknown>) };
+    if (field in groupObj) {
+      delete groupObj[field];
+      changed = true;
+    }
+    if (Object.keys(groupObj).length > 0) {
+      next[key] = groupObj;
+    } else {
+      delete next[key];
+    }
+  }
+  return changed ? next : null;
+}
+
 export interface SdkInitAppliedInfo {
   /** Monotonic counter from the host page (each successful DropInSDK construction). */
   initGeneration: number;
@@ -554,6 +595,47 @@ export function EvonetDropinHost({
               },
             });
 
+            return;
+          } catch {
+            // Fall through to normal error reporting.
+          }
+        }
+
+        const appearanceWithoutFontWeight = stripAppearanceTypographyField(
+          options.appearance,
+          "fontWeight"
+        );
+        if (appearanceWithoutFontWeight) {
+          try {
+            const fallbackOptions: EvonetDropinSdkOptions = {
+              ...options,
+              appearance:
+                appearanceWithoutFontWeight as EvonetDropinSdkOptions["appearance"],
+            };
+            emitHostPhase("construct_retry_without_font_weight");
+            const debugPayload = sdkOptionsToDebugPayload(fallbackOptions);
+            // eslint-disable-next-line no-new
+            dropInInstanceRef.current = new SdkCtor(fallbackOptions);
+            handledVerificationIdsRef.current = new Set();
+
+            onSdkInitAppliedRef.current?.({
+              initGeneration: capturedGen,
+              appliedAt: new Date().toISOString(),
+              debugPayload: {
+                ...debugPayload,
+                _note:
+                  "fontWeight caused SDK init failure and was removed from appearance typography for fallback preview.",
+              },
+            });
+
+            onEventRef.current?.({
+              type: "sdk_message",
+              payload: {
+                source: "dropin_host",
+                phase: "construct_ok_without_font_weight",
+                note: "Fallback init succeeded after removing appearance.*.fontWeight.",
+              },
+            });
             return;
           } catch {
             // Fall through to normal error reporting.
