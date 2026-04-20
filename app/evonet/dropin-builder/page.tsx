@@ -1109,72 +1109,79 @@ export default function DropinBuilderPage() {
               </Grid>
             </Paper>
 
-            <Accordion>
-              <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                <Typography sx={{ fontWeight: 600, color: "#1F2937" }}>
-                  Advanced Typography
-                </Typography>
-              </AccordionSummary>
-              <AccordionDetails>
-                <Stack spacing={2}>
-                  {TYPOGRAPHY_GROUPS.map((group) => (
-                    <Paper key={group} variant="outlined" sx={{ p: 2 }}>
-                      <Typography variant="subtitle2" sx={{ mb: 1 }}>
-                        {group}
-                      </Typography>
-                      <Grid container spacing={1.5}>
-                        {FONT_FIELDS.map((field) => (
-                          <Grid item xs={12} sm={6} md={3} key={`${group}-${field}`}>
-                            {field === "fontFamily" ? (
-                              <TextField
-                                fullWidth
-                                select
-                                size="small"
-                                label="fontFamily"
-                                value={typography[group][field] ?? ""}
-                                onChange={(event) =>
-                                  setTypography((prev) => ({
-                                    ...prev,
-                                    [group]: {
-                                      ...prev[group],
-                                      [field]: event.target.value,
-                                    },
-                                  }))
-                                }
-                                helperText="Popular Google Fonts"
-                              >
-                                <MenuItem value="">(inherit/default)</MenuItem>
-                                {POPULAR_FONT_OPTIONS.map((font) => (
-                                  <MenuItem key={font.label} value={font.value}>
-                                    {font.label}
-                                  </MenuItem>
-                                ))}
-                              </TextField>
-                            ) : (
-                              <TextField
-                                fullWidth
-                                size="small"
-                                label={field}
-                                value={typography[group][field] ?? ""}
-                                onChange={(event) =>
-                                  setTypography((prev) => ({
-                                    ...prev,
-                                    [group]: {
-                                      ...prev[group],
-                                      [field]: event.target.value,
-                                    },
-                                  }))
-                                }
-                              />
-                            )}
-                          </Grid>
-                        ))}
-                      </Grid>
-                    </Paper>
-                  ))}
-                </Stack>
-              </AccordionDetails>
-            </Accordion>
+            <Paper
+              sx={{
+                p: 3,
+                borderRadius: 3,
+                border: "1px solid",
+                borderColor: "#E5E7EB",
+                bgcolor: "#FFFFFF",
+              }}
+            >
+              <Typography
+                variant="h6"
+                sx={{ fontWeight: 600, mb: 2, color: "#1F2937" }}
+              >
+                Advanced Typography
+              </Typography>
+              <Stack spacing={2}>
+                {TYPOGRAPHY_GROUPS.map((group) => (
+                  <Paper key={group} variant="outlined" sx={{ p: 2 }}>
+                    <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                      {group}
+                    </Typography>
+                    <Grid container spacing={1.5}>
+                      {FONT_FIELDS.map((field) => (
+                        <Grid item xs={12} sm={6} md={3} key={`${group}-${field}`}>
+                          {field === "fontFamily" ? (
+                            <TextField
+                              fullWidth
+                              select
+                              size="small"
+                              label="fontFamily"
+                              value={typography[group][field] ?? ""}
+                              onChange={(event) =>
+                                setTypography((prev) => ({
+                                  ...prev,
+                                  [group]: {
+                                    ...prev[group],
+                                    [field]: event.target.value,
+                                  },
+                                }))
+                              }
+                              helperText="Popular Google Fonts"
+                            >
+                              <MenuItem value="">(inherit/default)</MenuItem>
+                              {POPULAR_FONT_OPTIONS.map((font) => (
+                                <MenuItem key={font.label} value={font.value}>
+                                  {font.label}
+                                </MenuItem>
+                              ))}
+                            </TextField>
+                          ) : (
+                            <TextField
+                              fullWidth
+                              size="small"
+                              label={field}
+                              value={typography[group][field] ?? ""}
+                              onChange={(event) =>
+                                setTypography((prev) => ({
+                                  ...prev,
+                                  [group]: {
+                                    ...prev[group],
+                                    [field]: event.target.value,
+                                  },
+                                }))
+                              }
+                            />
+                          )}
+                        </Grid>
+                      ))}
+                    </Grid>
+                  </Paper>
+                ))}
+              </Stack>
+            </Paper>
 
           </Stack>
         </Box>
