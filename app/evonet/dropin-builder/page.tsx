@@ -646,7 +646,7 @@ export default function DropinBuilderPage() {
                 Order Info
               </Typography>
               <Grid container spacing={2}>
-                <Grid size={{ xs: 12, md: 4 }}>
+                <Grid item xs={12} md={4}>
                   <TextField
                     fullWidth
                     label="Amount"
@@ -656,7 +656,7 @@ export default function DropinBuilderPage() {
                     inputProps={{ "aria-label": "Order amount" }}
                   />
                 </Grid>
-                <Grid size={{ xs: 12, md: 4 }}>
+                <Grid item xs={12} md={4}>
                   <TextField
                     fullWidth
                     label="Currency"
@@ -666,7 +666,7 @@ export default function DropinBuilderPage() {
                     inputProps={{ "aria-label": "Order currency" }}
                   />
                 </Grid>
-                <Grid size={{ xs: 12, md: 4 }}>
+                <Grid item xs={12} md={4}>
                   <Button
                     fullWidth
                     variant="outlined"
@@ -677,7 +677,7 @@ export default function DropinBuilderPage() {
                     {isCreatingSession ? "Creating Session..." : "Refresh Session ID"}
                   </Button>
                 </Grid>
-                <Grid size={{ xs: 12 }}>
+                <Grid item xs={12}>
                   <TextField
                     fullWidth
                     label="Description"
@@ -687,13 +687,13 @@ export default function DropinBuilderPage() {
                     inputProps={{ "aria-label": "Order description" }}
                   />
                 </Grid>
-                <Grid size={{ xs: 12 }}>
+                <Grid item xs={12}>
                   <Alert severity="info" variant="outlined">
                     Current Session ID: {sessionID || "N/A"}
                   </Alert>
                 </Grid>
                 {sessionError ? (
-                  <Grid size={{ xs: 12 }}>
+                  <Grid item xs={12}>
                     <Alert severity="error" variant="outlined">
                       {sessionError}
                     </Alert>
@@ -752,7 +752,7 @@ export default function DropinBuilderPage() {
                     label: "Show Terms and Conditions",
                   },
                 ].map((item) => (
-                  <Grid key={item.label} size={{ xs: 12, sm: 6, md: 4 }}>
+                  <Grid item key={item.label} xs={12} sm={6} md={4}>
                     <Box
                       sx={{
                         border: "1px solid #E5E7EB",
@@ -790,7 +790,7 @@ export default function DropinBuilderPage() {
                     </Box>
                   </Grid>
                 ))}
-                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+                <Grid item xs={12} sm={6} md={4}>
                   <FormControl fullWidth size="small" disabled={!showTnC}>
                     <InputLabel id="builder-tnc-mode-label">TnC Mode</InputLabel>
                     <Select
@@ -806,7 +806,7 @@ export default function DropinBuilderPage() {
                     </Select>
                   </FormControl>
                 </Grid>
-                <Grid size={{ xs: 12, sm: 6, md: 8 }}>
+                <Grid item xs={12} sm={6} md={8}>
                   <TextField
                     fullWidth
                     size="small"
@@ -844,7 +844,7 @@ export default function DropinBuilderPage() {
                 </Button>
               </Stack>
               <Grid container spacing={1.75}>
-                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+                <Grid item xs={12} sm={6} md={4}>
                   <Stack direction="row" spacing={1} alignItems="center">
                     <TextField
                       type="color"
@@ -864,7 +864,7 @@ export default function DropinBuilderPage() {
                     />
                   </Stack>
                 </Grid>
-                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+                <Grid item xs={12} sm={6} md={4}>
                   <Stack direction="row" spacing={1} alignItems="center">
                     <TextField
                       type="color"
@@ -884,7 +884,7 @@ export default function DropinBuilderPage() {
                     />
                   </Stack>
                 </Grid>
-                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+                <Grid item xs={12} sm={6} md={4}>
                   <Stack direction="row" spacing={1} alignItems="center">
                     <TextField
                       type="color"
@@ -904,7 +904,7 @@ export default function DropinBuilderPage() {
                     />
                   </Stack>
                 </Grid>
-                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+                <Grid item xs={12} sm={6} md={4}>
                   <Stack direction="row" spacing={1} alignItems="center">
                     <TextField
                       type="color"
@@ -924,7 +924,7 @@ export default function DropinBuilderPage() {
                     />
                   </Stack>
                 </Grid>
-                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+                <Grid item xs={12} sm={6} md={4}>
                   <Stack direction="row" spacing={1} alignItems="center">
                     <TextField
                       type="color"
@@ -944,7 +944,7 @@ export default function DropinBuilderPage() {
                     />
                   </Stack>
                 </Grid>
-                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+                <Grid item xs={12} sm={6} md={4}>
                   <Stack direction="row" spacing={1} alignItems="center">
                     <TextField
                       type="color"
@@ -964,7 +964,7 @@ export default function DropinBuilderPage() {
                     />
                   </Stack>
                 </Grid>
-                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+                <Grid item xs={12} sm={6} md={4}>
                   <Stack direction="row" spacing={1} alignItems="center">
                     <TextField
                       type="color"
@@ -983,7 +983,7 @@ export default function DropinBuilderPage() {
                     />
                   </Stack>
                 </Grid>
-                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+                <Grid item xs={12} sm={6} md={4}>
                   <Stack direction="row" spacing={1} alignItems="center">
                     <TextField
                       type="color"
@@ -1002,7 +1002,7 @@ export default function DropinBuilderPage() {
                     />
                   </Stack>
                 </Grid>
-                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+                <Grid item xs={12} sm={6} md={4}>
                   <Stack direction="row" spacing={1} alignItems="center">
                     <TextField
                       type="color"
@@ -1021,7 +1021,7 @@ export default function DropinBuilderPage() {
                     />
                   </Stack>
                 </Grid>
-                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+                <Grid item xs={12} sm={6} md={4}>
                   <Stack direction="row" spacing={1} alignItems="center">
                     <TextField
                       type="color"
@@ -1040,7 +1040,7 @@ export default function DropinBuilderPage() {
                     />
                   </Stack>
                 </Grid>
-                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+                <Grid item xs={12} sm={6} md={4}>
                   <Stack direction="row" spacing={1} alignItems="center">
                     <TextField
                       type="color"
@@ -1059,7 +1059,7 @@ export default function DropinBuilderPage() {
                     />
                   </Stack>
                 </Grid>
-                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+                <Grid item xs={12} sm={6} md={4}>
                   <Stack direction="row" spacing={1} alignItems="center">
                     <TextField
                       type="color"
@@ -1078,7 +1078,7 @@ export default function DropinBuilderPage() {
                     />
                   </Stack>
                 </Grid>
-                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+                <Grid item xs={12} sm={6} md={4}>
                   <TextField
                     fullWidth
                     size="small"
@@ -1094,7 +1094,7 @@ export default function DropinBuilderPage() {
                     <MenuItem value="right">right</MenuItem>
                   </TextField>
                 </Grid>
-                <Grid size={{ xs: 12, md: 8 }}>
+                <Grid item xs={12} md={8}>
                   <TextField
                     fullWidth
                     size="small"
@@ -1124,10 +1124,7 @@ export default function DropinBuilderPage() {
                       </Typography>
                       <Grid container spacing={1.5}>
                         {FONT_FIELDS.map((field) => (
-                          <Grid
-                            size={{ xs: 12, sm: 6, md: 2.4 }}
-                            key={`${group}-${field}`}
-                          >
+                          <Grid item xs={12} sm={6} md={3} key={`${group}-${field}`}>
                             {field === "fontFamily" ? (
                               <TextField
                                 fullWidth
