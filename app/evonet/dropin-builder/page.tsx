@@ -367,30 +367,10 @@ export default function DropinBuilderPage() {
 
   const builderConfig = useMemo(
     () => ({
-      profile: "dropin-builder-v1",
-      generatedAt: mountedAt,
-      sdk: {
-        sessionID: sessionID.trim(),
-        environment: environment.trim(),
-        mode,
-        locale: locale.trim() || "en-US",
-        verifyPaymentBrand,
-        maxWaitTime: maxWaitTime.trim() || "10",
-        uiOption: sdkUiOption,
-        appearance: sdkAppearance,
-      },
+      uiOption: sdkUiOption,
+      appearance: sdkAppearance,
     }),
-    [
-      environment,
-      locale,
-      mountedAt,
-      maxWaitTime,
-      mode,
-      sessionID,
-      sdkAppearance,
-      sdkUiOption,
-      verifyPaymentBrand,
-    ]
+    [sdkAppearance, sdkUiOption]
   );
 
   const sdkRuntimePayload = useMemo(() => {
