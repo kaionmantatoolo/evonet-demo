@@ -515,6 +515,51 @@ export function EvonetDropinHost({
           note: "new DropInSDK(...) returned; instance ref set",
         });
       } catch (error) {
+        const hasBorderRadius =
+          Array.isArray(options.appearance?.borderRadius) &&
+          options.appearance!.borderRadius!.length > 0;
+        if (hasBorderRadius) {
+          try {
+            const safeAppearance: Record<string, unknown> = {
+              ...(options.appearance as Record<string, unknown>),
+            };
+            delete safeAppearance.borderRadius;
+            const fallbackOptions: EvonetDropinSdkOptions = {
+              ...options,
+              appearance: safeAppearance as EvonetDropinSdkOptions["appearance"],
+            };
+
+            emitHostPhase("construct_retry_without_border_radius");
+            const debugPayload = sdkOptionsToDebugPayload(fallbackOptions);
+            // eslint-disable-next-line no-new
+            dropInInstanceRef.current = new SdkCtor(fallbackOptions);
+            handledVerificationIdsRef.current = new Set();
+
+            onSdkInitAppliedRef.current?.({
+              initGeneration: capturedGen,
+              appliedAt: new Date().toISOString(),
+              debugPayload: {
+                ...debugPayload,
+                _note:
+                  "borderRadius caused SDK init failure and was removed for fallback preview.",
+              },
+            });
+
+            onEventRef.current?.({
+              type: "sdk_message",
+              payload: {
+                source: "dropin_host",
+                phase: "construct_ok_without_border_radius",
+                note: "Fallback init succeeded after removing appearance.borderRadius.",
+              },
+            });
+
+            return;
+          } catch {
+            // Fall through to normal error reporting.
+          }
+        }
+
         const card = cfg.uiOption?.card;
         const payload: Record<string, unknown> = {
           message: "Failed to initialize DropInSDK",
