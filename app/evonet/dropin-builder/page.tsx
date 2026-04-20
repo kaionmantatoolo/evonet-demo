@@ -1161,7 +1161,7 @@ export default function DropinBuilderPage() {
               </Stack>
               <Stack spacing={2}>
                 {TYPOGRAPHY_GROUPS.map((group) => (
-                  <Paper key={group} variant="outlined" sx={{ p: 2 }}>
+                  <Paper key={group} variant="outlined" sx={{ p: 2, pb: 2.5 }}>
                     <Typography variant="subtitle2" sx={{ mb: 1 }}>
                       {group}
                     </Typography>
@@ -1373,25 +1373,6 @@ export default function DropinBuilderPage() {
                     {previewFallbackBadge}
                   </Alert>
                 ) : null}
-
-                <Stack
-                  spacing={0.5}
-                  sx={{
-                    p: 1.25,
-                    border: "1px dashed #D1D5DB",
-                    borderRadius: 2,
-                    bgcolor: "#F9FAFB",
-                  }}
-                >
-                  <Typography variant="caption" color="text.secondary">
-                    Captured preview events: {previewEvents.length}
-                  </Typography>
-                  {lastSdkInitInfo ? (
-                    <Typography variant="caption" color="text.secondary">
-                      Last preview init: {lastSdkInitInfo.appliedAt}
-                    </Typography>
-                  ) : null}
-                </Stack>
 
                 <Box sx={{ pt: 1 }}>
                   <Typography
