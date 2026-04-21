@@ -64,20 +64,16 @@ const POPULAR_FONT_OPTIONS = [
     value: '"DM Sans", sans-serif',
   },
   {
-    label: "Montserrat",
-    value: "Montserrat, sans-serif",
+    label: "Instrument Serif",
+    value: '"Instrument Serif", serif',
   },
   {
     label: "Inter",
     value: "Inter, sans-serif",
   },
   {
-    label: "Gilda Display",
-    value: '"Gilda Display", serif',
-  },
-  {
-    label: "Noto Serif",
-    value: '"Noto Serif", serif',
+    label: "Roboto Serif",
+    value: '"Roboto Serif", serif',
   },
   {
     label: "Roboto Mono",
