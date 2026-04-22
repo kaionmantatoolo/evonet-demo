@@ -64,10 +64,6 @@ const POPULAR_FONT_OPTIONS = [
     value: '"DM Sans", sans-serif',
   },
   {
-    label: "Instrument Serif",
-    value: '"Instrument Serif", serif',
-  },
-  {
     label: "Inter",
     value: "Inter, sans-serif",
   },
