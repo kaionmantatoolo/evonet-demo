@@ -102,6 +102,12 @@ export interface EvonetDropinConfig {
   [key: string]: unknown;
 }
 
+/** MIT / token checkout model for POST interaction (see Evonet Drop-in / LinkPay docs). */
+export type EvonetRecurringProcessingModel =
+  | "Subscription"
+  | "Unscheduled"
+  | "COF";
+
 export interface EvonetInteractionRequest {
   amount: number;
   currency: string;
@@ -109,6 +115,15 @@ export interface EvonetInteractionRequest {
   description?: string;
   environment: EvonetEnvironment;
   locale: string;
+  /**
+   * When true, interaction payload includes `userInfo.reference` and
+   * `paymentMethod.recurringProcessingModel` so Drop-in can offer save-card / token flows.
+   */
+  saveCardForNextPurchase?: boolean;
+  /** Required when `saveCardForNextPurchase` is true. Maps to `userInfo.reference`. */
+  userInfoReference?: string;
+  /** Defaults to `COF` when save-card is enabled and this is omitted. */
+  recurringProcessingModel?: EvonetRecurringProcessingModel;
 }
 
 export interface EvonetInteractionResponse {

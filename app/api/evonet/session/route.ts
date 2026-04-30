@@ -4,7 +4,14 @@ import type {
   EvonetEnvironment,
   EvonetInteractionRequest,
   EvonetInteractionResponse,
+  EvonetRecurringProcessingModel,
 } from "../../../../types/evonet";
+
+const RECURRING_MODELS: EvonetRecurringProcessingModel[] = [
+  "Subscription",
+  "Unscheduled",
+  "COF",
+];
 
 const EVONET_INTERACTION_URL =
   process.env.EVONET_INTERACTION_URL ?? "https://REPLACE_WITH_INTERACTION_URL";
@@ -32,7 +39,17 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { amount, currency, orderId, description, environment, locale } = body;
+  const {
+    amount,
+    currency,
+    orderId,
+    description,
+    environment,
+    locale,
+    saveCardForNextPurchase,
+    userInfoReference,
+    recurringProcessingModel,
+  } = body;
 
   if (
     amount == null ||
@@ -49,6 +66,35 @@ export async function POST(req: NextRequest) {
       },
       { status: 400 }
     );
+  }
+
+  const enableSaveCard = saveCardForNextPurchase === true;
+  const referenceTrimmed =
+    typeof userInfoReference === "string" ? userInfoReference.trim() : "";
+  if (enableSaveCard && !referenceTrimmed) {
+    return NextResponse.json(
+      {
+        error:
+          "userInfoReference is required when saveCardForNextPurchase is true (maps to userInfo.reference).",
+      },
+      { status: 400 }
+    );
+  }
+
+  let recurringModel: EvonetRecurringProcessingModel = "COF";
+  const rawRecurring: unknown = recurringProcessingModel;
+  if (typeof rawRecurring === "string" && rawRecurring.trim() !== "") {
+    const candidate = rawRecurring.trim() as EvonetRecurringProcessingModel;
+    if (!RECURRING_MODELS.includes(candidate)) {
+      return NextResponse.json(
+        {
+          error:
+            "recurringProcessingModel must be one of: Subscription, Unscheduled, COF.",
+        },
+        { status: 400 }
+      );
+    }
+    recurringModel = candidate;
   }
 
   if (!EVONET_INTERACTION_URL || EVONET_INTERACTION_URL.includes("REPLACE")) {
@@ -93,6 +139,11 @@ export async function POST(req: NextRequest) {
     locale,
     description: description ?? undefined,
   };
+
+  if (enableSaveCard) {
+    payload.userInfo = { reference: referenceTrimmed };
+    payload.paymentMethod = { recurringProcessingModel: recurringModel };
+  }
 
   const interactionUrl = EVONET_INTERACTION_URL;
 

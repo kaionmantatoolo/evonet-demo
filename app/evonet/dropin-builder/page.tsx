@@ -30,6 +30,7 @@ import {
 import type {
   EvonetDropinConfig,
   EvonetDropinEvent,
+  EvonetRecurringProcessingModel,
   EvonetSdkAppearance,
   EvonetSdkFontObject,
   EvonetSdkUiOption,
@@ -95,6 +96,15 @@ const FONT_WEIGHT_OPTIONS = [
   "600",
   "700",
 ] as const;
+
+const RECURRING_MODEL_OPTIONS: {
+  value: EvonetRecurringProcessingModel;
+  label: string;
+}[] = [
+  { value: "COF", label: "COF — Card on file / one-click" },
+  { value: "Subscription", label: "Subscription" },
+  { value: "Unscheduled", label: "Unscheduled (auto-debit)" },
+];
 
 type TypographyGroup = (typeof TYPOGRAPHY_GROUPS)[number];
 type FontField = (typeof FONT_FIELDS)[number];
@@ -182,6 +192,10 @@ export default function DropinBuilderPage() {
   const [orderDescription, setOrderDescription] = useState(
     "Drop-in Builder Session"
   );
+  const [saveCardForNextPurchase, setSaveCardForNextPurchase] = useState(false);
+  const [userInfoReference, setUserInfoReference] = useState("");
+  const [recurringProcessingModel, setRecurringProcessingModel] =
+    useState<EvonetRecurringProcessingModel>("COF");
   const [environment, setEnvironment] = useState(DEFAULT_ENVIRONMENT);
   const [mode, setMode] = useState<EvonetDropinConfig["mode"]>("embedded");
   const [locale, setLocale] = useState("en-US");
@@ -493,6 +507,12 @@ export default function DropinBuilderPage() {
 
   const handleCreateSession = async () => {
     setSessionError(null);
+    if (saveCardForNextPurchase && !userInfoReference.trim()) {
+      setSessionError(
+        "User reference is required when Allow save card for next purchase is enabled (maps to userInfo.reference)."
+      );
+      return;
+    }
     setIsCreatingSession(true);
     try {
       const parsedAmount = Number.parseFloat(orderAmount);
@@ -509,6 +529,13 @@ export default function DropinBuilderPage() {
           description: orderDescription.trim() || "Drop-in Builder Session",
           environment,
           locale: locale.trim() || "en-US",
+          ...(saveCardForNextPurchase
+            ? {
+                saveCardForNextPurchase: true,
+                userInfoReference: userInfoReference.trim(),
+                recurringProcessingModel,
+              }
+            : {}),
         }),
       });
 
@@ -693,6 +720,92 @@ export default function DropinBuilderPage() {
                   />
                 </Grid>
                 <Grid item xs={12}>
+                  <Box
+                    sx={{
+                      border: "1px solid #E5E7EB",
+                      borderRadius: 2,
+                      px: 2,
+                      py: 1.5,
+                      bgcolor: "#FAFAFA",
+                    }}
+                  >
+                    <FormControlLabel
+                      sx={{ m: 0, alignItems: "flex-start" }}
+                      control={
+                        <Switch
+                          checked={saveCardForNextPurchase}
+                          onChange={(event) =>
+                            setSaveCardForNextPurchase(event.target.checked)
+                          }
+                          inputProps={{
+                            "aria-label": "Allow save card for next purchase",
+                          }}
+                          sx={{
+                            mt: 0.25,
+                            "& .MuiSwitch-switchBase.Mui-checked": {
+                              color: "#3B82F6",
+                            },
+                            "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
+                              bgcolor: "#3B82F6",
+                            },
+                          }}
+                        />
+                      }
+                      label={
+                        <Box>
+                          <Typography variant="body2" sx={{ color: "#1F2937", fontWeight: 600 }}>
+                            Allow save card for next purchase (Interaction)
+                          </Typography>
+                          <Typography variant="caption" sx={{ color: "#6B7280", display: "block" }}>
+                            Sends userInfo.reference and paymentMethod.recurringProcessingModel on
+                            POST interaction. Requires merchant capability; after changing this,
+                            use Refresh Session ID.
+                          </Typography>
+                        </Box>
+                      }
+                    />
+                  </Box>
+                </Grid>
+                <Grid item xs={12} md={6}>
+                  <TextField
+                    fullWidth
+                    label="User reference (userInfo.reference)"
+                    value={userInfoReference}
+                    onChange={(event) => setUserInfoReference(event.target.value)}
+                    placeholder="e.g. your_customer_id_123"
+                    disabled={!saveCardForNextPurchase}
+                    required={saveCardForNextPurchase}
+                    helperText={
+                      saveCardForNextPurchase
+                        ? "Stable shopper ID in your system; used to associate stored tokens."
+                        : "Enable the option above to send this field."
+                    }
+                    inputProps={{ "aria-label": "User reference for interaction" }}
+                  />
+                </Grid>
+                <Grid item xs={12} md={6}>
+                  <FormControl fullWidth disabled={!saveCardForNextPurchase}>
+                    <InputLabel id="recurring-model-label">Recurring model</InputLabel>
+                    <Select
+                      labelId="recurring-model-label"
+                      label="Recurring model"
+                      value={recurringProcessingModel}
+                      onChange={(event) =>
+                        setRecurringProcessingModel(
+                          event.target.value as EvonetRecurringProcessingModel
+                        )
+                      }
+                      inputProps={{ "aria-label": "Recurring processing model" }}
+                    >
+                      {RECURRING_MODEL_OPTIONS.map((opt) => (
+                        <MenuItem key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Grid>
+                <Grid item xs={12}>
                   <Alert severity="info" variant="outlined">
                     Current Session ID: {sessionID || "N/A"}
                   </Alert>
@@ -725,6 +838,7 @@ export default function DropinBuilderPage() {
                     checked: showSaveImage,
                     onChange: setShowSaveImage,
                     label: "Show Save Image",
+                    caption: "Allow saving QR code to device (not card storage).",
                   },
                   {
                     checked: columnsLayout,
@@ -771,13 +885,14 @@ export default function DropinBuilderPage() {
                       }}
                     >
                       <FormControlLabel
-                        sx={{ m: 0, width: "100%" }}
+                        sx={{ m: 0, width: "100%", alignItems: "flex-start" }}
                         control={
                           <Switch
                             checked={item.checked}
                             onChange={(event) => item.onChange(event.target.checked)}
                             sx={{
                               mr: 1,
+                              mt: item.caption ? 0.25 : 0,
                               "& .MuiSwitch-switchBase.Mui-checked": {
                                 color: "#3B82F6",
                               },
@@ -787,10 +902,21 @@ export default function DropinBuilderPage() {
                             }}
                           />
                         }
-                        label={item.label}
-                        slotProps={{
-                          typography: { variant: "body2", sx: { color: "#1F2937" } },
-                        }}
+                        label={
+                          <Box>
+                            <Typography variant="body2" sx={{ color: "#1F2937" }}>
+                              {item.label}
+                            </Typography>
+                            {"caption" in item && item.caption ? (
+                              <Typography
+                                variant="caption"
+                                sx={{ color: "#6B7280", display: "block", mt: 0.25 }}
+                              >
+                                {item.caption}
+                              </Typography>
+                            ) : null}
+                          </Box>
+                        }
                       />
                     </Box>
                   </Grid>
