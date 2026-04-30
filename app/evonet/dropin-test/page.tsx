@@ -29,6 +29,7 @@ import type {
   BinRule,
   EvonetDropinConfig,
   EvonetDropinEvent,
+  EvonetRecurringProcessingModel,
   EvonetSdkAppearance,
   EvonetSdkFontObject,
   EvonetSdkUiOption,
@@ -97,6 +98,15 @@ const FONT_FIELDS = [
   "lineHeight",
 ] as const;
 
+const RECURRING_MODEL_OPTIONS: {
+  value: EvonetRecurringProcessingModel;
+  label: string;
+}[] = [
+  { value: "COF", label: "COF — Card on file / one-click" },
+  { value: "Subscription", label: "Subscription" },
+  { value: "Unscheduled", label: "Unscheduled (auto-debit)" },
+];
+
 type TypographyGroup = (typeof TYPOGRAPHY_GROUPS)[number];
 type FontField = (typeof FONT_FIELDS)[number];
 type TypographyState = Record<TypographyGroup, EvonetSdkFontObject>;
@@ -131,6 +141,10 @@ export default function EvonetDropinTestPage() {
     `EVT-${Date.now().toString().slice(-6)}`
   );
   const [description, setDescription] = useState<string>("Local PROD-like test");
+  const [saveCardForNextPurchase, setSaveCardForNextPurchase] = useState(false);
+  const [userInfoReference, setUserInfoReference] = useState("");
+  const [recurringProcessingModel, setRecurringProcessingModel] =
+    useState<EvonetRecurringProcessingModel>("COF");
 
   const [customerName, setCustomerName] = useState<string>("Test User");
   const [customerEmail, setCustomerEmail] = useState<string>("test@example.com");
@@ -501,6 +515,12 @@ export default function EvonetDropinTestPage() {
 
   const handleCreateSession = async () => {
     setSessionError(null);
+    if (saveCardForNextPurchase && !userInfoReference.trim()) {
+      setSessionError(
+        "User reference is required when Allow save card for next purchase is enabled (maps to userInfo.reference)."
+      );
+      return;
+    }
 
     const numericAmount = parseFloat(amount);
     if (Number.isNaN(numericAmount) || numericAmount <= 0) {
@@ -530,6 +550,13 @@ export default function EvonetDropinTestPage() {
           description,
           environment,
           locale,
+          ...(saveCardForNextPurchase
+            ? {
+                saveCardForNextPurchase: true,
+                userInfoReference: userInfoReference.trim(),
+                recurringProcessingModel,
+              }
+            : {}),
         }),
       });
 
@@ -577,6 +604,9 @@ export default function EvonetDropinTestPage() {
       description,
       environment,
       locale,
+      saveCardForNextPurchase,
+      userInfoReference,
+      recurringProcessingModel,
       mode,
       verifyPaymentBrand,
       maxWaitTime,
@@ -599,6 +629,12 @@ export default function EvonetDropinTestPage() {
         );
         return;
       }
+      if (snap.saveCardForNextPurchase && !snap.userInfoReference.trim()) {
+        setSessionError(
+          "Auto-start skipped: user reference is required when save-card option is enabled."
+        );
+        return;
+      }
 
       setIsCreatingSession(true);
       const newOrderId = generateOrderId();
@@ -617,6 +653,13 @@ export default function EvonetDropinTestPage() {
             description: snap.description,
             environment: snap.environment,
             locale: snap.locale,
+            ...(snap.saveCardForNextPurchase
+              ? {
+                  saveCardForNextPurchase: true,
+                  userInfoReference: snap.userInfoReference.trim(),
+                  recurringProcessingModel: snap.recurringProcessingModel,
+                }
+              : {}),
           }),
           signal: ac.signal,
         });
@@ -770,6 +813,81 @@ export default function EvonetDropinTestPage() {
                     </Typography>
                     <Grid container spacing={2}>
                       <Grid item xs={12}>
+                        <Paper variant="outlined" sx={{ p: 1.5, mb: 1.5 }}>
+                          <Stack spacing={1.25}>
+                            <Stack
+                              direction={{ xs: "column", sm: "row" }}
+                              alignItems={{ sm: "center" }}
+                              justifyContent="space-between"
+                              gap={1}
+                            >
+                              <Box>
+                                <Typography variant="body2" fontWeight={600}>
+                                  Allow save card for next purchase (Interaction)
+                                </Typography>
+                                <Typography variant="caption" color="text.secondary">
+                                  Sends userInfo.reference and paymentMethod.recurringProcessingModel
+                                  when creating session. Requires merchant capability.
+                                </Typography>
+                              </Box>
+                              <Switch
+                                checked={saveCardForNextPurchase}
+                                onChange={(e) =>
+                                  setSaveCardForNextPurchase(e.target.checked)
+                                }
+                                inputProps={{
+                                  "aria-label": "Allow save card for next purchase interaction",
+                                }}
+                              />
+                            </Stack>
+                            <Grid container spacing={1.5}>
+                              <Grid item xs={12} sm={6}>
+                                <TextField
+                                  size="small"
+                                  fullWidth
+                                  label="User reference (userInfo.reference)"
+                                  value={userInfoReference}
+                                  onChange={(e) => setUserInfoReference(e.target.value)}
+                                  placeholder="e.g. your_customer_id_123"
+                                  disabled={!saveCardForNextPurchase}
+                                  required={saveCardForNextPurchase}
+                                  helperText={
+                                    saveCardForNextPurchase
+                                      ? "Stable shopper ID in your system; used to bind token."
+                                      : "Enable the option above to send this field."
+                                  }
+                                />
+                              </Grid>
+                              <Grid item xs={12} sm={6}>
+                                <FormControl
+                                  size="small"
+                                  fullWidth
+                                  disabled={!saveCardForNextPurchase}
+                                >
+                                  <InputLabel id="recurring-model-test-label">
+                                    Recurring model
+                                  </InputLabel>
+                                  <Select
+                                    labelId="recurring-model-test-label"
+                                    label="Recurring model"
+                                    value={recurringProcessingModel}
+                                    onChange={(e) =>
+                                      setRecurringProcessingModel(
+                                        e.target.value as EvonetRecurringProcessingModel
+                                      )
+                                    }
+                                  >
+                                    {RECURRING_MODEL_OPTIONS.map((opt) => (
+                                      <MenuItem key={opt.value} value={opt.value}>
+                                        {opt.label}
+                                      </MenuItem>
+                                    ))}
+                                  </Select>
+                                </FormControl>
+                              </Grid>
+                            </Grid>
+                          </Stack>
+                        </Paper>
                         <TextField
                           label="sessionID"
                           value={sessionId}
