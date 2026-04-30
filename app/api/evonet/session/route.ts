@@ -10,7 +10,6 @@ import type {
 const RECURRING_MODELS: EvonetRecurringProcessingModel[] = [
   "Subscription",
   "Unscheduled",
-  "COF",
 ];
 
 const EVONET_INTERACTION_URL =
@@ -81,7 +80,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  let recurringModel: EvonetRecurringProcessingModel = "COF";
+  let recurringModel: EvonetRecurringProcessingModel = "Subscription";
   const rawRecurring: unknown = recurringProcessingModel;
   if (typeof rawRecurring === "string" && rawRecurring.trim() !== "") {
     const candidate = rawRecurring.trim() as EvonetRecurringProcessingModel;
@@ -89,7 +88,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           error:
-            "recurringProcessingModel must be one of: Subscription, Unscheduled, COF.",
+            "recurringProcessingModel must be one of: Subscription, Unscheduled.",
         },
         { status: 400 }
       );

@@ -101,7 +101,6 @@ const RECURRING_MODEL_OPTIONS: {
   value: EvonetRecurringProcessingModel;
   label: string;
 }[] = [
-  { value: "COF", label: "COF — Card on file / one-click" },
   { value: "Subscription", label: "Subscription" },
   { value: "Unscheduled", label: "Unscheduled (auto-debit)" },
 ];
@@ -195,7 +194,7 @@ export default function DropinBuilderPage() {
   const [saveCardForNextPurchase, setSaveCardForNextPurchase] = useState(false);
   const [userInfoReference, setUserInfoReference] = useState("");
   const [recurringProcessingModel, setRecurringProcessingModel] =
-    useState<EvonetRecurringProcessingModel>("COF");
+    useState<EvonetRecurringProcessingModel>("Subscription");
   const [environment, setEnvironment] = useState(DEFAULT_ENVIRONMENT);
   const [mode, setMode] = useState<EvonetDropinConfig["mode"]>("embedded");
   const [locale, setLocale] = useState("en-US");

@@ -105,8 +105,7 @@ export interface EvonetDropinConfig {
 /** MIT / token checkout model for POST interaction (see Evonet Drop-in / LinkPay docs). */
 export type EvonetRecurringProcessingModel =
   | "Subscription"
-  | "Unscheduled"
-  | "COF";
+  | "Unscheduled";
 
 export interface EvonetInteractionRequest {
   amount: number;
@@ -122,7 +121,7 @@ export interface EvonetInteractionRequest {
   saveCardForNextPurchase?: boolean;
   /** Required when `saveCardForNextPurchase` is true. Maps to `userInfo.reference`. */
   userInfoReference?: string;
-  /** Defaults to `COF` when save-card is enabled and this is omitted. */
+  /** Defaults to `Subscription` when save-card is enabled and this is omitted. */
   recurringProcessingModel?: EvonetRecurringProcessingModel;
 }
 
