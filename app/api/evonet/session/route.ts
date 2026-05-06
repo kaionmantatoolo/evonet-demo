@@ -47,6 +47,7 @@ export async function POST(req: NextRequest) {
     locale,
     saveCardForNextPurchase,
     userInfoReference,
+    includeRecurringProcessingModel,
     recurringProcessingModel,
   } = body;
 
@@ -80,20 +81,23 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  const shouldIncludeRecurringModel = includeRecurringProcessingModel !== false;
   let recurringModel: EvonetRecurringProcessingModel = "Subscription";
-  const rawRecurring: unknown = recurringProcessingModel;
-  if (typeof rawRecurring === "string" && rawRecurring.trim() !== "") {
-    const candidate = rawRecurring.trim() as EvonetRecurringProcessingModel;
-    if (!RECURRING_MODELS.includes(candidate)) {
-      return NextResponse.json(
-        {
-          error:
-            "recurringProcessingModel must be one of: Subscription, Unscheduled.",
-        },
-        { status: 400 }
-      );
+  if (shouldIncludeRecurringModel) {
+    const rawRecurring: unknown = recurringProcessingModel;
+    if (typeof rawRecurring === "string" && rawRecurring.trim() !== "") {
+      const candidate = rawRecurring.trim() as EvonetRecurringProcessingModel;
+      if (!RECURRING_MODELS.includes(candidate)) {
+        return NextResponse.json(
+          {
+            error:
+              "recurringProcessingModel must be one of: Subscription, Unscheduled.",
+          },
+          { status: 400 }
+        );
+      }
+      recurringModel = candidate;
     }
-    recurringModel = candidate;
   }
 
   if (!EVONET_INTERACTION_URL || EVONET_INTERACTION_URL.includes("REPLACE")) {
@@ -141,7 +145,9 @@ export async function POST(req: NextRequest) {
 
   if (enableSaveCard) {
     payload.userInfo = { reference: referenceTrimmed };
-    payload.paymentMethod = { recurringProcessingModel: recurringModel };
+    if (shouldIncludeRecurringModel) {
+      payload.paymentMethod = { recurringProcessingModel: recurringModel };
+    }
   }
 
   const interactionUrl = EVONET_INTERACTION_URL;

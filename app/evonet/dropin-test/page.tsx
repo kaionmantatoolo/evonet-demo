@@ -11,6 +11,7 @@ import {
   Chip,
   Container,
   FormControl,
+  FormControlLabel,
   Grid,
   InputLabel,
   MenuItem,
@@ -142,6 +143,8 @@ export default function EvonetDropinTestPage() {
   const [description, setDescription] = useState<string>("Local PROD-like test");
   const [saveCardForNextPurchase, setSaveCardForNextPurchase] = useState(false);
   const [userInfoReference, setUserInfoReference] = useState("");
+  const [includeRecurringProcessingModel, setIncludeRecurringProcessingModel] =
+    useState(true);
   const [recurringProcessingModel, setRecurringProcessingModel] =
     useState<EvonetRecurringProcessingModel>("Subscription");
 
@@ -553,7 +556,10 @@ export default function EvonetDropinTestPage() {
             ? {
                 saveCardForNextPurchase: true,
                 userInfoReference: userInfoReference.trim(),
-                recurringProcessingModel,
+                includeRecurringProcessingModel,
+                ...(includeRecurringProcessingModel
+                  ? { recurringProcessingModel }
+                  : {}),
               }
             : {}),
         }),
@@ -605,6 +611,7 @@ export default function EvonetDropinTestPage() {
       locale,
       saveCardForNextPurchase,
       userInfoReference,
+      includeRecurringProcessingModel,
       recurringProcessingModel,
       mode,
       verifyPaymentBrand,
@@ -656,7 +663,14 @@ export default function EvonetDropinTestPage() {
               ? {
                   saveCardForNextPurchase: true,
                   userInfoReference: snap.userInfoReference.trim(),
-                  recurringProcessingModel: snap.recurringProcessingModel,
+                  includeRecurringProcessingModel:
+                    snap.includeRecurringProcessingModel,
+                  ...(snap.includeRecurringProcessingModel
+                    ? {
+                        recurringProcessingModel:
+                          snap.recurringProcessingModel,
+                      }
+                    : {}),
                 }
               : {}),
           }),
@@ -839,6 +853,35 @@ export default function EvonetDropinTestPage() {
                                 }}
                               />
                             </Stack>
+                            <FormControlLabel
+                              sx={{ m: 0 }}
+                              control={
+                                <Switch
+                                  checked={includeRecurringProcessingModel}
+                                  onChange={(e) =>
+                                    setIncludeRecurringProcessingModel(
+                                      e.target.checked
+                                    )
+                                  }
+                                  disabled={!saveCardForNextPurchase}
+                                  inputProps={{
+                                    "aria-label":
+                                      "Include paymentMethod recurringProcessingModel",
+                                  }}
+                                />
+                              }
+                              label={
+                                <Box>
+                                  <Typography variant="body2" fontWeight={600}>
+                                    Include paymentMethod.recurringProcessingModel
+                                  </Typography>
+                                  <Typography variant="caption" color="text.secondary">
+                                    Turn this off to send only userInfo.reference and omit the
+                                    paymentMethod object.
+                                  </Typography>
+                                </Box>
+                              }
+                            />
                             <Grid container spacing={1.5}>
                               <Grid item xs={12} sm={6}>
                                 <TextField
@@ -861,7 +904,10 @@ export default function EvonetDropinTestPage() {
                                 <FormControl
                                   size="small"
                                   fullWidth
-                                  disabled={!saveCardForNextPurchase}
+                                  disabled={
+                                    !saveCardForNextPurchase ||
+                                    !includeRecurringProcessingModel
+                                  }
                                 >
                                   <InputLabel id="recurring-model-test-label">
                                     Recurring model

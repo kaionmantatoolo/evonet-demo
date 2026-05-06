@@ -193,6 +193,8 @@ export default function DropinBuilderPage() {
   );
   const [saveCardForNextPurchase, setSaveCardForNextPurchase] = useState(false);
   const [userInfoReference, setUserInfoReference] = useState("");
+  const [includeRecurringProcessingModel, setIncludeRecurringProcessingModel] =
+    useState(true);
   const [recurringProcessingModel, setRecurringProcessingModel] =
     useState<EvonetRecurringProcessingModel>("Subscription");
   const [environment, setEnvironment] = useState(DEFAULT_ENVIRONMENT);
@@ -532,7 +534,10 @@ export default function DropinBuilderPage() {
             ? {
                 saveCardForNextPurchase: true,
                 userInfoReference: userInfoReference.trim(),
-                recurringProcessingModel,
+                includeRecurringProcessingModel,
+                ...(includeRecurringProcessingModel
+                  ? { recurringProcessingModel }
+                  : {}),
               }
             : {}),
         }),
@@ -765,6 +770,35 @@ export default function DropinBuilderPage() {
                     />
                   </Box>
                 </Grid>
+                <Grid item xs={12}>
+                  <FormControlLabel
+                    sx={{ m: 0 }}
+                    control={
+                      <Switch
+                        checked={includeRecurringProcessingModel}
+                        onChange={(event) =>
+                          setIncludeRecurringProcessingModel(event.target.checked)
+                        }
+                        disabled={!saveCardForNextPurchase}
+                        inputProps={{
+                          "aria-label":
+                            "Include paymentMethod recurringProcessingModel",
+                        }}
+                      />
+                    }
+                    label={
+                      <Box>
+                        <Typography variant="body2" sx={{ color: "#1F2937", fontWeight: 600 }}>
+                          Include paymentMethod.recurringProcessingModel
+                        </Typography>
+                        <Typography variant="caption" sx={{ color: "#6B7280", display: "block" }}>
+                          Turn this off to send only userInfo.reference and omit the paymentMethod
+                          object.
+                        </Typography>
+                      </Box>
+                    }
+                  />
+                </Grid>
                 <Grid item xs={12} md={6}>
                   <TextField
                     fullWidth
@@ -783,7 +817,10 @@ export default function DropinBuilderPage() {
                   />
                 </Grid>
                 <Grid item xs={12} md={6}>
-                  <FormControl fullWidth disabled={!saveCardForNextPurchase}>
+                  <FormControl
+                    fullWidth
+                    disabled={!saveCardForNextPurchase || !includeRecurringProcessingModel}
+                  >
                     <InputLabel id="recurring-model-label">Recurring model</InputLabel>
                     <Select
                       labelId="recurring-model-label"

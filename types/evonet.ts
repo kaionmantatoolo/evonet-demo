@@ -121,6 +121,8 @@ export interface EvonetInteractionRequest {
   saveCardForNextPurchase?: boolean;
   /** Required when `saveCardForNextPurchase` is true. Maps to `userInfo.reference`. */
   userInfoReference?: string;
+  /** When false, skip sending `paymentMethod.recurringProcessingModel` in interaction payload. */
+  includeRecurringProcessingModel?: boolean;
   /** Defaults to `Subscription` when save-card is enabled and this is omitted. */
   recurringProcessingModel?: EvonetRecurringProcessingModel;
 }
