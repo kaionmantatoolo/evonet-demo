@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Analytics } from "@vercel/analytics/next";
 import ThemeRegistry from "../components/ThemeRegistry";
 
 export const metadata = {
@@ -11,6 +12,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html lang="en">
       <body>
         <ThemeRegistry>{children}</ThemeRegistry>
+        <Analytics />
       </body>
     </html>
   );
