@@ -4,9 +4,11 @@
   "description": "Evonet Drop-in local test app (Next.js + React + Material UI)",
   "main": "index.js",
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start"
+    "postinstall": "node scripts/patch-next-swc-wasm.cjs",
+    "preswc:prepare": "node -e \"const fs=require('fs');const p='node_modules/@next/swc-darwin-arm64';try{if(fs.existsSync(p)){fs.rmSync(p,{recursive:true,force:true});console.log('Removed',p)}}catch(e){console.warn('SWC cleanup skipped:',e?.message||e)}\"",
+    "dev": "npm run preswc:prepare && NEXT_DISABLE_SWC_WASM= NEXT_SWC_PATH=.next/swc-cache next dev",
+    "build": "npm run preswc:prepare && NEXT_DISABLE_SWC_WASM= NEXT_SWC_PATH=.next/swc-cache next build",
+    "start": "npm run preswc:prepare && NEXT_DISABLE_SWC_WASM= NEXT_SWC_PATH=.next/swc-cache next start"
   },
   "keywords": [],
   "author": "",
@@ -18,7 +20,9 @@
     "@mui/icons-material": "^5.18.0",
     "@mui/material": "^5.18.0",
     "@mui/material-nextjs": "^5.18.0",
-    "next": "^15.1.6",
+    "@next/swc-wasm-nodejs": "^15.5.18",
+    "@next/swc-wasm-web": "^15.5.12",
+    "next": "^15.5.18",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   },
