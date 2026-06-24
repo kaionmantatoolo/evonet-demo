@@ -225,11 +225,32 @@ export function EvonetDropinHost({
   }, []);
 
   useEffect(() => {
+    const win = window as unknown as EvonetWindow;
+
+    const markScriptLoaded = (script?: HTMLScriptElement) => {
+      if (script) {
+        script.dataset.loaded = "true";
+      }
+      setScriptLoaded(true);
+    };
+
     const existing = document.querySelector<HTMLScriptElement>(
       'script[data-evonet-dropin="true"]'
     );
     if (existing) {
-      existing.addEventListener("load", () => setScriptLoaded(true), {
+      const scriptReadyState = (
+        existing as HTMLScriptElement & { readyState?: string }
+      ).readyState;
+      if (
+        existing.dataset.loaded === "true" ||
+        scriptReadyState === "complete" ||
+        scriptReadyState === "loaded" ||
+        win.DropInSDK
+      ) {
+        markScriptLoaded(existing);
+        return;
+      }
+      existing.addEventListener("load", () => markScriptLoaded(existing), {
         once: true,
       });
       return;
@@ -242,7 +263,7 @@ export function EvonetDropinHost({
     script.addEventListener(
       "load",
       () => {
-        setScriptLoaded(true);
+        markScriptLoaded(script);
       },
       { once: true }
     );
