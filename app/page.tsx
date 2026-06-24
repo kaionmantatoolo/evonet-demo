@@ -64,7 +64,7 @@ export default function HomePage() {
                   size="large"
                   variant="outlined"
                 >
-                  Explore Advanced View
+                  Explore Validation Workspace
                 </Button>
               </Stack>
             </Stack>
@@ -145,11 +145,11 @@ export default function HomePage() {
                   >
                     <Stack spacing={1.25}>
                       <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                        Advanced Validation View
+                        Production Validation
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
-                        Best for deeper internal review when you want to inspect full
-                        behavior details and prepare for implementation decisions.
+                        Full configuration surface for internal QA against live
+                        credentials. Inspect SDK options, events, and payment outcomes.
                       </Typography>
                       <Box>
                         <Button
@@ -157,7 +157,7 @@ export default function HomePage() {
                           href="/evonet/dropin-test"
                           variant="outlined"
                         >
-                          Open Advanced View
+                          Open Validation Workspace
                         </Button>
                       </Box>
                     </Stack>

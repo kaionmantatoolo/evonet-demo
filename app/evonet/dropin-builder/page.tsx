@@ -27,6 +27,11 @@ import {
   EvonetDropinHost,
   type SdkInitAppliedInfo,
 } from "../../../components/EvonetDropinHost";
+import { DemoTransactionWarning } from "../../../components/DemoTransactionWarning";
+import {
+  CODE_PANEL_PRE_SX,
+  DEV_CONSOLE_SECTION_TITLE_SX,
+} from "../../../lib/codePanelStyles";
 import type {
   EvonetDropinConfig,
   EvonetDropinEvent,
@@ -639,17 +644,6 @@ export default function DropinBuilderPage() {
                   Configure Evonet Drop-in SDK options with a guided interface,
                   preview the result instantly, and copy JSON in one click.
                 </Typography>
-                <Stack direction="row" spacing={1.25} flexWrap="wrap" useFlexGap>
-                  <Button size="small" variant="outlined">
-                    SDK-only config
-                  </Button>
-                  <Button size="small" variant="outlined">
-                    1-click copy JSON
-                  </Button>
-                  <Button size="small" variant="outlined">
-                    Sticky live preview
-                  </Button>
-                </Stack>
               </Stack>
             </Paper>
 
@@ -1477,6 +1471,8 @@ export default function DropinBuilderPage() {
                   </Alert>
                 ) : null}
 
+                <DemoTransactionWarning sx={{ mb: 1.5 }} />
+
                 <Box sx={{ border: "1px solid #D1D5DB", borderRadius: 2, p: 1 }}>
                   <EvonetDropinHost
                     config={dropinConfigForPreview}
@@ -1514,10 +1510,7 @@ export default function DropinBuilderPage() {
                 ) : null}
 
                 <Box sx={{ pt: 1 }}>
-                  <Typography
-                    variant="subtitle1"
-                    sx={{ fontWeight: 600, mb: 1.5, color: "#1F2937" }}
-                  >
+                  <Typography variant="subtitle1" sx={DEV_CONSOLE_SECTION_TITLE_SX}>
                     UI Config JSON (UI Options + Appearance only)
                   </Typography>
                   <Stack spacing={1.5}>
@@ -1549,23 +1542,8 @@ export default function DropinBuilderPage() {
                       <Box
                         component="pre"
                         sx={{
-                          m: 0,
-                          minWidth: 0,
-                          width: "100%",
-                          p: 2,
-                          borderRadius: 2,
-                          border: "1px solid #E5E7EB",
-                          bgcolor: "#0B1220",
-                          color: "#E5E7EB",
-                          fontSize: 12,
-                          lineHeight: 1.5,
-                          fontFamily:
-                            "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+                          ...CODE_PANEL_PRE_SX,
                           maxHeight: 220,
-                          overflowX: "auto",
-                          overflowY: "auto",
-                          whiteSpace: "pre-wrap",
-                          wordBreak: "break-word",
                         }}
                       >
                         {builderConfigJson}
@@ -1616,23 +1594,8 @@ export default function DropinBuilderPage() {
                           <Box
                             component="pre"
                             sx={{
-                              m: 0,
-                              minWidth: 0,
-                              width: "100%",
-                              p: 2,
-                              borderRadius: 2,
-                              border: "1px solid #E5E7EB",
-                              bgcolor: "#0B1220",
-                              color: "#E5E7EB",
-                              fontSize: 12,
-                              lineHeight: 1.5,
-                              fontFamily:
-                                "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+                              ...CODE_PANEL_PRE_SX,
                               maxHeight: 220,
-                              overflowX: "auto",
-                              overflowY: "auto",
-                              whiteSpace: "pre-wrap",
-                              wordBreak: "break-word",
                             }}
                           >
                             {sdkPayloadJson}

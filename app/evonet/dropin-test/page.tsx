@@ -26,6 +26,15 @@ import {
   EvonetDropinHost,
   type SdkInitAppliedInfo,
 } from "../../../components/EvonetDropinHost";
+import { DemoTransactionWarning } from "../../../components/DemoTransactionWarning";
+import {
+  CODE_PANEL_EMPTY_SX,
+  CODE_PANEL_FONT,
+  CODE_PANEL_PRE_SX,
+  CODE_PANEL_SCROLL_SX,
+  DEV_CONSOLE_PAPER_SX,
+  DEV_CONSOLE_SECTION_TITLE_SX,
+} from "../../../lib/codePanelStyles";
 import type {
   BinRule,
   EvonetDropinConfig,
@@ -134,13 +143,82 @@ function createEmptyTypographyState(): TypographyState {
   };
 }
 
+const DEV_CODE_PANEL_SX = CODE_PANEL_SCROLL_SX;
+
+function EventLogList({
+  events,
+  filterSdk,
+  emptyLabel,
+  eventColor,
+}: {
+  events: EvonetDropinEvent[];
+  filterSdk: boolean;
+  emptyLabel: string;
+  eventColor: string;
+}) {
+  const filtered = events.filter((e) =>
+    filterSdk ? e.type === "sdk_message" : e.type !== "sdk_message"
+  );
+
+  if (filtered.length === 0) {
+    return (
+      <Typography variant="caption" sx={CODE_PANEL_EMPTY_SX}>
+        {emptyLabel}
+      </Typography>
+    );
+  }
+
+  return (
+    <Stack spacing={1} component="ul" sx={{ m: 0, p: 0 }}>
+      {filtered.map((event, index) => (
+        <Box
+          key={index}
+          component="li"
+          sx={{
+            listStyle: "none",
+            bgcolor: "rgba(255, 255, 255, 0.04)",
+            border: "1px solid rgba(229, 231, 235, 0.2)",
+            borderRadius: 1,
+            px: 1.25,
+            py: 1,
+          }}
+        >
+          <Typography
+            variant="caption"
+            sx={{ fontFamily: CODE_PANEL_FONT, color: eventColor, fontWeight: 600, fontSize: 12 }}
+          >
+            {event.type}
+          </Typography>
+          {event.payload != null && (
+            <Box
+              component="pre"
+              sx={{
+                mt: 0.75,
+                mb: 0,
+                whiteSpace: "pre-wrap",
+                wordBreak: "break-word",
+                fontSize: 12,
+                lineHeight: 1.5,
+                color: "#CBD5E1",
+                fontFamily: CODE_PANEL_FONT,
+              }}
+            >
+              {JSON.stringify(event.payload, null, 2)}
+            </Box>
+          )}
+        </Box>
+      ))}
+    </Stack>
+  );
+}
+
 export default function EvonetDropinTestPage() {
   const [amount, setAmount] = useState<string>("10.00");
   const [currency, setCurrency] = useState<string>(DEFAULT_CURRENCY);
   const [orderId, setOrderId] = useState<string>(
     `EVT-${Date.now().toString().slice(-6)}`
   );
-  const [description, setDescription] = useState<string>("Local PROD-like test");
+  const [description, setDescription] = useState<string>("Production validation transaction");
   const [saveCardForNextPurchase, setSaveCardForNextPurchase] = useState(false);
   const [userInfoReference, setUserInfoReference] = useState("");
   const [includeRecurringProcessingModel, setIncludeRecurringProcessingModel] =
@@ -217,10 +295,6 @@ export default function EvonetDropinTestPage() {
    * Use debounced bumps for live parameter tweaks so the iframe reflects uiOption / appearance / locale, etc.
    */
   const [sdkInitGeneration, setSdkInitGeneration] = useState(0);
-  /** Proves the Initialize button handler ran (not blocked by validation alerts). */
-  const [lastInitializeClickAt, setLastInitializeClickAt] = useState<
-    string | null
-  >(null);
   /** When true, changing SDK-facing parameters (fingerprint) re-inits Drop-in after a short debounce. */
   const [liveApplySdk, setLiveApplySdk] = useState(true);
   const prevSdkFingerprintRef = useRef<string>("");
@@ -428,7 +502,6 @@ export default function EvonetDropinTestPage() {
       alert("Please enter a valid amount.");
       return;
     }
-    setLastInitializeClickAt(new Date().toISOString());
     setOrderId(generateOrderId());
     setEvents([]);
     prevSdkFingerprintRef.current = buildDropinSdkFingerprint({
@@ -625,19 +698,17 @@ export default function EvonetDropinTestPage() {
       const numericAmount = parseFloat(snap.amount);
       if (Number.isNaN(numericAmount) || numericAmount <= 0) {
         setSessionError(
-          "Auto-start: enter a valid amount to create a session, then use Create session ID."
+          "Enter a valid amount, then create a session."
         );
         return;
       }
       if (!snap.currency?.trim()) {
-        setSessionError(
-          "Auto-start: currency is required. Set currency and refresh."
-        );
+        setSessionError("Currency is required.");
         return;
       }
       if (snap.saveCardForNextPurchase && !snap.userInfoReference.trim()) {
         setSessionError(
-          "Auto-start skipped: user reference is required when save-card option is enabled."
+          "User reference is required when save-card is enabled."
         );
         return;
       }
@@ -725,7 +796,7 @@ export default function EvonetDropinTestPage() {
           setSessionError(
             error instanceof Error
               ? error.message
-              : "Unexpected error creating sessionID (auto-start)."
+              : "Unexpected error while creating session on page load."
           );
         }
       } finally {
@@ -743,76 +814,105 @@ export default function EvonetDropinTestPage() {
   }, []);
 
   return (
-    <Box sx={{ minHeight: "100vh", bgcolor: "background.default" }}>
-      <Container maxWidth="xl" sx={{ py: { xs: 3, lg: 5 } }}>
-        <Grid container spacing={3}>
-          <Grid item xs={12} lg={4}>
-            <Stack spacing={2}>
-              <Alert severity="error" variant="outlined">
-                You are configuring a PROD-like Evonet Drop-in test page. Ensure
-                you use sandbox credentials or very small live amounts.
-              </Alert>
-
-              <Alert severity="info" variant="outlined">
-                On load, this page automatically requests a{" "}
-                <strong>sessionID</strong> and then <strong>initializes Drop-in</strong>{" "}
-                in the browser. The host tears down any previous instance before
-                re-init to avoid DOM conflicts. After changing amount or
-                environment, use <strong>Create session ID</strong>; tweak SDK
-                options with <strong>auto-apply</strong> on/off as needed.
-              </Alert>
-
-              <Box>
-                <Typography variant="h5" sx={{ mb: 1, fontWeight: 600 }}>
-                  Evonet Drop-in Test (Local)
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Configure order and customer details, then initialize Evonet
-                  Drop-in to run local test transactions using your real browser
-                  user agent.
-                </Typography>
-              </Box>
-
+    <Box sx={{ minHeight: "100vh", bgcolor: "#F4F6F8" }}>
+      <Container maxWidth={false} sx={{ py: 2, px: { xs: 2, md: 3 }, maxWidth: 1600 }}>
+        {/* Status bar — what devs check first */}
+        <Paper
+          elevation={0}
+          variant="outlined"
+          sx={{
+            px: 2,
+            py: 1.25,
+            mb: 2,
+            borderRadius: 2,
+            borderColor: "#E2E8F0",
+            bgcolor: "#FFFFFF",
+          }}
+        >
+          <Stack
+            direction={{ xs: "column", lg: "row" }}
+            spacing={1.5}
+            alignItems={{ lg: "center" }}
+            justifyContent="space-between"
+          >
+            <Stack direction="row" alignItems="center" spacing={1} flexWrap="wrap" useFlexGap>
+              <Typography variant="subtitle1" fontWeight={700} color="text.primary">
+                Drop-in Dev Console
+              </Typography>
+              <Chip size="small" color="error" label="PROD" />
+              <Chip
+                size="small"
+                variant="outlined"
+                label={environment}
+                sx={{ fontFamily: "monospace" }}
+              />
+              <Chip
+                size="small"
+                variant="outlined"
+                label={`init #${sdkInitGeneration}`}
+                sx={{ fontFamily: "monospace" }}
+              />
+              <Chip
+                size="small"
+                variant="outlined"
+                label={`mode: ${mode}`}
+                sx={{ fontFamily: "monospace" }}
+              />
+              <Chip
+                size="small"
+                variant="outlined"
+                label={`locale: ${locale}`}
+                sx={{ fontFamily: "monospace" }}
+              />
               {lastResult.type && (
-                <Alert
-                  severity={
+                <Chip
+                  size="small"
+                  color={
                     lastResult.type === "payment_success"
                       ? "success"
                       : lastResult.type === "payment_fail"
-                      ? "error"
-                      : "warning"
+                        ? "error"
+                        : "warning"
                   }
-                  variant="outlined"
-                >
-                  <Typography variant="subtitle2" fontWeight={700}>
-                    {lastResult.type === "payment_success"
-                      ? "Payment successful"
-                      : lastResult.type === "payment_fail"
-                      ? "Payment failed"
-                      : "Payment cancelled"}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    {lastResult.payload?.merchantTransID
-                      ? `merchantTransID: ${lastResult.payload.merchantTransID}`
-                      : lastResult.payload?.code
-                      ? `code: ${lastResult.payload.code}`
-                      : "See the event log below for details."}
-                  </Typography>
-                </Alert>
+                  label={lastResult.type.replace("payment_", "")}
+                />
               )}
+            </Stack>
+            <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap alignItems="center">
+              <Typography variant="caption" sx={{ color: "warning.dark", fontFamily: "monospace" }}>
+                session: {sessionId.slice(0, 12) || "—"}…
+              </Typography>
+              <Typography variant="caption" color="text.secondary" sx={{ fontFamily: "monospace" }}>
+                order: {orderId}
+              </Typography>
+            </Stack>
+          </Stack>
+        </Paper>
 
-              <Paper variant="outlined" sx={{ p: { xs: 2, lg: 3 } }}>
+        <Grid container spacing={2}>
+          <Grid item xs={12} lg={4}>
+            <Stack spacing={2}>
+              <Paper
+                variant="outlined"
+                sx={{
+                  p: { xs: 2, lg: 2 },
+                  borderRadius: 2,
+                  borderColor: "#E2E8F0",
+                  bgcolor: "#FFFFFF",
+                  maxHeight: { lg: "calc(100vh - 120px)" },
+                  overflowY: { lg: "auto" },
+                }}
+              >
                 <Stack spacing={3}>
                   <Box>
                     <Typography
                       variant="subtitle2"
-                      sx={{ mb: 2, fontWeight: 600 }}
+                      sx={{ mb: 0.5, fontWeight: 600, color: "#1F2937" }}
                     >
-                      Session &amp; SDK basics
+                      Configuration
                     </Typography>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 1.5 }}>
-                      Create a session, then initialize Drop-in here — no need to scroll to the bottom.
-                      See{" "}
+                    <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 2 }}>
+                      Session auto-creates on load. Re-create after amount / currency / env changes.{" "}
                       <Box
                         component="a"
                         href="https://developer.evonetonline.com/docs/sdk"
@@ -820,9 +920,8 @@ export default function EvonetDropinTestPage() {
                         rel="noopener noreferrer"
                         sx={{ color: "primary.main" }}
                       >
-                        SDK Parameter Reference
+                        SDK docs
                       </Box>
-                      .
                     </Typography>
                     <Grid container spacing={2}>
                       <Grid item xs={12}>
@@ -957,8 +1056,8 @@ export default function EvonetDropinTestPage() {
                             sx={{ textTransform: "none" }}
                           >
                             {isCreatingSession
-                              ? "Creating session ID…"
-                              : "Create session ID"}
+                              ? "Creating session…"
+                              : "Create session"}
                           </Button>
                           <Button
                             type="button"
@@ -972,61 +1071,20 @@ export default function EvonetDropinTestPage() {
                           </Button>
                         </Stack>
                         <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 1 }}>
-                          Create session uses your server credentials (interaction API). Initialize runs
-                          in this browser with your real user agent.
+                          Session uses server credentials. Initialize runs Drop-in in this browser.
                         </Typography>
-                        <Typography
-                          variant="caption"
-                          color={
-                            lastInitializeClickAt ? "success.main" : "text.secondary"
-                          }
-                          sx={{ display: "block", mt: 0.75 }}
-                          component="div"
-                        >
-                          {lastInitializeClickAt ? (
-                            <>
-                              Last 「Initialize / Re-init」click recorded at{" "}
-                              <Box component="span" sx={{ fontFamily: "monospace" }}>
-                                {lastInitializeClickAt}
-                              </Box>
-                              . If the event log shows{" "}
-                              <Box component="span" sx={{ fontFamily: "monospace" }}>
-                                source: dropin_host
-                              </Box>{" "}
-                              phases ending with{" "}
-                              <Box component="span" sx={{ fontFamily: "monospace" }}>
-                                before_new_dropinsdk
-                              </Box>{" "}
-                              then{" "}
-                              <Box component="span" sx={{ fontFamily: "monospace" }}>
-                                construct_threw
-                              </Box>
-                              , the button and React pipeline are working — the SDK
-                              constructor is failing.
-                            </>
-                          ) : (
-                            <>
-                              After a successful click (no alert), you should see
-                              dropin_host phases in the event list and{" "}
-                              <Box component="span" sx={{ fontFamily: "monospace" }}>
-                                initGeneration
-                              </Box>{" "}
-                              increase below.
-                            </>
-                          )}
-                        </Typography>
-                        <Paper variant="outlined" sx={{ mt: 2, p: 1.5, bgcolor: "action.hover" }}>
+                        <Paper variant="outlined" sx={{ mt: 2, p: 1.5, bgcolor: "grey.50" }}>
                           <Typography variant="caption" fontWeight={700} color="text.secondary" sx={{ display: "block", mb: 1 }}>
-                            Developer: SDK parameter apply
+                            Live SDK sync
                           </Typography>
                           <Stack spacing={1.25}>
                             <Stack direction="row" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={1}>
                               <Box>
                                 <Typography variant="body2" fontWeight={600}>
-                                  Auto-apply (500ms debounce)
+                                  Auto-apply changes
                                 </Typography>
                                 <Typography variant="caption" color="text.secondary">
-                                  When locale, uiOption, appearance, verifyOption, etc. change, Drop-in re-initializes automatically so you can compare the UI.
+                                  Re-initialize Drop-in when locale, UI, or appearance options change.
                                 </Typography>
                               </Box>
                               <Switch
@@ -1043,12 +1101,8 @@ export default function EvonetDropinTestPage() {
                               onClick={handleApplySdkParamsNow}
                               disabled={sdkInitGeneration < 1}
                             >
-                              Manual apply parameters to drop-in now
+                              Apply parameters now
                             </Button>
-                            <Typography variant="caption" color="text.secondary" sx={{ fontFamily: "monospace", wordBreak: "break-all" }}>
-                              initGeneration: {sdkInitGeneration} · fingerprint len {sdkOptionsFingerprint.length}
-                              {sdkInitGeneration < 1 ? " · not initialized yet" : ""}
-                            </Typography>
                           </Stack>
                         </Paper>
                         {sessionError && (
@@ -1113,7 +1167,7 @@ export default function EvonetDropinTestPage() {
                   <Accordion defaultExpanded disableGutters sx={{ border: "1px solid", borderColor: "divider", borderRadius: 1, "&:before": { display: "none" } }}>
                     <AccordionSummary sx={{ px: 2, minHeight: 48 }}>
                       <Typography variant="subtitle2" fontWeight={600}>
-                        SDK: Payment workflow (uiOption)
+                        Payment UI
                       </Typography>
                     </AccordionSummary>
                     <AccordionDetails sx={{ pt: 0, px: 2, pb: 2 }}>
@@ -1189,7 +1243,7 @@ export default function EvonetDropinTestPage() {
                   <Accordion defaultExpanded={false} disableGutters sx={{ border: "1px solid", borderColor: "divider", borderRadius: 1, "&:before": { display: "none" } }}>
                     <AccordionSummary sx={{ px: 2, minHeight: 48 }}>
                       <Typography variant="subtitle2" fontWeight={600}>
-                        SDK: Appearance (hex colors &amp; layout)
+                        Appearance
                       </Typography>
                     </AccordionSummary>
                     <AccordionDetails sx={{ pt: 0, px: 2, pb: 2 }}>
@@ -1293,7 +1347,7 @@ export default function EvonetDropinTestPage() {
                         ))}
                       </Grid>
                       <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 1 }}>
-                        Typography fields now map into <code>appearance</code>. Actual rendering depends on the Drop-in SDK build and account-side support.
+                        Typography maps into <code>appearance</code>. Rendering depends on SDK build and merchant configuration.
                       </Typography>
                     </AccordionDetails>
                   </Accordion>
@@ -1301,7 +1355,7 @@ export default function EvonetDropinTestPage() {
                   <Accordion defaultExpanded disableGutters sx={{ border: "1px solid", borderColor: "divider", borderRadius: 1, "&:before": { display: "none" } }}>
                     <AccordionSummary sx={{ px: 2, minHeight: 48 }}>
                       <Typography variant="subtitle2" fontWeight={600}>
-                        SDK: BIN verification (verifyOption + host rules)
+                        BIN verification
                       </Typography>
                     </AccordionSummary>
                     <AccordionDetails sx={{ pt: 0, px: 2, pb: 2 }}>
@@ -1341,8 +1395,7 @@ export default function EvonetDropinTestPage() {
                     {verifyPaymentBrand && (
                       <Stack spacing={2} sx={{ mt: 2 }}>
                         <Typography variant="caption" color="text.secondary">
-                          Add BIN conditions to show a promotion message above the
-                          Drop-in. BIN verification will not block Pay.
+                          Optional promotion copy when a card BIN matches. Does not block payment.
                         </Typography>
 
                         <Stack spacing={1.5}>
@@ -1473,7 +1526,7 @@ export default function EvonetDropinTestPage() {
                   <Accordion defaultExpanded={false} disableGutters sx={{ border: "1px solid", borderColor: "divider", borderRadius: 1, "&:before": { display: "none" } }}>
                     <AccordionSummary sx={{ px: 2, minHeight: 48 }}>
                       <Typography variant="subtitle2" fontWeight={600}>
-                        Order &amp; customer (metadata for this page)
+                        Order &amp; customer
                       </Typography>
                     </AccordionSummary>
                     <AccordionDetails sx={{ pt: 0, px: 2, pb: 2 }}>
@@ -1634,137 +1687,35 @@ export default function EvonetDropinTestPage() {
                 </Stack>
               </Paper>
 
-              <Paper
-                sx={{
-                  bgcolor: "grey.900",
-                  color: "grey.100",
-                  p: 2,
-                  borderRadius: 3,
-                }}
-              >
-                <Stack
-                  direction="row"
-                  alignItems="center"
-                  justifyContent="space-between"
-                  sx={{ mb: 1 }}
-                >
-                  <Typography variant="subtitle2" sx={{ color: "success.light" }}>
-                    Runtime debug
-                  </Typography>
-                  <Chip
-                    size="small"
-                    label="Browser-only"
-                    sx={{ bgcolor: "grey.800", color: "grey.200" }}
-                  />
-                </Stack>
-                <Grid container spacing={2}>
-                  <Grid item xs={12} sm={4}>
-                    <Typography
-                      variant="overline"
-                      sx={{ color: "grey.400", display: "block" }}
-                    >
-                      Evonet environment
-                    </Typography>
-                    <Typography
-                      variant="body2"
-                      sx={{ color: "success.light", wordBreak: "break-all" }}
-                    >
-                      {environment}
-                    </Typography>
-                  </Grid>
-                  <Grid item xs={12} sm={4}>
-                    <Typography
-                      variant="overline"
-                      sx={{ color: "grey.400", display: "block" }}
-                    >
-                      Drop-in mode
-                    </Typography>
-                    <Typography variant="body2" sx={{ color: "success.light" }}>
-                      {mode}
-                    </Typography>
-                  </Grid>
-                  <Grid item xs={12} sm={4}>
-                    <Typography
-                      variant="overline"
-                      sx={{ color: "grey.400", display: "block" }}
-                    >
-                      locale (SDK)
-                    </Typography>
-                    <Typography variant="body2" sx={{ color: "success.light" }}>
-                      {locale}
-                    </Typography>
-                  </Grid>
-                </Grid>
-                <Box sx={{ mt: 2 }}>
-                  <Typography
-                    variant="overline"
-                    sx={{ color: "grey.400", display: "block" }}
-                  >
-                    navigator.userAgent
-                  </Typography>
-                  <Typography
-                    variant="caption"
-                    sx={{
-                      color: "grey.100",
-                      display: "block",
-                      wordBreak: "break-all",
-                    }}
-                  >
-                    {userAgent}
-                  </Typography>
-                </Box>
-              </Paper>
             </Stack>
           </Grid>
 
-          {/* Center: Drop-in only */}
-          <Grid item xs={12} lg={4}>
-            <Stack spacing={2} sx={{ height: "100%" }}>
+          <Grid item xs={12} lg={8}>
+            <Stack spacing={2}>
               <Paper
                 variant="outlined"
                 sx={{
                   overflow: "hidden",
+                  borderRadius: 2,
+                  borderColor: "#E2E8F0",
+                  bgcolor: "#FFFFFF",
                 }}
               >
                 <Box
                   sx={{
                     borderBottom: "1px solid",
                     borderColor: "divider",
-                    px: { xs: 2, lg: 3 },
-                    py: 2,
+                    px: 2,
+                    py: 1.25,
+                    bgcolor: "grey.50",
                   }}
                 >
-                  <Stack
-                    direction={{ xs: "column", sm: "row" }}
-                    spacing={2}
-                    alignItems={{ sm: "center" }}
-                    justifyContent="space-between"
-                  >
-                    <Box>
-                      <Typography variant="subtitle2" fontWeight={600}>
-                        Drop-in preview
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        Embedded Evonet Drop-in. Initialize from the control panel
-                        (first column).
-                      </Typography>
-                    </Box>
-                    <Chip
-                      size="small"
-                      variant="outlined"
-                      label={
-                        <Box component="span" sx={{ fontSize: 11 }}>
-                          sessionID:{" "}
-                          <Box
-                            component="span"
-                            sx={{ fontFamily: "monospace" }}
-                          >
-                            {sessionId.slice(0, 6) || "N/A"}…
-                          </Box>
-                        </Box>
-                      }
-                    />
-                  </Stack>
+                  <Typography variant="subtitle2" fontWeight={600}>
+                    Drop-in preview
+                  </Typography>
+                </Box>
+                <Box sx={{ px: 2, pt: 2 }}>
+                  <DemoTransactionWarning />
                 </Box>
                 {binPromoMessage && (
                   <Box sx={{ px: { xs: 2, lg: 3 }, pt: 2 }}>
@@ -1782,308 +1733,122 @@ export default function EvonetDropinTestPage() {
                   />
                 </Box>
               </Paper>
-            </Stack>
-          </Grid>
 
-          {/* Right: developer debug + event logs */}
-          <Grid item xs={12} lg={4}>
-            <Stack spacing={2} sx={{ height: "100%" }}>
-              <Paper
-                sx={{
-                  p: { xs: 2, lg: 2 },
-                  bgcolor: "grey.900",
-                  color: "grey.100",
-                  borderRadius: 3,
-                }}
-              >
+              {/* Developer console — always visible, never collapsed */}
+              <Paper elevation={0} sx={DEV_CONSOLE_PAPER_SX}>
                 <Stack
-                  direction="column"
-                  spacing={1}
-                  sx={{ mb: 1 }}
+                  direction="row"
+                  alignItems="center"
+                  justifyContent="space-between"
+                  flexWrap="wrap"
+                  gap={1}
+                  sx={{ mb: 2 }}
                 >
-                  <Stack
-                    direction="row"
-                    alignItems="center"
-                    justifyContent="space-between"
-                    flexWrap="wrap"
-                    gap={1}
-                  >
-                    <Typography variant="subtitle2" fontWeight={700} sx={{ color: "grey.100" }}>
-                      Developer debug: last options passed to DropInSDK
-                    </Typography>
+                  <Typography variant="subtitle1" sx={DEV_CONSOLE_SECTION_TITLE_SX}>
+                    Developer console
+                  </Typography>
+                  <Stack direction="row" spacing={1} alignItems="center">
                     <Button
                       type="button"
                       size="small"
                       variant="outlined"
-                      sx={{
-                        textTransform: "none",
-                        color: "grey.100",
-                        borderColor: "grey.700",
-                        "&.Mui-disabled": {
-                          color: "grey.600",
-                          borderColor: "grey.800",
-                        },
-                      }}
                       disabled={!lastSdkInitInfo}
                       onClick={async () => {
                         if (!lastSdkInitInfo) return;
                         try {
                           await navigator.clipboard.writeText(
-                            JSON.stringify(
-                              lastSdkInitInfo.debugPayload,
-                              null,
-                              2
-                            )
+                            JSON.stringify(lastSdkInitInfo.debugPayload, null, 2)
                           );
-                          setCopySdkPayloadHint("JSON copied");
-                          window.setTimeout(() => setCopySdkPayloadHint(null), 2500);
+                          setCopySdkPayloadHint("Copied");
+                          window.setTimeout(() => setCopySdkPayloadHint(null), 2000);
                         } catch {
                           setCopySdkPayloadHint("Copy failed");
-                          window.setTimeout(() => setCopySdkPayloadHint(null), 2500);
+                          window.setTimeout(() => setCopySdkPayloadHint(null), 2000);
                         }
                       }}
                     >
-                      Copy JSON
+                      Copy SDK JSON
                     </Button>
+                    <Button
+                      type="button"
+                      size="small"
+                      variant="outlined"
+                      onClick={() => setEvents([])}
+                    >
+                      Clear logs
+                    </Button>
+                    {copySdkPayloadHint ? (
+                      <Chip
+                        size="small"
+                        label={copySdkPayloadHint}
+                        color={copySdkPayloadHint === "Copy failed" ? "error" : "success"}
+                      />
+                    ) : null}
                   </Stack>
-                  {copySdkPayloadHint && (
-                    <Typography
-                      variant="caption"
-                      sx={{
-                        color:
-                          copySdkPayloadHint === "Copy failed"
-                            ? "error.light"
-                            : "success.light",
-                      }}
-                    >
-                      {copySdkPayloadHint}
-                    </Typography>
-                  )}
-                </Stack>
-                {lastSdkInitInfo ? (
-                  <>
-                    <Stack direction="row" spacing={1} flexWrap="wrap" sx={{ mb: 1 }}>
-                      <Chip
-                        size="small"
-                        label={`#${lastSdkInitInfo.initGeneration}`}
-                        sx={{
-                          bgcolor: "grey.800",
-                          color: "grey.100",
-                        }}
-                      />
-                      <Chip
-                        size="small"
-                        variant="outlined"
-                        label={lastSdkInitInfo.appliedAt}
-                        sx={{
-                          color: "grey.300",
-                          borderColor: "grey.700",
-                        }}
-                      />
-                    </Stack>
-                    <Box
-                      component="pre"
-                      sx={{
-                        m: 0,
-                        p: 2,
-                        borderRadius: 2,
-                        bgcolor: "rgba(2, 6, 23, 0.7)",
-                        border: "1px solid",
-                        borderColor: "grey.800",
-                        color: "grey.100",
-                        fontSize: 10,
-                        maxHeight: { xs: 220, lg: 260 },
-                        overflow: "auto",
-                        whiteSpace: "pre-wrap",
-                        wordBreak: "break-word",
-                      }}
-                    >
-                      {JSON.stringify(lastSdkInitInfo.debugPayload, null, 2)}
-                    </Box>
-                    <Typography variant="caption" sx={{ display: "block", mt: 1, color: "grey.400" }}>
-                      Excludes payment_* callbacks; other fields match the constructor. With auto-apply on, control panel changes re-init after ~0.5s and refresh this panel.
-                    </Typography>
-                  </>
-                ) : (
-                  <Typography variant="body2" sx={{ color: "grey.500" }}>
-                    Not initialized yet. Use “Initialize / Re-init Drop-in” in the control panel first; full JSON appears after the SDK instance is created.
-                  </Typography>
-                )}
-              </Paper>
-
-              <Paper
-                sx={{
-                  flex: 1,
-                  bgcolor: "grey.900",
-                  color: "grey.100",
-                  p: { xs: 2, lg: 2 },
-                  borderRadius: 3,
-                  display: "flex",
-                  flexDirection: "column",
-                  minHeight: 320,
-                }}
-              >
-                <Stack
-                  direction="row"
-                  alignItems="center"
-                  justifyContent="space-between"
-                  sx={{ mb: 2 }}
-                >
-                  <Typography variant="subtitle2" sx={{ color: "grey.100" }}>
-                    Drop-in events
-                  </Typography>
-                  <Button
-                    type="button"
-                    onClick={() => setEvents([])}
-                    size="small"
-                    variant="outlined"
-                    sx={{
-                      color: "grey.100",
-                      borderColor: "grey.700",
-                      textTransform: "none",
-                    }}
-                  >
-                    Clear
-                  </Button>
                 </Stack>
 
-                <Grid container spacing={2} sx={{ flex: 1, minHeight: 0 }}>
-                  <Grid item xs={12} sx={{ display: "flex", flexDirection: "column", minHeight: 0 }}>
-                    <Typography
-                      variant="overline"
-                      sx={{ color: "grey.400", display: "block", mb: 0.5, lineHeight: 1.8 }}
-                    >
-                      Recognised events
+                <Grid container spacing={2}>
+                  <Grid item xs={12} lg={4}>
+                    <Typography variant="subtitle2" sx={{ mb: 1.25 }}>
+                      SDK runtime payload JSON
                     </Typography>
-                    <Box
-                      sx={{
-                        bgcolor: "rgba(2, 6, 23, 0.7)",
-                        border: "1px solid",
-                        borderColor: "grey.800",
-                        borderRadius: 2,
-                        p: 2,
-                        flex: 1,
-                        minHeight: 200,
-                        overflow: "auto",
-                      }}
-                    >
-                      {events.filter((e) => e.type !== "sdk_message").length === 0 ? (
-                        <Typography variant="caption" color="grey.500">
-                          No recognised events yet. payment_success, payment_fail,
-                          payment_method_selected etc. will appear here.
+                    {lastSdkInitInfo ? (
+                      <Box component="pre" sx={DEV_CODE_PANEL_SX}>
+                        {JSON.stringify(lastSdkInitInfo.debugPayload, null, 2)}
+                      </Box>
+                    ) : (
+                      <Box sx={DEV_CODE_PANEL_SX}>
+                        <Typography variant="caption" sx={CODE_PANEL_EMPTY_SX}>
+                          Waiting for init…
                         </Typography>
-                      ) : (
-                        <Stack spacing={1} component="ul" sx={{ m: 0, p: 0 }}>
-                          {events
-                            .filter((e) => e.type !== "sdk_message")
-                            .map((event, index) => (
-                              <Box
-                                key={index}
-                                component="li"
-                                sx={{
-                                  listStyle: "none",
-                                  bgcolor: "grey.900",
-                                  borderRadius: 1.5,
-                                  px: 1.5,
-                                  py: 1,
-                                }}
-                              >
-                                <Typography
-                                  variant="caption"
-                                  sx={{ fontFamily: "monospace", color: "success.light" }}
-                                >
-                                  {event.type}
-                                </Typography>
-                                {event.payload != null && (
-                                  <Box
-                                    component="pre"
-                                    sx={{
-                                      mt: 1,
-                                      mb: 0,
-                                      whiteSpace: "pre-wrap",
-                                      wordBreak: "break-word",
-                                      fontSize: 10,
-                                      color: "grey.200",
-                                    }}
-                                  >
-                                    {JSON.stringify(event.payload, null, 2)}
-                                  </Box>
-                                )}
-                              </Box>
-                            ))}
-                        </Stack>
-                      )}
+                      </Box>
+                    )}
+                  </Grid>
+
+                  <Grid item xs={12} lg={4}>
+                    <Typography variant="subtitle2" sx={{ mb: 1.25 }}>
+                      Payment events
+                    </Typography>
+                    <Box sx={DEV_CODE_PANEL_SX}>
+                      <EventLogList
+                        events={events}
+                        filterSdk={false}
+                        emptyLabel="// payment_success | payment_fail | payment_method_selected …"
+                        eventColor="#86EFAC"
+                      />
                     </Box>
                   </Grid>
 
-                  <Grid item xs={12} sx={{ display: "flex", flexDirection: "column", minHeight: 0 }}>
-                    <Typography
-                      variant="overline"
-                      sx={{ color: "grey.400", display: "block", mb: 0.5, lineHeight: 1.8 }}
-                    >
-                      Raw SDK messages
+                  <Grid item xs={12} lg={4}>
+                    <Typography variant="subtitle2" sx={{ mb: 1.25 }}>
+                      SDK / host messages
                     </Typography>
-                    <Box
-                      sx={{
-                        bgcolor: "rgba(2, 6, 23, 0.7)",
-                        border: "1px solid",
-                        borderColor: "grey.800",
-                        borderRadius: 2,
-                        p: 2,
-                        flex: 1,
-                        minHeight: 200,
-                        overflow: "auto",
-                      }}
-                    >
-                      {events.filter((e) => e.type === "sdk_message").length === 0 ? (
-                        <Typography variant="caption" color="grey.500">
-                          No raw SDK messages yet. postMessage frames from the
-                          Drop-in iframe will appear here.
-                        </Typography>
-                      ) : (
-                        <Stack spacing={1} component="ul" sx={{ m: 0, p: 0 }}>
-                          {events
-                            .filter((e) => e.type === "sdk_message")
-                            .map((event, index) => (
-                              <Box
-                                key={index}
-                                component="li"
-                                sx={{
-                                  listStyle: "none",
-                                  bgcolor: "grey.900",
-                                  borderRadius: 1.5,
-                                  px: 1.5,
-                                  py: 1,
-                                }}
-                              >
-                                <Typography
-                                  variant="caption"
-                                  sx={{ fontFamily: "monospace", color: "info.light" }}
-                                >
-                                  sdk_message
-                                </Typography>
-                                {event.payload != null && (
-                                  <Box
-                                    component="pre"
-                                    sx={{
-                                      mt: 1,
-                                      mb: 0,
-                                      whiteSpace: "pre-wrap",
-                                      wordBreak: "break-word",
-                                      fontSize: 10,
-                                      color: "grey.200",
-                                    }}
-                                  >
-                                    {JSON.stringify(event.payload, null, 2)}
-                                  </Box>
-                                )}
-                              </Box>
-                            ))}
-                        </Stack>
-                      )}
+                    <Box sx={DEV_CODE_PANEL_SX}>
+                      <EventLogList
+                        events={events}
+                        filterSdk
+                        emptyLabel="// dropin_host phases · postMessage · bin_verification …"
+                        eventColor="#7DD3FC"
+                      />
                     </Box>
                   </Grid>
                 </Grid>
+
+                <Box sx={{ mt: 2 }}>
+                  <Typography variant="subtitle2" sx={{ mb: 1.25 }}>
+                    navigator.userAgent
+                  </Typography>
+                  <Box
+                    component="pre"
+                    sx={{
+                      ...CODE_PANEL_PRE_SX,
+                      minHeight: "auto",
+                      maxHeight: "none",
+                    }}
+                  >
+                    {userAgent}
+                  </Box>
+                </Box>
               </Paper>
             </Stack>
           </Grid>
