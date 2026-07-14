@@ -43,7 +43,9 @@ import {
 } from "../../../lib/evonetEnvironment";
 import {
   parseEvonetReturnParams,
+  parseEvonetSdkPaymentEvent,
   stripEvonetReturnQuery,
+  type EvonetReturnParams,
 } from "../../../lib/evonetReturnParams";
 import type {
   BinRule,
@@ -223,12 +225,22 @@ function EvonetDropinTestPage() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const paymentReturn = useMemo(
+  const paymentReturnFromUrl = useMemo(
     () => parseEvonetReturnParams(searchParams),
     [searchParams]
   );
+  const [paymentReturnPrompt, setPaymentReturnPrompt] =
+    useState<EvonetReturnParams | null>(null);
   const [returnDialogDismissed, setReturnDialogDismissed] = useState(false);
-  const showReturnDialog = Boolean(paymentReturn) && !returnDialogDismissed;
+  const showReturnDialog =
+    Boolean(paymentReturnPrompt) && !returnDialogDismissed;
+
+  useEffect(() => {
+    if (paymentReturnFromUrl) {
+      setPaymentReturnPrompt(paymentReturnFromUrl);
+      setReturnDialogDismissed(false);
+    }
+  }, [paymentReturnFromUrl]);
 
   const [amount, setAmount] = useState<string>("10.00");
   const [currency, setCurrency] = useState<string>(DEFAULT_CURRENCY);
@@ -600,6 +612,11 @@ function EvonetDropinTestPage() {
         type: event.type as "payment_success" | "payment_fail" | "payment_cancelled",
         payload,
       });
+      const fromSdk = parseEvonetSdkPaymentEvent(event.type, payload);
+      if (fromSdk) {
+        setPaymentReturnPrompt(fromSdk);
+        setReturnDialogDismissed(false);
+      }
     }
   }, [binRules]);
 
@@ -1911,10 +1928,11 @@ function EvonetDropinTestPage() {
 
       <EvonetPaymentReturnDialog
         open={showReturnDialog}
-        params={paymentReturn}
+        params={paymentReturnPrompt}
         onDismiss={() => setReturnDialogDismissed(true)}
         onStartNewPayment={() => {
           setReturnDialogDismissed(true);
+          setPaymentReturnPrompt(null);
           clearPaymentReturnQuery();
           void handleCreateSession({ initDropin: true });
         }}

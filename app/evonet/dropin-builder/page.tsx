@@ -37,7 +37,9 @@ import {
 import { getEvonetEnvironment } from "../../../lib/evonetEnvironment";
 import {
   parseEvonetReturnParams,
+  parseEvonetSdkPaymentEvent,
   stripEvonetReturnQuery,
+  type EvonetReturnParams,
 } from "../../../lib/evonetReturnParams";
 import type {
   EvonetDropinConfig,
@@ -193,12 +195,22 @@ function DropinBuilderPage() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const paymentReturn = useMemo(
+  const paymentReturnFromUrl = useMemo(
     () => parseEvonetReturnParams(searchParams),
     [searchParams]
   );
+  const [paymentReturnPrompt, setPaymentReturnPrompt] =
+    useState<EvonetReturnParams | null>(null);
   const [returnDialogDismissed, setReturnDialogDismissed] = useState(false);
-  const showReturnDialog = Boolean(paymentReturn) && !returnDialogDismissed;
+  const showReturnDialog =
+    Boolean(paymentReturnPrompt) && !returnDialogDismissed;
+
+  useEffect(() => {
+    if (paymentReturnFromUrl) {
+      setPaymentReturnPrompt(paymentReturnFromUrl);
+      setReturnDialogDismissed(false);
+    }
+  }, [paymentReturnFromUrl]);
 
   const [mountedAt, setMountedAt] = useState<string>("");
   const [sessionID, setSessionID] = useState(DEFAULT_SESSION_ID);
@@ -1526,6 +1538,20 @@ function DropinBuilderPage() {
                           );
                         }
                       }
+                      if (
+                        event.type === "payment_success" ||
+                        event.type === "payment_fail" ||
+                        event.type === "payment_cancelled"
+                      ) {
+                        const fromSdk = parseEvonetSdkPaymentEvent(
+                          event.type,
+                          event.payload
+                        );
+                        if (fromSdk) {
+                          setPaymentReturnPrompt(fromSdk);
+                          setReturnDialogDismissed(false);
+                        }
+                      }
                       setPreviewEvents((prev) => [event, ...prev].slice(0, 20));
                     }}
                     onSdkInitApplied={(info) => setLastSdkInitInfo(info)}
@@ -1642,10 +1668,11 @@ function DropinBuilderPage() {
 
       <EvonetPaymentReturnDialog
         open={showReturnDialog}
-        params={paymentReturn}
+        params={paymentReturnPrompt}
         onDismiss={() => setReturnDialogDismissed(true)}
         onStartNewPayment={() => {
           setReturnDialogDismissed(true);
+          setPaymentReturnPrompt(null);
           clearPaymentReturnQuery();
           void handleCreateSession();
         }}

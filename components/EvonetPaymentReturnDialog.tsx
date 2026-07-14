@@ -57,11 +57,9 @@ export function EvonetPaymentReturnDialog({
       <DialogTitle>{copy.title}</DialogTitle>
       <DialogContent>
         <Alert severity={copy.severity} variant="outlined" sx={{ mb: 2 }}>
-          Wallet / new-tab payment returned to this page via Evonet{" "}
-          <Typography component="span" variant="body2" fontFamily="monospace">
-            returnURL
-          </Typography>
-          .
+          {params.source === "sdk_event"
+            ? "Drop-in reported this result via SDK payment callback."
+            : "Wallet / new-tab payment returned to this page via Evonet returnURL."}
         </Alert>
         {rows.length > 0 ? (
           <Box
