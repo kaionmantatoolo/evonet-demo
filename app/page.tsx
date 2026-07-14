@@ -10,8 +10,11 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
+import { isEvonetProductionEnvironment } from "../lib/evonetEnvironment";
 
 export default function HomePage() {
+  const isProd = isEvonetProductionEnvironment();
+
   return (
     <Box component="main" sx={{ minHeight: "100vh", bgcolor: "background.default" }}>
       <Container maxWidth="lg" sx={{ py: { xs: 6, md: 10 } }}>
@@ -145,11 +148,12 @@ export default function HomePage() {
                   >
                     <Stack spacing={1.25}>
                       <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                        Production Validation
+                        {isProd ? "Production Validation" : "Validation Workspace"}
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
-                        Full configuration surface for internal QA against live
-                        credentials. Inspect SDK options, events, and payment outcomes.
+                        {isProd
+                          ? "Full configuration surface for internal QA against live credentials. Inspect SDK options, events, and payment outcomes."
+                          : "Full configuration surface for internal QA. Inspect SDK options, events, and payment outcomes."}
                       </Typography>
                       <Box>
                         <Button

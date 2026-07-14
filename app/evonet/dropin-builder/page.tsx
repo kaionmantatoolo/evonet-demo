@@ -32,6 +32,7 @@ import {
   CODE_PANEL_PRE_SX,
   DEV_CONSOLE_SECTION_TITLE_SX,
 } from "../../../lib/codePanelStyles";
+import { getEvonetEnvironment } from "../../../lib/evonetEnvironment";
 import type {
   EvonetDropinConfig,
   EvonetDropinEvent,
@@ -41,9 +42,7 @@ import type {
   EvonetSdkUiOption,
 } from "../../../types/evonet";
 
-const DEFAULT_ENVIRONMENT =
-  (process.env.NEXT_PUBLIC_EVONET_ENVIRONMENT as string | undefined) ??
-  "HKG_prod";
+const DEFAULT_ENVIRONMENT = getEvonetEnvironment();
 const DEFAULT_SESSION_ID =
   process.env.NEXT_PUBLIC_EVONET_SESSION_ID ?? "REPLACE_WITH_REAL_SESSION_ID";
 

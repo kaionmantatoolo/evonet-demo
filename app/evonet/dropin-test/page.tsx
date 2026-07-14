@@ -35,6 +35,10 @@ import {
   DEV_CONSOLE_PAPER_SX,
   DEV_CONSOLE_SECTION_TITLE_SX,
 } from "../../../lib/codePanelStyles";
+import {
+  getEvonetEnvironment,
+  isEvonetProductionEnvironment,
+} from "../../../lib/evonetEnvironment";
 import type {
   BinRule,
   EvonetDropinConfig,
@@ -45,15 +49,12 @@ import type {
   EvonetSdkUiOption,
 } from "../../../types/evonet";
 
-const DEFAULT_ENVIRONMENT =
-  (process.env.NEXT_PUBLIC_EVONET_ENVIRONMENT as string | undefined) ??
-  "HKG_prod";
-
+const DEFAULT_ENVIRONMENT = getEvonetEnvironment();
 const DEFAULT_SESSION_ID =
   process.env.NEXT_PUBLIC_EVONET_SESSION_ID ?? "REPLACE_WITH_REAL_SESSION_ID";
-
 const DEFAULT_CURRENCY =
   process.env.NEXT_PUBLIC_EVONET_DEFAULT_CURRENCY ?? "HKD";
+const IS_PROD_ENVIRONMENT = isEvonetProductionEnvironment(DEFAULT_ENVIRONMENT);
 
 function generateOrderId(): string {
   const suffix =
@@ -218,7 +219,11 @@ export default function EvonetDropinTestPage() {
   const [orderId, setOrderId] = useState<string>(
     `EVT-${Date.now().toString().slice(-6)}`
   );
-  const [description, setDescription] = useState<string>("Production validation transaction");
+  const [description, setDescription] = useState<string>(
+    IS_PROD_ENVIRONMENT
+      ? "Production validation transaction"
+      : "UAT validation transaction"
+  );
   const [saveCardForNextPurchase, setSaveCardForNextPurchase] = useState(false);
   const [userInfoReference, setUserInfoReference] = useState("");
   const [includeRecurringProcessingModel, setIncludeRecurringProcessingModel] =
