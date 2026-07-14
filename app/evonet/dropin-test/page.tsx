@@ -844,7 +844,9 @@ export default function EvonetDropinTestPage() {
               <Typography variant="subtitle1" fontWeight={700} color="text.primary">
                 Drop-in Dev Console
               </Typography>
-              <Chip size="small" color="error" label="PROD" />
+              {isEvonetProductionEnvironment(environment) ? (
+                <Chip size="small" color="error" label="PROD" />
+              ) : null}
               <Chip
                 size="small"
                 variant="outlined"
