@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   Accordion,
   AccordionDetails,
@@ -27,6 +28,7 @@ import {
   type SdkInitAppliedInfo,
 } from "../../../components/EvonetDropinHost";
 import { DemoTransactionWarning } from "../../../components/DemoTransactionWarning";
+import { EvonetPaymentReturnDialog } from "../../../components/EvonetPaymentReturnDialog";
 import {
   CODE_PANEL_EMPTY_SX,
   CODE_PANEL_FONT,
@@ -39,6 +41,10 @@ import {
   getEvonetEnvironment,
   isEvonetProductionEnvironment,
 } from "../../../lib/evonetEnvironment";
+import {
+  parseEvonetReturnParams,
+  stripEvonetReturnQuery,
+} from "../../../lib/evonetReturnParams";
 import type {
   BinRule,
   EvonetDropinConfig,
@@ -213,7 +219,17 @@ function EventLogList({
   );
 }
 
-export default function EvonetDropinTestPage() {
+function EvonetDropinTestPage() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const paymentReturn = useMemo(
+    () => parseEvonetReturnParams(searchParams),
+    [searchParams]
+  );
+  const [returnDialogDismissed, setReturnDialogDismissed] = useState(false);
+  const showReturnDialog = Boolean(paymentReturn) && !returnDialogDismissed;
+
   const [amount, setAmount] = useState<string>("10.00");
   const [currency, setCurrency] = useState<string>(DEFAULT_CURRENCY);
   const [orderId, setOrderId] = useState<string>(
@@ -593,7 +609,15 @@ export default function EvonetDropinTestPage() {
     }
   }, []);
 
-  const handleCreateSession = async () => {
+  const clearPaymentReturnQuery = useCallback(() => {
+    const next = stripEvonetReturnQuery(
+      new URLSearchParams(searchParams.toString())
+    );
+    const qs = next.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname);
+  }, [pathname, router, searchParams]);
+
+  const handleCreateSession = async (options?: { initDropin?: boolean }) => {
     setSessionError(null);
     if (saveCardForNextPurchase && !userInfoReference.trim()) {
       setSessionError(
@@ -664,7 +688,22 @@ export default function EvonetDropinTestPage() {
         return;
       }
 
-      setSessionId(data.sessionId as string);
+      const sid = data.sessionId as string;
+      setSessionId(sid);
+      if (options?.initDropin) {
+        prevSdkFingerprintRef.current = buildDropinSdkFingerprint({
+          sessionID: sid,
+          environment,
+          mode,
+          locale,
+          verifyPaymentBrand,
+          maxWaitTime,
+          sdkUiOption,
+          sdkAppearance,
+        });
+        setEvents([]);
+        setSdkInitGeneration((g) => g + 1);
+      }
     } catch (error) {
       setSessionError(
         error instanceof Error
@@ -677,7 +716,15 @@ export default function EvonetDropinTestPage() {
   };
 
   // On first load: create session via interaction API, then initialize Drop-in (host destroys old instance before re-init).
+  // Skip when this tab is a wallet returnURL landing (e.g. Alipay/WeChat).
   useEffect(() => {
+    if (
+      typeof window !== "undefined" &&
+      parseEvonetReturnParams(new URLSearchParams(window.location.search))
+    ) {
+      return;
+    }
+
     const ac = new AbortController();
     let cancelled = false;
 
@@ -1056,7 +1103,7 @@ export default function EvonetDropinTestPage() {
                         >
                           <Button
                             type="button"
-                            onClick={handleCreateSession}
+                            onClick={() => void handleCreateSession()}
                             disabled={isCreatingSession}
                             variant="contained"
                             size="small"
@@ -1861,6 +1908,25 @@ export default function EvonetDropinTestPage() {
           </Grid>
         </Grid>
       </Container>
+
+      <EvonetPaymentReturnDialog
+        open={showReturnDialog}
+        params={paymentReturn}
+        onDismiss={() => setReturnDialogDismissed(true)}
+        onStartNewPayment={() => {
+          setReturnDialogDismissed(true);
+          clearPaymentReturnQuery();
+          void handleCreateSession({ initDropin: true });
+        }}
+      />
     </Box>
+  );
+}
+
+export default function EvonetDropinTestPageRoute() {
+  return (
+    <Suspense fallback={null}>
+      <EvonetDropinTestPage />
+    </Suspense>
   );
 }

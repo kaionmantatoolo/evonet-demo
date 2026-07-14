@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   Accordion,
   AccordionDetails,
@@ -28,11 +29,16 @@ import {
   type SdkInitAppliedInfo,
 } from "../../../components/EvonetDropinHost";
 import { DemoTransactionWarning } from "../../../components/DemoTransactionWarning";
+import { EvonetPaymentReturnDialog } from "../../../components/EvonetPaymentReturnDialog";
 import {
   CODE_PANEL_PRE_SX,
   DEV_CONSOLE_SECTION_TITLE_SX,
 } from "../../../lib/codePanelStyles";
 import { getEvonetEnvironment } from "../../../lib/evonetEnvironment";
+import {
+  parseEvonetReturnParams,
+  stripEvonetReturnQuery,
+} from "../../../lib/evonetReturnParams";
 import type {
   EvonetDropinConfig,
   EvonetDropinEvent,
@@ -183,7 +189,17 @@ function generateOrderId(): string {
   return `EVB-${Date.now()}-${suffix}`;
 }
 
-export default function DropinBuilderPage() {
+function DropinBuilderPage() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const paymentReturn = useMemo(
+    () => parseEvonetReturnParams(searchParams),
+    [searchParams]
+  );
+  const [returnDialogDismissed, setReturnDialogDismissed] = useState(false);
+  const showReturnDialog = Boolean(paymentReturn) && !returnDialogDismissed;
+
   const [mountedAt, setMountedAt] = useState<string>("");
   const [sessionID, setSessionID] = useState(DEFAULT_SESSION_ID);
   const [isCreatingSession, setIsCreatingSession] = useState(false);
@@ -510,6 +526,14 @@ export default function DropinBuilderPage() {
     }
   };
 
+  const clearPaymentReturnQuery = useCallback(() => {
+    const next = stripEvonetReturnQuery(
+      new URLSearchParams(searchParams.toString())
+    );
+    const qs = next.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname);
+  }, [pathname, router, searchParams]);
+
   const handleCreateSession = async () => {
     setSessionError(null);
     if (saveCardForNextPurchase && !userInfoReference.trim()) {
@@ -590,8 +614,14 @@ export default function DropinBuilderPage() {
   };
 
   useEffect(() => {
+    if (
+      typeof window !== "undefined" &&
+      parseEvonetReturnParams(new URLSearchParams(window.location.search))
+    ) {
+      return;
+    }
     void handleCreateSession();
-    // Auto-create once when page loads.
+    // Auto-create once when page loads (skip wallet returnURL landings).
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -1609,6 +1639,25 @@ export default function DropinBuilderPage() {
           </Box>
         </Box>
       </Box>
+
+      <EvonetPaymentReturnDialog
+        open={showReturnDialog}
+        params={paymentReturn}
+        onDismiss={() => setReturnDialogDismissed(true)}
+        onStartNewPayment={() => {
+          setReturnDialogDismissed(true);
+          clearPaymentReturnQuery();
+          void handleCreateSession();
+        }}
+      />
     </Container>
+  );
+}
+
+export default function DropinBuilderPageRoute() {
+  return (
+    <Suspense fallback={null}>
+      <DropinBuilderPage />
+    </Suspense>
   );
 }
