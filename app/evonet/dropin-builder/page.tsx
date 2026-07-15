@@ -41,7 +41,10 @@ import {
   stripEvonetReturnQuery,
   type EvonetReturnParams,
 } from "../../../lib/evonetReturnParams";
-import { writeStorefrontSnapshot } from "../../../lib/storefrontSnapshot";
+import {
+  resolveStorefrontUnitPrice,
+  writeStorefrontSnapshot,
+} from "../../../lib/storefrontSnapshot";
 import type {
   EvonetDropinConfig,
   EvonetDropinEvent,
@@ -217,7 +220,7 @@ function DropinBuilderPage() {
   const [sessionID, setSessionID] = useState(DEFAULT_SESSION_ID);
   const [isCreatingSession, setIsCreatingSession] = useState(false);
   const [sessionError, setSessionError] = useState<string | null>(null);
-  const [orderAmount, setOrderAmount] = useState("10.00");
+  const [orderAmount, setOrderAmount] = useState("128.00");
   const [orderCurrency, setOrderCurrency] = useState(
     process.env.NEXT_PUBLIC_EVONET_DEFAULT_CURRENCY ?? "HKD"
   );
@@ -547,6 +550,32 @@ function DropinBuilderPage() {
     router.replace(qs ? `${pathname}?${qs}` : pathname);
   }, [pathname, router, searchParams]);
 
+  const openAsStorefront = useCallback(() => {
+    writeStorefrontSnapshot({
+      appearance: sdkAppearance,
+      environment,
+      locale: locale.trim() || "en-US",
+      mode,
+      currency: orderCurrency.trim() || "HKD",
+      amount: resolveStorefrontUnitPrice(orderAmount),
+      uiOption: sdkUiOption,
+      verifyPaymentBrand,
+      maxWaitTime: maxWaitTime.trim() || "10",
+    });
+    router.push("/evonet/storefront");
+  }, [
+    environment,
+    locale,
+    maxWaitTime,
+    mode,
+    orderAmount,
+    orderCurrency,
+    router,
+    sdkAppearance,
+    sdkUiOption,
+    verifyPaymentBrand,
+  ]);
+
   const handleCreateSession = async () => {
     setSessionError(null);
     if (saveCardForNextPurchase && !userInfoReference.trim()) {
@@ -689,19 +718,7 @@ function DropinBuilderPage() {
                 <Box>
                   <Button
                     variant="contained"
-                    onClick={() => {
-                      writeStorefrontSnapshot({
-                        appearance: sdkAppearance,
-                        environment,
-                        locale: locale.trim() || "en-US",
-                        mode,
-                        currency: orderCurrency.trim() || "HKD",
-                        uiOption: sdkUiOption,
-                        verifyPaymentBrand,
-                        maxWaitTime: maxWaitTime.trim() || "10",
-                      });
-                      router.push("/evonet/storefront");
-                    }}
+                    onClick={openAsStorefront}
                     sx={{ textTransform: "none", fontWeight: 600 }}
                   >
                     Open as storefront
@@ -729,7 +746,7 @@ function DropinBuilderPage() {
                     label="Amount"
                     value={orderAmount}
                     onChange={(event) => setOrderAmount(event.target.value)}
-                    placeholder="10.00"
+                    placeholder="128.00"
                     inputProps={{ "aria-label": "Order amount" }}
                   />
                 </Grid>
@@ -1493,19 +1510,7 @@ function DropinBuilderPage() {
                     <Button
                       size="small"
                       variant="outlined"
-                      onClick={() => {
-                        writeStorefrontSnapshot({
-                          appearance: sdkAppearance,
-                          environment,
-                          locale: locale.trim() || "en-US",
-                          mode,
-                          currency: orderCurrency.trim() || "HKD",
-                          uiOption: sdkUiOption,
-                          verifyPaymentBrand,
-                          maxWaitTime: maxWaitTime.trim() || "10",
-                        });
-                        router.push("/evonet/storefront");
-                      }}
+                      onClick={openAsStorefront}
                       sx={{ textTransform: "none" }}
                     >
                       Open as storefront

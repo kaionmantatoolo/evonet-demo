@@ -45,11 +45,19 @@ export function StorefrontBagDrawer({
       anchor="right"
       open={open}
       onClose={onClose}
+      ModalProps={{
+        BackdropProps: {
+          sx: {
+            bgcolor: "rgba(28, 25, 23, 0.08)",
+          },
+        },
+      }}
       PaperProps={{
         sx: {
           width: { xs: "100%", sm: 400 },
           bgcolor: "var(--shop-bg)",
           color: "var(--shop-text)",
+          boxShadow: "-12px 0 40px rgba(28, 25, 23, 0.1)",
         },
       }}
     >

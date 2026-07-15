@@ -12,6 +12,8 @@ export interface StorefrontSnapshot {
   locale: string;
   mode: EvonetDropinMode;
   currency: string;
+  /** Unit price from Drop-in Builder Order Info amount. */
+  amount: number;
   uiOption?: EvonetSdkUiOption;
   verifyPaymentBrand?: boolean;
   maxWaitTime?: string;
@@ -57,6 +59,17 @@ export function readStorefrontSnapshot(): StorefrontSnapshot | null {
 export function clearStorefrontSnapshot(): void {
   if (typeof window === "undefined") return;
   window.sessionStorage.removeItem(STOREFRONT_SNAPSHOT_KEY);
+}
+
+/** Parse Builder order amount into a positive unit price for the storefront. */
+export function resolveStorefrontUnitPrice(
+  amount: unknown,
+  fallback = 128
+): number {
+  const parsed =
+    typeof amount === "number" ? amount : Number.parseFloat(String(amount ?? ""));
+  if (!Number.isFinite(parsed) || parsed <= 0) return fallback;
+  return Math.round(parsed * 100) / 100;
 }
 
 /** Map Drop-in appearance tokens onto shop CSS custom properties. */

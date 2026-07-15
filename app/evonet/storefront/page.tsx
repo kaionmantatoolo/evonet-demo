@@ -28,9 +28,11 @@ import {
 import {
   appearanceToStorefrontCssVars,
   readStorefrontSnapshot,
+  resolveStorefrontUnitPrice,
   type StorefrontSnapshot,
 } from "../../../lib/storefrontSnapshot";
 import type { EvonetDropinConfig, EvonetDropinEvent } from "../../../types/evonet";
+import type { DemoProduct } from "../../../components/storefront/demoProduct";
 
 function generateOrderId(): string {
   const suffix =
@@ -89,9 +91,19 @@ function StorefrontPage() {
   );
 
   const currency = snapshot?.currency?.trim() || "HKD";
-  const cartTotal = DEMO_PRODUCT.price * Math.max(cartQty, 0);
+  const unitPrice = resolveStorefrontUnitPrice(snapshot?.amount);
+  const product: DemoProduct = useMemo(
+    () => ({
+      ...DEMO_PRODUCT,
+      // Builder Order Info amount drives the listing + checkout total.
+      price: unitPrice,
+      compareAtPrice: undefined,
+    }),
+    [unitPrice]
+  );
+  const cartTotal = product.price * Math.max(cartQty, 0);
   const colorLabel =
-    DEMO_PRODUCT.colors.find((c) => c.id === selectedColorId)?.label ?? "Charcoal";
+    product.colors.find((c) => c.id === selectedColorId)?.label ?? "Charcoal";
 
   const dropinConfig: EvonetDropinConfig | null = useMemo(() => {
     if (!snapshot || !sessionID.trim()) return null;
@@ -128,7 +140,7 @@ function StorefrontPage() {
       setSessionError(null);
       setIsCreatingSession(true);
 
-      const amount = DEMO_PRODUCT.price * qty;
+      const amount = product.price * qty;
 
       try {
         const response = await fetch("/api/evonet/session", {
@@ -138,7 +150,7 @@ function StorefrontPage() {
             amount,
             currency,
             orderId: generateOrderId(),
-            description: `${DEMO_PRODUCT.name} · ${colorLabel} · ${selectedSize} × ${qty}`,
+            description: `${product.name} · ${colorLabel} · ${selectedSize} × ${qty}`,
             environment: snapshot.environment,
             locale: snapshot.locale || "en-US",
           }),
@@ -162,7 +174,7 @@ function StorefrontPage() {
         setIsCreatingSession(false);
       }
     },
-    [colorLabel, currency, selectedSize, snapshot]
+    [colorLabel, currency, product.name, product.price, selectedSize, snapshot]
   );
 
   const handleAddToCart = () => {
@@ -297,7 +309,7 @@ function StorefrontPage() {
                   textDecoration: "none",
                 }}
               >
-                {DEMO_PRODUCT.brand}
+                {product.brand}
               </Typography>
               <Typography
                 variant="caption"
@@ -370,7 +382,7 @@ function StorefrontPage() {
 
       <Container maxWidth="lg" sx={{ py: { xs: 3.5, md: 6 } }}>
         <StorefrontProductCard
-          product={DEMO_PRODUCT}
+          product={product}
           currency={currency}
           selectedSize={selectedSize}
           selectedColorId={selectedColorId}
@@ -413,8 +425,8 @@ function StorefrontPage() {
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <Box
                 component="img"
-                src={DEMO_PRODUCT.images[1]?.src}
-                alt={DEMO_PRODUCT.images[1]?.alt ?? ""}
+                src={product.images[1]?.src}
+                alt={product.images[1]?.alt ?? ""}
                 sx={{ width: "100%", height: "100%", objectFit: "cover" }}
               />
             </Box>
@@ -477,7 +489,7 @@ function StorefrontPage() {
                 letterSpacing: "-0.02em",
               }}
             >
-              {DEMO_PRODUCT.brand}
+              {product.brand}
             </Typography>
             <Typography variant="caption" sx={{ color: "var(--shop-muted)" }}>
               Demo storefront · Theme from Builder · {snapshot.environment} ·{" "}
@@ -490,7 +502,7 @@ function StorefrontPage() {
       <StorefrontBagDrawer
         open={bagOpen}
         onClose={() => setBagOpen(false)}
-        product={DEMO_PRODUCT}
+        product={product}
         quantity={cartQty}
         currency={currency}
         size={selectedSize}
@@ -503,12 +515,12 @@ function StorefrontPage() {
       <StorefrontCheckoutDrawer
         open={checkoutOpen}
         onClose={() => setCheckoutOpen(false)}
-        product={DEMO_PRODUCT}
+        product={product}
         currency={currency}
         quantity={Math.max(cartQty, 1)}
         size={selectedSize}
         colorLabel={colorLabel}
-        total={cartQty > 0 ? cartTotal : DEMO_PRODUCT.price}
+        total={cartQty > 0 ? cartTotal : product.price}
         isCreatingSession={isCreatingSession}
         sessionError={sessionError}
         dropinConfig={dropinConfig}

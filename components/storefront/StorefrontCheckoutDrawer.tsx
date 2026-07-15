@@ -54,11 +54,20 @@ export function StorefrontCheckoutDrawer({
       anchor="right"
       open={open}
       onClose={onClose}
+      ModalProps={{
+        // Keep the shop page readable — avoid the default heavy dim overlay.
+        BackdropProps: {
+          sx: {
+            bgcolor: "rgba(28, 25, 23, 0.08)",
+          },
+        },
+      }}
       PaperProps={{
         sx: {
           width: { xs: "100%", sm: 460, md: 500 },
           bgcolor: "var(--shop-bg)",
           color: "var(--shop-text)",
+          boxShadow: "-12px 0 40px rgba(28, 25, 23, 0.1)",
           backgroundImage:
             "linear-gradient(180deg, color-mix(in srgb, var(--shop-primary) 4%, var(--shop-bg)), var(--shop-bg) 28%)",
         },
