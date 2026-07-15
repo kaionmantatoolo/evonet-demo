@@ -50,7 +50,7 @@ export function StorefrontBagDrawer({
       anchor="right"
       open={open}
       onClose={onClose}
-      // Above StorefrontMorphOverlay (modal + 4).
+      // Above storefront fade overlay (modal + 4).
       sx={{ zIndex: (theme) => theme.zIndex.modal + 10 }}
       ModalProps={{
         BackdropProps: {

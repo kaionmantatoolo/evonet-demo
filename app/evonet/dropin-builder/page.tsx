@@ -699,13 +699,7 @@ function DropinBuilderPage() {
   }, []);
 
   return (
-    <Box
-      sx={{
-        perspective: { xs: "1000px", md: "1800px" },
-        perspectiveOrigin: "50% 40%",
-        minHeight: { sm: "100vh" },
-      }}
-    >
+    <Box sx={{ minHeight: { sm: "100vh" } }}>
       <Box sx={builderStageMorphSx(builderWarped)}>
         <Container
           maxWidth="xl"

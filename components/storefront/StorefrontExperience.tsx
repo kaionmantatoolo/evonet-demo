@@ -15,10 +15,13 @@ import {
   Typography,
 } from "@mui/material";
 import ShoppingBagOutlinedIcon from "@mui/icons-material/ShoppingBagOutlined";
-import { EvonetPaymentReturnDialog } from "../EvonetPaymentReturnDialog";
 import { DEMO_PRODUCT, type DemoProduct } from "./demoProduct";
 import { StorefrontBagDrawer } from "./StorefrontBagDrawer";
 import { StorefrontCheckoutDrawer } from "./StorefrontCheckoutDrawer";
+import {
+  StorefrontOrderResult,
+  type StorefrontCheckoutSummary,
+} from "./StorefrontOrderResult";
 import { StorefrontProductCard } from "./StorefrontProductCard";
 import {
   parseEvonetReturnParams,
@@ -82,23 +85,32 @@ export function StorefrontExperience({
   );
   const [justAdded, setJustAdded] = useState(false);
   const [toastOpen, setToastOpen] = useState(false);
+  const [checkoutSummary, setCheckoutSummary] =
+    useState<StorefrontCheckoutSummary | null>(null);
+  const [orderResult, setOrderResult] = useState<EvonetReturnParams | null>(
+    null
+  );
 
   const paymentReturnFromUrl = useMemo(
     () => parseEvonetReturnParams(searchParams),
     [searchParams]
   );
-  const [paymentReturnPrompt, setPaymentReturnPrompt] =
-    useState<EvonetReturnParams | null>(null);
-  const [returnDialogDismissed, setReturnDialogDismissed] = useState(false);
-  const showReturnDialog =
-    Boolean(paymentReturnPrompt) && !returnDialogDismissed;
+
+  const applyPaymentResult = useCallback((result: EvonetReturnParams) => {
+    setOrderResult(result);
+    setCheckoutOpen(false);
+    setBagOpen(false);
+    setSessionID("");
+    setSdkInitGeneration(0);
+    if (result.status === "success") {
+      setCartQty(0);
+    }
+  }, []);
 
   useEffect(() => {
-    if (paymentReturnFromUrl) {
-      setPaymentReturnPrompt(paymentReturnFromUrl);
-      setReturnDialogDismissed(false);
-    }
-  }, [paymentReturnFromUrl]);
+    if (!paymentReturnFromUrl) return;
+    applyPaymentResult(paymentReturnFromUrl);
+  }, [paymentReturnFromUrl, applyPaymentResult]);
 
   const cssVars = useMemo(
     () => appearanceToStorefrontCssVars(config.appearance),
@@ -148,13 +160,23 @@ export function StorefrontExperience({
   const startCheckout = useCallback(
     async (quantity: number) => {
       const qty = Math.max(1, quantity);
+      const orderId = generateOrderId();
+      const amount = product.price * qty;
+
       setCartQty((prev) => Math.max(prev, qty));
       setBagOpen(false);
+      setOrderResult(null);
+      setCheckoutSummary({
+        orderId,
+        quantity: qty,
+        size: selectedSize,
+        colorLabel,
+        total: amount,
+        currency,
+      });
       setCheckoutOpen(true);
       setSessionError(null);
       setIsCreatingSession(true);
-
-      const amount = product.price * qty;
 
       try {
         const response = await fetch("/api/evonet/session", {
@@ -163,7 +185,7 @@ export function StorefrontExperience({
           body: JSON.stringify({
             amount,
             currency,
-            orderId: generateOrderId(),
+            orderId,
             description: `${product.name} · ${colorLabel} · ${selectedSize} × ${qty}`,
             environment: config.environment,
             locale: config.locale || "en-US",
@@ -220,19 +242,21 @@ export function StorefrontExperience({
     void startCheckout(cartQty);
   };
 
-  const handleDropinEvent = useCallback((event: EvonetDropinEvent) => {
-    if (
-      event.type === "payment_success" ||
-      event.type === "payment_fail" ||
-      event.type === "payment_cancelled"
-    ) {
-      const fromSdk = parseEvonetSdkPaymentEvent(event.type, event.payload);
-      if (fromSdk) {
-        setPaymentReturnPrompt(fromSdk);
-        setReturnDialogDismissed(false);
+  const handleDropinEvent = useCallback(
+    (event: EvonetDropinEvent) => {
+      if (
+        event.type === "payment_success" ||
+        event.type === "payment_fail" ||
+        event.type === "payment_cancelled"
+      ) {
+        const fromSdk = parseEvonetSdkPaymentEvent(event.type, event.payload);
+        if (fromSdk) {
+          applyPaymentResult(fromSdk);
+        }
       }
-    }
-  }, []);
+    },
+    [applyPaymentResult]
+  );
 
   const handleBack = () => {
     if (onBackToBuilder) {
@@ -240,6 +264,33 @@ export function StorefrontExperience({
       return;
     }
     router.push("/evonet/dropin-builder");
+  };
+
+  const handleContinueShopping = () => {
+    setOrderResult(null);
+    setCheckoutSummary(null);
+    clearPaymentReturnQuery();
+  };
+
+  const handleTryCheckoutAgain = () => {
+    setOrderResult(null);
+    clearPaymentReturnQuery();
+    const qty = checkoutSummary?.quantity ?? Math.max(cartQty, 1);
+    void startCheckout(qty);
+  };
+
+  const showOrderResult = Boolean(orderResult);
+
+  const fallbackSummary: StorefrontCheckoutSummary = {
+    orderId:
+      orderResult?.merchantOrderID ||
+      checkoutSummary?.orderId ||
+      "SHOP-DEMO",
+    quantity: checkoutSummary?.quantity ?? Math.max(cartQty, 1),
+    size: checkoutSummary?.size ?? selectedSize,
+    colorLabel: checkoutSummary?.colorLabel ?? colorLabel,
+    total: checkoutSummary?.total ?? (cartQty > 0 ? cartTotal : product.price),
+    currency,
   };
 
   return (
@@ -256,6 +307,19 @@ export function StorefrontExperience({
         ...cssVars,
       }}
     >
+      {showOrderResult && orderResult ? (
+        <StorefrontOrderResult
+          product={product}
+          summary={checkoutSummary ?? fallbackSummary}
+          result={orderResult}
+          onContinueShopping={handleContinueShopping}
+          onTryAgain={
+            orderResult.status === "success" ? undefined : handleTryCheckoutAgain
+          }
+          onBackToBuilder={onBackToBuilder ?? handleBack}
+        />
+      ) : (
+        <>
       <Box
         component="header"
         sx={{
@@ -505,22 +569,6 @@ export function StorefrontExperience({
         themeVars={cssVars}
       />
 
-      <EvonetPaymentReturnDialog
-        open={showReturnDialog}
-        params={paymentReturnPrompt}
-        onDismiss={() => setReturnDialogDismissed(true)}
-        onStartNewPayment={() => {
-          setReturnDialogDismissed(true);
-          setPaymentReturnPrompt(null);
-          clearPaymentReturnQuery();
-          setCheckoutOpen(false);
-          setBagOpen(false);
-          setSessionID("");
-          setSdkInitGeneration(0);
-          setCartQty(0);
-        }}
-      />
-
       <Snackbar
         open={toastOpen}
         autoHideDuration={2200}
@@ -539,6 +587,8 @@ export function StorefrontExperience({
           </Button>
         }
       />
+        </>
+      )}
     </Box>
   );
 }

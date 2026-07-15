@@ -60,7 +60,7 @@ export function StorefrontCheckoutDrawer({
       anchor="right"
       open={open}
       onClose={onClose}
-      // Above StorefrontMorphOverlay (modal + 4) so Buy now / bag checkout is visible.
+      // Above storefront fade overlay (modal + 4) so Buy now / bag checkout is visible.
       sx={{ zIndex: (theme) => theme.zIndex.modal + 10 }}
       ModalProps={{
         // Keep the shop page readable — avoid the default heavy dim overlay.
