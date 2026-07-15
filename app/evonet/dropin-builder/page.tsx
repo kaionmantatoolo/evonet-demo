@@ -41,6 +41,7 @@ import {
   stripEvonetReturnQuery,
   type EvonetReturnParams,
 } from "../../../lib/evonetReturnParams";
+import { writeStorefrontSnapshot } from "../../../lib/storefrontSnapshot";
 import type {
   EvonetDropinConfig,
   EvonetDropinEvent,
@@ -685,6 +686,27 @@ function DropinBuilderPage() {
                   Configure Evonet Drop-in SDK options with a guided interface,
                   preview the result instantly, and copy JSON in one click.
                 </Typography>
+                <Box>
+                  <Button
+                    variant="contained"
+                    onClick={() => {
+                      writeStorefrontSnapshot({
+                        appearance: sdkAppearance,
+                        environment,
+                        locale: locale.trim() || "en-US",
+                        mode,
+                        currency: orderCurrency.trim() || "HKD",
+                        uiOption: sdkUiOption,
+                        verifyPaymentBrand,
+                        maxWaitTime: maxWaitTime.trim() || "10",
+                      });
+                      router.push("/evonet/storefront");
+                    }}
+                    sx={{ textTransform: "none", fontWeight: 600 }}
+                  >
+                    Open as storefront
+                  </Button>
+                </Box>
               </Stack>
             </Paper>
 
@@ -1467,23 +1489,45 @@ function DropinBuilderPage() {
                   <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
                     Drop-in Preview
                   </Typography>
-                  <FormControlLabel
-                    control={
-                      <Switch
-                        checked={livePreview}
-                        onChange={(event) => setLivePreview(event.target.checked)}
-                        sx={{
-                          "& .MuiSwitch-switchBase.Mui-checked": {
-                            color: "#3B82F6",
-                          },
-                          "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
-                            bgcolor: "#3B82F6",
-                          },
-                        }}
-                      />
-                    }
-                    label="Auto refresh"
-                  />
+                  <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      onClick={() => {
+                        writeStorefrontSnapshot({
+                          appearance: sdkAppearance,
+                          environment,
+                          locale: locale.trim() || "en-US",
+                          mode,
+                          currency: orderCurrency.trim() || "HKD",
+                          uiOption: sdkUiOption,
+                          verifyPaymentBrand,
+                          maxWaitTime: maxWaitTime.trim() || "10",
+                        });
+                        router.push("/evonet/storefront");
+                      }}
+                      sx={{ textTransform: "none" }}
+                    >
+                      Open as storefront
+                    </Button>
+                    <FormControlLabel
+                      control={
+                        <Switch
+                          checked={livePreview}
+                          onChange={(event) => setLivePreview(event.target.checked)}
+                          sx={{
+                            "& .MuiSwitch-switchBase.Mui-checked": {
+                              color: "#3B82F6",
+                            },
+                            "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
+                              bgcolor: "#3B82F6",
+                            },
+                          }}
+                        />
+                      }
+                      label="Auto refresh"
+                    />
+                  </Stack>
                 </Stack>
 
                 <Button
