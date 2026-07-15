@@ -15,6 +15,11 @@ import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import type { EvonetReturnParams } from "../../lib/evonetReturnParams";
 import type { DemoProduct } from "./demoProduct";
 import {
+  cartLineCount,
+  formatCartLineLabel,
+  type StorefrontCartLine,
+} from "./cartTypes";
+import {
   enterFade,
   enterScale,
   enterUp,
@@ -24,9 +29,7 @@ import {
 
 export interface StorefrontCheckoutSummary {
   orderId: string;
-  quantity: number;
-  size: string;
-  colorLabel: string;
+  lines: StorefrontCartLine[];
   total: number;
   currency: string;
 }
@@ -229,9 +232,6 @@ export function StorefrontOrderResult({
 
           <Box
             sx={{
-              display: "grid",
-              gridTemplateColumns: "88px 1fr",
-              gap: 2,
               p: 2,
               borderRadius: 2.5,
               border: "1px solid var(--shop-border)",
@@ -239,34 +239,58 @@ export function StorefrontOrderResult({
               ...enterUp(180),
             }}
           >
-            <Box
-              sx={{
-                width: 88,
-                height: 88,
-                borderRadius: 2,
-                overflow: "hidden",
-                bgcolor: "#ece8e1",
-              }}
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <Box
-                component="img"
-                src={thumb?.src}
-                alt={thumb?.alt ?? product.name}
-                sx={{ width: "100%", height: "100%", objectFit: "cover" }}
-              />
-            </Box>
-            <Box>
-              <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 0.5 }}>
-                {product.name}
-              </Typography>
-              <Typography variant="body2" sx={{ color: "var(--shop-muted)" }}>
-                {summary.colorLabel} · Size {summary.size} · Qty {summary.quantity}
-              </Typography>
-              <Typography variant="body1" sx={{ mt: 1.25, fontWeight: 650 }}>
-                {summary.currency} {summary.total.toFixed(2)}
-              </Typography>
-            </Box>
+            <Stack spacing={1.75}>
+              {summary.lines.map((line) => (
+                <Box
+                  key={line.id}
+                  sx={{
+                    display: "grid",
+                    gridTemplateColumns: "72px 1fr",
+                    gap: 1.5,
+                  }}
+                >
+                  <Box
+                    sx={{
+                      width: 72,
+                      height: 72,
+                      borderRadius: 2,
+                      overflow: "hidden",
+                      bgcolor: "#ece8e1",
+                    }}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <Box
+                      component="img"
+                      src={thumb?.src}
+                      alt={thumb?.alt ?? product.name}
+                      sx={{ width: "100%", height: "100%", objectFit: "cover" }}
+                    />
+                  </Box>
+                  <Box>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.35 }}>
+                      {product.name}
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: "var(--shop-muted)" }}>
+                      {formatCartLineLabel(line)} · Qty {line.quantity}
+                    </Typography>
+                    <Typography variant="body2" sx={{ mt: 0.75, fontWeight: 650 }}>
+                      {summary.currency}{" "}
+                      {(product.price * line.quantity).toFixed(2)}
+                    </Typography>
+                  </Box>
+                </Box>
+              ))}
+              <Divider sx={{ borderColor: "var(--shop-border)" }} />
+              <Stack direction="row" justifyContent="space-between">
+                <Typography variant="body2" sx={{ color: "var(--shop-muted)" }}>
+                  {cartLineCount(summary.lines)} item
+                  {cartLineCount(summary.lines) === 1 ? "" : "s"}
+                </Typography>
+                <Typography variant="body1" sx={{ fontWeight: 700 }}>
+                  {summary.currency} {summary.total.toFixed(2)}
+                </Typography>
+              </Stack>
+            </Stack>
           </Box>
 
           {isSuccess ? (

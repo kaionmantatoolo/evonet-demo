@@ -19,15 +19,17 @@ import type { EvonetDropinConfig, EvonetDropinEvent } from "../../types/evonet";
 import type { DemoProduct } from "./demoProduct";
 import type { StorefrontCssVars } from "../../lib/storefrontSnapshot";
 import { StorefrontDropinLoader } from "./StorefrontDropinLoader";
+import {
+  formatCartLineLabel,
+  type StorefrontCartLine,
+} from "./cartTypes";
 
 interface StorefrontCheckoutDrawerProps {
   open: boolean;
   onClose: () => void;
   product: DemoProduct;
   currency: string;
-  quantity: number;
-  size: string;
-  colorLabel: string;
+  lines: StorefrontCartLine[];
   total: number;
   isCreatingSession: boolean;
   sessionError: string | null;
@@ -51,9 +53,7 @@ export function StorefrontCheckoutDrawer({
   onClose,
   product,
   currency,
-  quantity,
-  size,
-  colorLabel,
+  lines,
   total,
   isCreatingSession,
   sessionError,
@@ -183,43 +183,66 @@ export function StorefrontCheckoutDrawer({
 
         <Box
           sx={{
-            display: "grid",
-            gridTemplateColumns: "72px 1fr",
-            gap: 1.5,
             p: 1.5,
             borderRadius: 2,
             border: "1px solid var(--shop-border)",
             bgcolor: "var(--shop-surface)",
           }}
         >
-          <Box
-            sx={{
-              width: 72,
-              height: 72,
-              borderRadius: 1.5,
-              overflow: "hidden",
-              bgcolor: "#ece8e1",
-            }}
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <Box
-              component="img"
-              src={thumb?.src}
-              alt={thumb?.alt ?? product.name}
-              sx={{ width: "100%", height: "100%", objectFit: "cover" }}
-            />
-          </Box>
-          <Box>
-            <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-              {product.name}
-            </Typography>
-            <Typography variant="caption" sx={{ color: "var(--shop-muted)", display: "block" }}>
-              {colorLabel} · Size {size} · Qty {quantity}
-            </Typography>
-            <Typography variant="body2" sx={{ mt: 0.75, fontWeight: 650 }}>
-              {currency} {total.toFixed(2)}
-            </Typography>
-          </Box>
+          <Stack spacing={1.25}>
+            {lines.map((line) => (
+              <Box
+                key={line.id}
+                sx={{
+                  display: "grid",
+                  gridTemplateColumns: "56px 1fr auto",
+                  gap: 1.25,
+                  alignItems: "center",
+                }}
+              >
+                <Box
+                  sx={{
+                    width: 56,
+                    height: 56,
+                    borderRadius: 1.25,
+                    overflow: "hidden",
+                    bgcolor: "#ece8e1",
+                  }}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <Box
+                    component="img"
+                    src={thumb?.src}
+                    alt={thumb?.alt ?? product.name}
+                    sx={{ width: "100%", height: "100%", objectFit: "cover" }}
+                  />
+                </Box>
+                <Box sx={{ minWidth: 0 }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                    {product.name}
+                  </Typography>
+                  <Typography
+                    variant="caption"
+                    sx={{ color: "var(--shop-muted)", display: "block" }}
+                  >
+                    {formatCartLineLabel(line)} · Qty {line.quantity}
+                  </Typography>
+                </Box>
+                <Typography variant="body2" sx={{ fontWeight: 650 }}>
+                  {currency} {(product.price * line.quantity).toFixed(2)}
+                </Typography>
+              </Box>
+            ))}
+            <Divider sx={{ borderColor: "var(--shop-border)" }} />
+            <Stack direction="row" justifyContent="space-between">
+              <Typography variant="body2" sx={{ color: "var(--shop-muted)" }}>
+                Total
+              </Typography>
+              <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                {currency} {total.toFixed(2)}
+              </Typography>
+            </Stack>
+          </Stack>
         </Box>
 
         <DemoTransactionWarning />

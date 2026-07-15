@@ -25,6 +25,12 @@ import {
 import { StorefrontProductCard } from "./StorefrontProductCard";
 import { bagBounce, enterUp } from "./storefrontMotion";
 import {
+  cartLineCount,
+  cartLineId,
+  formatCartLineLabel,
+  type StorefrontCartLine,
+} from "./cartTypes";
+import {
   parseEvonetReturnParams,
   parseEvonetSdkPaymentEvent,
   stripEvonetReturnQuery,
@@ -73,7 +79,7 @@ export function StorefrontExperience({
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  const [cartQty, setCartQty] = useState(0);
+  const [cartLines, setCartLines] = useState<StorefrontCartLine[]>([]);
   const [bagOpen, setBagOpen] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [sessionID, setSessionID] = useState("");
@@ -105,7 +111,7 @@ export function StorefrontExperience({
     setSessionID("");
     setSdkInitGeneration(0);
     if (result.status === "success") {
-      setCartQty(0);
+      setCartLines([]);
     }
   }, []);
 
@@ -129,9 +135,21 @@ export function StorefrontExperience({
     }),
     [unitPrice]
   );
+  const cartQty = cartLineCount(cartLines);
   const cartTotal = product.price * Math.max(cartQty, 0);
   const colorLabel =
     product.colors.find((c) => c.id === selectedColorId)?.label ?? "Charcoal";
+
+  const makeLine = useCallback(
+    (quantity: number): StorefrontCartLine => ({
+      id: cartLineId(selectedColorId, selectedSize),
+      size: selectedSize,
+      colorId: selectedColorId,
+      colorLabel,
+      quantity: Math.max(1, quantity),
+    }),
+    [colorLabel, selectedColorId, selectedSize]
+  );
 
   const dropinConfig: EvonetDropinConfig | null = useMemo(() => {
     if (!sessionID.trim()) return null;
@@ -160,19 +178,24 @@ export function StorefrontExperience({
   }, [pathname, router, searchParams]);
 
   const startCheckout = useCallback(
-    async (quantity: number) => {
-      const qty = Math.max(1, quantity);
-      const orderId = generateOrderId();
-      const amount = product.price * qty;
+    async (lines: StorefrontCartLine[]) => {
+      const checkoutLines = lines
+        .filter((line) => line.quantity > 0)
+        .map((line) => ({ ...line }));
+      if (checkoutLines.length === 0) return;
 
-      setCartQty((prev) => Math.max(prev, qty));
+      const qty = cartLineCount(checkoutLines);
+      const amount = product.price * qty;
+      const orderId = generateOrderId();
+      const description = `${product.name} · ${checkoutLines
+        .map((line) => `${formatCartLineLabel(line)} × ${line.quantity}`)
+        .join("; ")}`;
+
       setBagOpen(false);
       setOrderResult(null);
       setCheckoutSummary({
         orderId,
-        quantity: qty,
-        size: selectedSize,
-        colorLabel,
+        lines: checkoutLines,
         total: amount,
         currency,
       });
@@ -188,7 +211,7 @@ export function StorefrontExperience({
             amount,
             currency,
             orderId,
-            description: `${product.name} · ${colorLabel} · ${selectedSize} × ${qty}`,
+            description,
             environment: config.environment,
             locale: config.locale || "en-US",
           }),
@@ -212,36 +235,57 @@ export function StorefrontExperience({
         setIsCreatingSession(false);
       }
     },
-    [
-      colorLabel,
-      config.environment,
-      config.locale,
-      currency,
-      product.name,
-      product.price,
-      selectedSize,
-    ]
+    [config.environment, config.locale, currency, product.name, product.price]
   );
 
   const handleAddToCart = () => {
-    setCartQty((prev) => prev + 1);
+    const id = cartLineId(selectedColorId, selectedSize);
+    setCartLines((prev) => {
+      const existing = prev.find((line) => line.id === id);
+      if (existing) {
+        return prev.map((line) =>
+          line.id === id
+            ? { ...line, quantity: line.quantity + 1 }
+            : line
+        );
+      }
+      return [...prev, makeLine(1)];
+    });
     setJustAdded(true);
     setToastOpen(true);
     window.setTimeout(() => setJustAdded(false), 1600);
   };
 
   const handleBuyNow = () => {
-    setCartQty(1);
-    void startCheckout(1);
+    void startCheckout([makeLine(1)]);
   };
 
   const handlePayFromCart = () => {
-    if (cartQty < 1) {
-      setCartQty(1);
-      void startCheckout(1);
+    if (cartLines.length < 1) {
+      void startCheckout([makeLine(1)]);
       return;
     }
-    void startCheckout(cartQty);
+    void startCheckout(cartLines);
+  };
+
+  const handleIncrementLine = (lineId: string) => {
+    setCartLines((prev) =>
+      prev.map((line) =>
+        line.id === lineId ? { ...line, quantity: line.quantity + 1 } : line
+      )
+    );
+  };
+
+  const handleDecrementLine = (lineId: string) => {
+    setCartLines((prev) =>
+      prev
+        .map((line) =>
+          line.id === lineId
+            ? { ...line, quantity: line.quantity - 1 }
+            : line
+        )
+        .filter((line) => line.quantity > 0)
+    );
   };
 
   const handleDropinEvent = useCallback(
@@ -278,8 +322,13 @@ export function StorefrontExperience({
   const handleTryCheckoutAgain = () => {
     setOrderResult(null);
     clearPaymentReturnQuery();
-    const qty = checkoutSummary?.quantity ?? Math.max(cartQty, 1);
-    void startCheckout(qty);
+    const lines =
+      checkoutSummary?.lines?.length
+        ? checkoutSummary.lines
+        : cartLines.length > 0
+          ? cartLines
+          : [makeLine(1)];
+    void startCheckout(lines);
   };
 
   const showOrderResult = Boolean(orderResult);
@@ -289,10 +338,15 @@ export function StorefrontExperience({
       orderResult?.merchantOrderID ||
       checkoutSummary?.orderId ||
       "SHOP-DEMO",
-    quantity: checkoutSummary?.quantity ?? Math.max(cartQty, 1),
-    size: checkoutSummary?.size ?? selectedSize,
-    colorLabel: checkoutSummary?.colorLabel ?? colorLabel,
-    total: checkoutSummary?.total ?? (cartQty > 0 ? cartTotal : product.price),
+    lines:
+      checkoutSummary?.lines?.length
+        ? checkoutSummary.lines
+        : cartLines.length > 0
+          ? cartLines
+          : [makeLine(1)],
+    total:
+      checkoutSummary?.total ??
+      (cartQty > 0 ? cartTotal : product.price),
     currency,
   };
 
@@ -557,12 +611,10 @@ export function StorefrontExperience({
         open={bagOpen}
         onClose={() => setBagOpen(false)}
         product={product}
-        quantity={cartQty}
+        lines={cartLines}
         currency={currency}
-        size={selectedSize}
-        colorLabel={colorLabel}
-        onIncrement={() => setCartQty((q) => q + 1)}
-        onDecrement={() => setCartQty((q) => Math.max(0, q - 1))}
+        onIncrement={handleIncrementLine}
+        onDecrement={handleDecrementLine}
         onCheckout={handlePayFromCart}
         themeVars={cssVars}
       />
@@ -572,10 +624,17 @@ export function StorefrontExperience({
         onClose={() => setCheckoutOpen(false)}
         product={product}
         currency={currency}
-        quantity={Math.max(cartQty, 1)}
-        size={selectedSize}
-        colorLabel={colorLabel}
-        total={cartQty > 0 ? cartTotal : product.price}
+        lines={
+          checkoutSummary?.lines?.length
+            ? checkoutSummary.lines
+            : cartLines.length > 0
+              ? cartLines
+              : [makeLine(1)]
+        }
+        total={
+          checkoutSummary?.total ??
+          (cartQty > 0 ? cartTotal : product.price)
+        }
         isCreatingSession={isCreatingSession}
         sessionError={sessionError}
         dropinConfig={dropinConfig}

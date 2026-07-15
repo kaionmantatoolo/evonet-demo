@@ -13,17 +13,20 @@ import {
 import CloseIcon from "@mui/icons-material/Close";
 import type { DemoProduct } from "./demoProduct";
 import type { StorefrontCssVars } from "../../lib/storefrontSnapshot";
+import {
+  cartLineCount,
+  formatCartLineLabel,
+  type StorefrontCartLine,
+} from "./cartTypes";
 
 interface StorefrontBagDrawerProps {
   open: boolean;
   onClose: () => void;
   product: DemoProduct;
-  quantity: number;
+  lines: StorefrontCartLine[];
   currency: string;
-  size: string;
-  colorLabel: string;
-  onIncrement: () => void;
-  onDecrement: () => void;
+  onIncrement: (lineId: string) => void;
+  onDecrement: (lineId: string) => void;
   onCheckout: () => void;
   themeVars?: StorefrontCssVars;
 }
@@ -32,16 +35,15 @@ export function StorefrontBagDrawer({
   open,
   onClose,
   product,
-  quantity,
+  lines,
   currency,
-  size,
-  colorLabel,
   onIncrement,
   onDecrement,
   onCheckout,
   themeVars,
 }: StorefrontBagDrawerProps) {
   const thumb = product.images[0];
+  const quantity = cartLineCount(lines);
   const total = product.price * quantity;
   const panelBg = themeVars?.["--shop-bg"] || "#ffffff";
 
@@ -50,7 +52,6 @@ export function StorefrontBagDrawer({
       anchor="right"
       open={open}
       onClose={onClose}
-      // Above storefront fade overlay (modal + 4).
       sx={{ zIndex: (theme) => theme.zIndex.modal + 10 }}
       ModalProps={{
         BackdropProps: {
@@ -109,79 +110,101 @@ export function StorefrontBagDrawer({
           </Stack>
         ) : (
           <>
-            <Box
-              sx={{
-                display: "grid",
-                gridTemplateColumns: "96px 1fr",
-                gap: 1.75,
-              }}
+            <Stack
+              spacing={2}
+              sx={{ flex: 1, overflowY: "auto", pr: 0.5, minHeight: 0 }}
             >
-              <Box
-                sx={{
-                  width: 96,
-                  height: 120,
-                  borderRadius: 2,
-                  overflow: "hidden",
-                  bgcolor: "#ece8e1",
-                }}
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
+              {lines.map((line) => (
                 <Box
-                  component="img"
-                  src={thumb?.src}
-                  alt={thumb?.alt ?? product.name}
-                  sx={{ width: "100%", height: "100%", objectFit: "cover" }}
-                />
-              </Box>
-              <Stack spacing={0.75} justifyContent="space-between">
-                <Box>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-                    {product.name}
-                  </Typography>
-                  <Typography variant="caption" sx={{ color: "var(--shop-muted)" }}>
-                    {colorLabel} · Size {size}
-                  </Typography>
-                  <Typography variant="body2" sx={{ mt: 0.75, fontWeight: 650 }}>
-                    {currency} {product.price.toFixed(2)}
-                  </Typography>
+                  key={line.id}
+                  sx={{
+                    display: "grid",
+                    gridTemplateColumns: "88px 1fr",
+                    gap: 1.5,
+                  }}
+                >
+                  <Box
+                    sx={{
+                      width: 88,
+                      height: 110,
+                      borderRadius: 2,
+                      overflow: "hidden",
+                      bgcolor: "#ece8e1",
+                    }}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <Box
+                      component="img"
+                      src={thumb?.src}
+                      alt={thumb?.alt ?? product.name}
+                      sx={{ width: "100%", height: "100%", objectFit: "cover" }}
+                    />
+                  </Box>
+                  <Stack spacing={0.75} justifyContent="space-between">
+                    <Box>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                        {product.name}
+                      </Typography>
+                      <Typography
+                        variant="caption"
+                        sx={{ color: "var(--shop-muted)" }}
+                      >
+                        {formatCartLineLabel(line)}
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        sx={{ mt: 0.75, fontWeight: 650 }}
+                      >
+                        {currency} {product.price.toFixed(2)}
+                      </Typography>
+                    </Box>
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      <Button
+                        size="small"
+                        onClick={() => onDecrement(line.id)}
+                        aria-label={`Decrease ${formatCartLineLabel(line)}`}
+                        sx={{
+                          minWidth: 36,
+                          border: "1px solid var(--shop-border, #e7e5e4)",
+                          color: "var(--shop-text, #1c1917)",
+                        }}
+                      >
+                        −
+                      </Button>
+                      <Typography
+                        sx={{
+                          minWidth: 24,
+                          textAlign: "center",
+                          fontWeight: 650,
+                        }}
+                      >
+                        {line.quantity}
+                      </Typography>
+                      <Button
+                        size="small"
+                        onClick={() => onIncrement(line.id)}
+                        aria-label={`Increase ${formatCartLineLabel(line)}`}
+                        sx={{
+                          minWidth: 36,
+                          border: "1px solid var(--shop-border, #e7e5e4)",
+                          color: "var(--shop-text, #1c1917)",
+                        }}
+                      >
+                        +
+                      </Button>
+                    </Stack>
+                  </Stack>
                 </Box>
-                <Stack direction="row" spacing={1} alignItems="center">
-                  <Button
-                    size="small"
-                    onClick={onDecrement}
-                    sx={{
-                      minWidth: 36,
-                      border: "1px solid var(--shop-border, #e7e5e4)",
-                      color: "var(--shop-text, #1c1917)",
-                    }}
-                  >
-                    −
-                  </Button>
-                  <Typography sx={{ minWidth: 24, textAlign: "center", fontWeight: 650 }}>
-                    {quantity}
-                  </Typography>
-                  <Button
-                    size="small"
-                    onClick={onIncrement}
-                    sx={{
-                      minWidth: 36,
-                      border: "1px solid var(--shop-border, #e7e5e4)",
-                      color: "var(--shop-text, #1c1917)",
-                    }}
-                  >
-                    +
-                  </Button>
-                </Stack>
-              </Stack>
-            </Box>
-
-            <Box sx={{ flex: 1 }} />
+              ))}
+            </Stack>
 
             <Divider sx={{ borderColor: "var(--shop-border, #e7e5e4)" }} />
 
             <Stack spacing={1}>
               <Stack direction="row" justifyContent="space-between">
-                <Typography sx={{ color: "var(--shop-muted)" }}>Subtotal</Typography>
+                <Typography sx={{ color: "var(--shop-muted)" }}>
+                  Subtotal
+                </Typography>
                 <Typography fontWeight={700}>
                   {currency} {total.toFixed(2)}
                 </Typography>
@@ -208,7 +231,7 @@ export function StorefrontBagDrawer({
                   },
                 }}
               >
-                Checkout with Drop-in
+                Checkout
               </Button>
             </Stack>
           </>
