@@ -17,6 +17,7 @@ import { EvonetDropinHost } from "../EvonetDropinHost";
 import { DemoTransactionWarning } from "../DemoTransactionWarning";
 import type { EvonetDropinConfig, EvonetDropinEvent } from "../../types/evonet";
 import type { DemoProduct } from "./demoProduct";
+import { productThumbForColor } from "./demoProduct";
 import type { StorefrontCssVars } from "../../lib/storefrontSnapshot";
 import { StorefrontDropinLoader } from "./StorefrontDropinLoader";
 import {
@@ -62,7 +63,6 @@ export function StorefrontCheckoutDrawer({
   onEvent,
   themeVars,
 }: StorefrontCheckoutDrawerProps) {
-  const thumb = product.images[0];
   const panelBg = themeVars?.["--shop-bg"] || "#ffffff";
   const dropinPanelRef = useRef<HTMLDivElement>(null);
   const [dropinUiReady, setDropinUiReady] = useState(false);
@@ -190,7 +190,9 @@ export function StorefrontCheckoutDrawer({
           }}
         >
           <Stack spacing={1.25}>
-            {lines.map((line) => (
+            {lines.map((line) => {
+              const thumb = productThumbForColor(product, line.colorId);
+              return (
               <Box
                 key={line.id}
                 sx={{
@@ -232,7 +234,8 @@ export function StorefrontCheckoutDrawer({
                   {currency} {(product.price * line.quantity).toFixed(2)}
                 </Typography>
               </Box>
-            ))}
+            );
+            })}
             <Divider sx={{ borderColor: "var(--shop-border)" }} />
             <Stack direction="row" justifyContent="space-between">
               <Typography variant="body2" sx={{ color: "var(--shop-muted)" }}>

@@ -15,7 +15,7 @@ import {
   Typography,
 } from "@mui/material";
 import ShoppingBagOutlinedIcon from "@mui/icons-material/ShoppingBagOutlined";
-import { DEMO_PRODUCT, type DemoProduct } from "./demoProduct";
+import { DEMO_PRODUCT, type DemoProduct, productImagesForColor } from "./demoProduct";
 import { StorefrontBagDrawer } from "./StorefrontBagDrawer";
 import { StorefrontCheckoutDrawer } from "./StorefrontCheckoutDrawer";
 import {
@@ -531,8 +531,13 @@ export function StorefrontExperience({
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <Box
                 component="img"
-                src={product.images[1]?.src}
-                alt={product.images[1]?.alt ?? ""}
+                src={
+                  productImagesForColor(product, selectedColorId)[1]?.src ??
+                  productImagesForColor(product, selectedColorId)[0]?.src
+                }
+                alt={
+                  productImagesForColor(product, selectedColorId)[1]?.alt ?? ""
+                }
                 sx={{ width: "100%", height: "100%", objectFit: "cover" }}
               />
             </Box>

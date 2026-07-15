@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Box,
   Button,
@@ -10,6 +10,7 @@ import {
   Typography,
 } from "@mui/material";
 import type { DemoProduct } from "./demoProduct";
+import { productImagesForColor } from "./demoProduct";
 import { bagBounce, enterUp } from "./storefrontMotion";
 
 interface StorefrontProductCardProps {
@@ -36,6 +37,13 @@ export function StorefrontProductCard({
   justAdded,
 }: StorefrontProductCardProps) {
   const [activeImage, setActiveImage] = useState(0);
+  const colorImages = productImagesForColor(product, selectedColorId);
+  const selectedColor = product.colors.find((c) => c.id === selectedColorId);
+
+  useEffect(() => {
+    setActiveImage(0);
+  }, [selectedColorId]);
+
   const savings =
     product.compareAtPrice && product.compareAtPrice > product.price
       ? Math.round(
@@ -77,9 +85,9 @@ export function StorefrontProductCard({
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <Box
             component="img"
-            key={product.images[activeImage]?.src}
-            src={product.images[activeImage]?.src}
-            alt={product.images[activeImage]?.alt ?? product.name}
+            key={colorImages[activeImage]?.src}
+            src={colorImages[activeImage]?.src}
+            alt={colorImages[activeImage]?.alt ?? product.name}
             sx={{
               width: "100%",
               height: "100%",
@@ -107,7 +115,7 @@ export function StorefrontProductCard({
         </Box>
 
         <Stack direction="row" spacing={1.25} sx={{ overflowX: "auto", pb: 0.5 }}>
-          {product.images.map((image, index) => {
+          {colorImages.map((image, index) => {
             const selected = index === activeImage;
             return (
               <Box
@@ -429,7 +437,7 @@ export function StorefrontProductCard({
             variant="body2"
             sx={{ fontFamily: "ui-monospace, monospace" }}
           >
-            {product.sku}
+            {selectedColor?.sku ?? product.colors[0]?.sku}
           </Typography>
         </Box>
       </Stack>

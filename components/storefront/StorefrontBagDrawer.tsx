@@ -12,6 +12,7 @@ import {
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import type { DemoProduct } from "./demoProduct";
+import { productThumbForColor } from "./demoProduct";
 import type { StorefrontCssVars } from "../../lib/storefrontSnapshot";
 import {
   cartLineCount,
@@ -42,7 +43,6 @@ export function StorefrontBagDrawer({
   onCheckout,
   themeVars,
 }: StorefrontBagDrawerProps) {
-  const thumb = product.images[0];
   const quantity = cartLineCount(lines);
   const total = product.price * quantity;
   const panelBg = themeVars?.["--shop-bg"] || "#ffffff";
@@ -114,7 +114,9 @@ export function StorefrontBagDrawer({
               spacing={2}
               sx={{ flex: 1, overflowY: "auto", pr: 0.5, minHeight: 0 }}
             >
-              {lines.map((line) => (
+              {lines.map((line) => {
+                const thumb = productThumbForColor(product, line.colorId);
+                return (
                 <Box
                   key={line.id}
                   sx={{
@@ -195,7 +197,8 @@ export function StorefrontBagDrawer({
                     </Stack>
                   </Stack>
                 </Box>
-              ))}
+              );
+              })}
             </Stack>
 
             <Divider sx={{ borderColor: "var(--shop-border, #e7e5e4)" }} />

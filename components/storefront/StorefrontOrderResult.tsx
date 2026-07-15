@@ -14,6 +14,7 @@ import WarningAmberOutlinedIcon from "@mui/icons-material/WarningAmberOutlined";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import type { EvonetReturnParams } from "../../lib/evonetReturnParams";
 import type { DemoProduct } from "./demoProduct";
+import { productThumbForColor } from "./demoProduct";
 import {
   cartLineCount,
   formatCartLineLabel,
@@ -88,7 +89,6 @@ export function StorefrontOrderResult({
 }: StorefrontOrderResultProps) {
   const chrome = statusChrome(result.status);
   const Icon = chrome.Icon;
-  const thumb = product.images[0];
   const isSuccess = result.status === "success";
   const isNegative =
     result.status === "failed" || result.status === "cancelled";
@@ -240,7 +240,9 @@ export function StorefrontOrderResult({
             }}
           >
             <Stack spacing={1.75}>
-              {summary.lines.map((line) => (
+              {summary.lines.map((line) => {
+                const thumb = productThumbForColor(product, line.colorId);
+                return (
                 <Box
                   key={line.id}
                   sx={{
@@ -279,7 +281,8 @@ export function StorefrontOrderResult({
                     </Typography>
                   </Box>
                 </Box>
-              ))}
+              );
+              })}
               <Divider sx={{ borderColor: "var(--shop-border)" }} />
               <Stack direction="row" justifyContent="space-between">
                 <Typography variant="body2" sx={{ color: "var(--shop-muted)" }}>
