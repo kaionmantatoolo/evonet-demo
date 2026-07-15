@@ -706,16 +706,16 @@ function DropinBuilderPage() {
         minHeight: { sm: "100vh" },
       }}
     >
-    <Container
-      maxWidth="xl"
-      sx={{
-        py: { xs: 4, sm: 2 },
-        height: { sm: "100vh" },
-        overflow: { sm: "hidden" },
-        ...builderStageMorphSx(builderWarped),
-      }}
-      suppressHydrationWarning
-    >
+      <Box sx={builderStageMorphSx(builderWarped)}>
+        <Container
+          maxWidth="xl"
+          sx={{
+            py: { xs: 4, sm: 2 },
+            height: { sm: "100vh" },
+            overflow: { sm: "hidden" },
+          }}
+          suppressHydrationWarning
+        >
       <Box
         sx={{
           display: "grid",
@@ -1765,6 +1765,8 @@ function DropinBuilderPage() {
           void handleCreateSession();
         }}
       />
+        </Container>
+      </Box>
 
       <StorefrontMorphOverlay open={storefrontOpen}>
         <Suspense fallback={null}>
@@ -1774,7 +1776,6 @@ function DropinBuilderPage() {
           />
         </Suspense>
       </StorefrontMorphOverlay>
-    </Container>
     </Box>
   );
 }

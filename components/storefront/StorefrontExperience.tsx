@@ -125,7 +125,8 @@ export function StorefrontExperience({
       type: "payment",
       sessionID: sessionID.trim(),
       environment: config.environment,
-      mode: config.mode,
+      // Drawer checkout must stay embedded — fullPage/bottomUp fight the sheet layout.
+      mode: "embedded",
       language: config.locale || "en-US",
       isVerifyPaymentBrand: Boolean(config.verifyPaymentBrand),
       verifyOption: config.verifyPaymentBrand

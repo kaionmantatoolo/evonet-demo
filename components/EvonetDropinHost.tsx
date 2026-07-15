@@ -1,7 +1,7 @@
 "use client";
 
 import { Alert, Box } from "@mui/material";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import type {
   EvonetDropinConfig,
   EvonetDropinEvent,
@@ -190,7 +190,11 @@ export function EvonetDropinHost({
   onEvent,
   onSdkInitApplied,
 }: EvonetDropinHostProps) {
-  const containerIdRef = useRef<string>("evonet-dropin-root");
+  // Unique per host — Builder + storefront checkout can both mount Drop-in;
+  // a shared `#evonet-dropin-root` made the SDK bind to the hidden Builder node.
+  const containerId = `evonet-dropin-${useId().replace(/:/g, "")}`;
+  const containerIdRef = useRef(containerId);
+  containerIdRef.current = containerId;
   const dropInInstanceRef = useRef<unknown>(null);
   const handledVerificationIdsRef = useRef<Set<string>>(new Set());
   const [scriptLoaded, setScriptLoaded] = useState(false);
@@ -739,7 +743,7 @@ export function EvonetDropinHost({
         </Alert>
       )}
       <Box
-        id={containerIdRef.current}
+        id={containerId}
         sx={{
           minHeight: 320,
           width: "100%",
@@ -749,7 +753,7 @@ export function EvonetDropinHost({
         }}
       />
       <style jsx global>{`
-        #evonet-dropin-root iframe {
+        #${containerId} iframe {
           display: block;
           width: 100% !important;
           border: 0 !important;
