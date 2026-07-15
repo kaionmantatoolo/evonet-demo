@@ -45,6 +45,15 @@ import {
   resolveStorefrontUnitPrice,
   writeStorefrontSnapshot,
 } from "../../../lib/storefrontSnapshot";
+import {
+  StorefrontExperience,
+  type StorefrontConfig,
+} from "../../../components/storefront/StorefrontExperience";
+import {
+  StorefrontMorphOverlay,
+  STOREFRONT_MORPH_MS,
+  builderStageMorphSx,
+} from "../../../components/storefront/StorefrontMorphOverlay";
 import type {
   EvonetDropinConfig,
   EvonetDropinEvent,
@@ -208,6 +217,8 @@ function DropinBuilderPage() {
   const [returnDialogDismissed, setReturnDialogDismissed] = useState(false);
   const showReturnDialog =
     Boolean(paymentReturnPrompt) && !returnDialogDismissed;
+  const [storefrontOpen, setStorefrontOpen] = useState(false);
+  const [builderWarped, setBuilderWarped] = useState(false);
 
   useEffect(() => {
     if (paymentReturnFromUrl) {
@@ -284,6 +295,15 @@ function DropinBuilderPage() {
 
   const [copyBuilderHint, setCopyBuilderHint] = useState<string | null>(null);
   const [copySdkHint, setCopySdkHint] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!builderWarped) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, [builderWarped]);
 
   useEffect(() => {
     setMountedAt(new Date().toISOString());
@@ -550,8 +570,8 @@ function DropinBuilderPage() {
     router.replace(qs ? `${pathname}?${qs}` : pathname);
   }, [pathname, router, searchParams]);
 
-  const openAsStorefront = useCallback(() => {
-    writeStorefrontSnapshot({
+  const storefrontConfig: StorefrontConfig = useMemo(
+    () => ({
       appearance: sdkAppearance,
       environment,
       locale: locale.trim() || "en-US",
@@ -561,20 +581,31 @@ function DropinBuilderPage() {
       uiOption: sdkUiOption,
       verifyPaymentBrand,
       maxWaitTime: maxWaitTime.trim() || "10",
-    });
-    router.push("/evonet/storefront");
-  }, [
-    environment,
-    locale,
-    maxWaitTime,
-    mode,
-    orderAmount,
-    orderCurrency,
-    router,
-    sdkAppearance,
-    sdkUiOption,
-    verifyPaymentBrand,
-  ]);
+    }),
+    [
+      environment,
+      locale,
+      maxWaitTime,
+      mode,
+      orderAmount,
+      orderCurrency,
+      sdkAppearance,
+      sdkUiOption,
+      verifyPaymentBrand,
+    ]
+  );
+
+  const openAsStorefront = useCallback(() => {
+    // Keep a snapshot for the optional /evonet/storefront route; overlay keeps Builder state alive.
+    writeStorefrontSnapshot(storefrontConfig);
+    setBuilderWarped(true);
+    setStorefrontOpen(true);
+  }, [storefrontConfig]);
+
+  const closeStorefront = useCallback(() => {
+    setStorefrontOpen(false);
+    window.setTimeout(() => setBuilderWarped(false), STOREFRONT_MORPH_MS);
+  }, []);
 
   const handleCreateSession = async () => {
     setSessionError(null);
@@ -668,12 +699,20 @@ function DropinBuilderPage() {
   }, []);
 
   return (
+    <Box
+      sx={{
+        perspective: { xs: "1000px", md: "1800px" },
+        perspectiveOrigin: "50% 40%",
+        minHeight: { sm: "100vh" },
+      }}
+    >
     <Container
       maxWidth="xl"
       sx={{
         py: { xs: 4, sm: 2 },
         height: { sm: "100vh" },
         overflow: { sm: "hidden" },
+        ...builderStageMorphSx(builderWarped),
       }}
       suppressHydrationWarning
     >
@@ -1726,7 +1765,17 @@ function DropinBuilderPage() {
           void handleCreateSession();
         }}
       />
+
+      <StorefrontMorphOverlay open={storefrontOpen}>
+        <Suspense fallback={null}>
+          <StorefrontExperience
+            config={storefrontConfig}
+            onBackToBuilder={closeStorefront}
+          />
+        </Suspense>
+      </StorefrontMorphOverlay>
     </Container>
+    </Box>
   );
 }
 

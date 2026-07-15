@@ -1,5 +1,6 @@
 "use client";
 
+import type { CSSProperties } from "react";
 import {
   Box,
   Button,
@@ -11,6 +12,7 @@ import {
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import type { DemoProduct } from "./demoProduct";
+import type { StorefrontCssVars } from "../../lib/storefrontSnapshot";
 
 interface StorefrontBagDrawerProps {
   open: boolean;
@@ -23,6 +25,7 @@ interface StorefrontBagDrawerProps {
   onIncrement: () => void;
   onDecrement: () => void;
   onCheckout: () => void;
+  themeVars?: StorefrontCssVars;
 }
 
 export function StorefrontBagDrawer({
@@ -36,9 +39,11 @@ export function StorefrontBagDrawer({
   onIncrement,
   onDecrement,
   onCheckout,
+  themeVars,
 }: StorefrontBagDrawerProps) {
   const thumb = product.images[0];
   const total = product.price * quantity;
+  const panelBg = themeVars?.["--shop-bg"] || "#ffffff";
 
   return (
     <Drawer
@@ -53,15 +58,19 @@ export function StorefrontBagDrawer({
         },
       }}
       PaperProps={{
+        style: {
+          ...(themeVars as CSSProperties | undefined),
+          backgroundColor: panelBg,
+          backgroundImage: "none",
+        },
         sx: {
           width: { xs: "100%", sm: 400 },
-          bgcolor: "var(--shop-bg)",
-          color: "var(--shop-text)",
-          boxShadow: "-12px 0 40px rgba(28, 25, 23, 0.1)",
+          color: "var(--shop-text, #1c1917)",
+          boxShadow: "-12px 0 40px rgba(28, 25, 23, 0.12)",
         },
       }}
     >
-      <Stack spacing={2.5} sx={{ p: 2.5, height: "100%" }}>
+      <Stack spacing={2.5} sx={{ p: 2.5, height: "100%", bgcolor: panelBg }}>
         <Stack direction="row" alignItems="center" justifyContent="space-between">
           <Typography
             sx={{
@@ -89,8 +98,8 @@ export function StorefrontBagDrawer({
               sx={{
                 alignSelf: "flex-start",
                 textTransform: "none",
-                borderColor: "var(--shop-border)",
-                color: "var(--shop-text)",
+                borderColor: "var(--shop-border, #e7e5e4)",
+                color: "var(--shop-text, #1c1917)",
               }}
             >
               Keep browsing
@@ -140,8 +149,8 @@ export function StorefrontBagDrawer({
                     onClick={onDecrement}
                     sx={{
                       minWidth: 36,
-                      border: "1px solid var(--shop-border)",
-                      color: "var(--shop-text)",
+                      border: "1px solid var(--shop-border, #e7e5e4)",
+                      color: "var(--shop-text, #1c1917)",
                     }}
                   >
                     −
@@ -154,8 +163,8 @@ export function StorefrontBagDrawer({
                     onClick={onIncrement}
                     sx={{
                       minWidth: 36,
-                      border: "1px solid var(--shop-border)",
-                      color: "var(--shop-text)",
+                      border: "1px solid var(--shop-border, #e7e5e4)",
+                      color: "var(--shop-text, #1c1917)",
                     }}
                   >
                     +
@@ -166,7 +175,7 @@ export function StorefrontBagDrawer({
 
             <Box sx={{ flex: 1 }} />
 
-            <Divider sx={{ borderColor: "var(--shop-border)" }} />
+            <Divider sx={{ borderColor: "var(--shop-border, #e7e5e4)" }} />
 
             <Stack spacing={1}>
               <Stack direction="row" justifyContent="space-between">
@@ -189,10 +198,10 @@ export function StorefrontBagDrawer({
                   textTransform: "none",
                   fontWeight: 650,
                   borderRadius: 2,
-                  bgcolor: "var(--shop-action)",
-                  color: "var(--shop-action-text)",
+                  bgcolor: "var(--shop-action, #1c1917)",
+                  color: "var(--shop-action-text, #ffffff)",
                   "&:hover": {
-                    bgcolor: "var(--shop-action)",
+                    bgcolor: "var(--shop-action, #1c1917)",
                     filter: "brightness(1.05)",
                   },
                 }}

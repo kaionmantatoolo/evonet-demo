@@ -1,5 +1,6 @@
 "use client";
 
+import type { CSSProperties } from "react";
 import {
   Alert,
   Box,
@@ -15,6 +16,7 @@ import { EvonetDropinHost } from "../EvonetDropinHost";
 import { DemoTransactionWarning } from "../DemoTransactionWarning";
 import type { EvonetDropinConfig, EvonetDropinEvent } from "../../types/evonet";
 import type { DemoProduct } from "./demoProduct";
+import type { StorefrontCssVars } from "../../lib/storefrontSnapshot";
 
 interface StorefrontCheckoutDrawerProps {
   open: boolean;
@@ -30,6 +32,8 @@ interface StorefrontCheckoutDrawerProps {
   dropinConfig: EvonetDropinConfig | null;
   sdkInitGeneration: number;
   onEvent: (event: EvonetDropinEvent) => void;
+  /** CSS vars must be set on the portal Paper — Drawer leaves the themed page tree. */
+  themeVars?: StorefrontCssVars;
 }
 
 export function StorefrontCheckoutDrawer({
@@ -46,8 +50,10 @@ export function StorefrontCheckoutDrawer({
   dropinConfig,
   sdkInitGeneration,
   onEvent,
+  themeVars,
 }: StorefrontCheckoutDrawerProps) {
   const thumb = product.images[0];
+  const panelBg = themeVars?.["--shop-bg"] || "#ffffff";
 
   return (
     <Drawer
@@ -63,17 +69,19 @@ export function StorefrontCheckoutDrawer({
         },
       }}
       PaperProps={{
+        style: {
+          ...(themeVars as CSSProperties | undefined),
+          backgroundColor: panelBg,
+          backgroundImage: "none",
+        },
         sx: {
           width: { xs: "100%", sm: 460, md: 500 },
-          bgcolor: "var(--shop-bg)",
-          color: "var(--shop-text)",
-          boxShadow: "-12px 0 40px rgba(28, 25, 23, 0.1)",
-          backgroundImage:
-            "linear-gradient(180deg, color-mix(in srgb, var(--shop-primary) 4%, var(--shop-bg)), var(--shop-bg) 28%)",
+          color: "var(--shop-text, #1c1917)",
+          boxShadow: "-12px 0 40px rgba(28, 25, 23, 0.12)",
         },
       }}
     >
-      <Stack spacing={2} sx={{ p: 2.5, height: "100%" }}>
+      <Stack spacing={2} sx={{ p: 2.5, height: "100%", bgcolor: panelBg }}>
         <Stack direction="row" alignItems="center" justifyContent="space-between">
           <Box>
             <Typography
