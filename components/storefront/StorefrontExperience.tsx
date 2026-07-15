@@ -320,7 +320,6 @@ export function StorefrontExperience({
           onTryAgain={
             orderResult.status === "success" ? undefined : handleTryCheckoutAgain
           }
-          onBackToBuilder={onBackToBuilder ?? handleBack}
         />
       ) : (
         <Box key={shopViewKey} sx={enterUp(0, 420)}>

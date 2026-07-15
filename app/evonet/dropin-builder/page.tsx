@@ -748,15 +748,6 @@ function DropinBuilderPage() {
                   Configure Evonet Drop-in SDK options with a guided interface,
                   preview the result instantly, and copy JSON in one click.
                 </Typography>
-                <Box>
-                  <Button
-                    variant="contained"
-                    onClick={openAsStorefront}
-                    sx={{ textTransform: "none", fontWeight: 600 }}
-                  >
-                    Open as storefront
-                  </Button>
-                </Box>
               </Stack>
             </Paper>
 

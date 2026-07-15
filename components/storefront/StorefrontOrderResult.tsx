@@ -37,7 +37,6 @@ interface StorefrontOrderResultProps {
   result: EvonetReturnParams;
   onContinueShopping: () => void;
   onTryAgain?: () => void;
-  onBackToBuilder?: () => void;
 }
 
 function statusChrome(status: EvonetReturnParams["status"]) {
@@ -48,7 +47,7 @@ function statusChrome(status: EvonetReturnParams["status"]) {
         tone: "var(--shop-action, #1c1917)",
         eyebrow: "Order confirmed",
         title: "Thank you — your order is placed",
-        body: "We’ve emailed a receipt and started packing. You can keep exploring the demo or jump back to Drop-in Builder.",
+        body: "We’ve emailed a receipt and started packing. You’ll get tracking updates as soon as it ships.",
       };
     case "failed":
       return {
@@ -72,7 +71,7 @@ function statusChrome(status: EvonetReturnParams["status"]) {
         tone: "#0369a1",
         eyebrow: "Payment pending",
         title: "We’re confirming your payment",
-        body: "This can take a moment for some wallets. Refresh status from the return details below if needed.",
+        body: "This can take a moment for some payment methods. Hang tight — we’ll update this page when it’s ready.",
       };
   }
 }
@@ -83,7 +82,6 @@ export function StorefrontOrderResult({
   result,
   onContinueShopping,
   onTryAgain,
-  onBackToBuilder,
 }: StorefrontOrderResultProps) {
   const chrome = statusChrome(result.status);
   const Icon = chrome.Icon;
@@ -93,25 +91,15 @@ export function StorefrontOrderResult({
     result.status === "failed" || result.status === "cancelled";
 
   const detailRows: { label: string; value: string }[] = [
-    { label: "Order", value: summary.orderId },
+    { label: "Order number", value: summary.orderId },
   ];
-  if (result.merchantOrderID) {
-    detailRows.push({ label: "Merchant order", value: result.merchantOrderID });
+  const paymentRef =
+    result.merchantTransID || result.merchantOrderID || null;
+  if (paymentRef) {
+    detailRows.push({ label: "Payment reference", value: paymentRef });
   }
-  if (result.merchantTransID) {
-    detailRows.push({ label: "Transaction", value: result.merchantTransID });
-  }
-  if (result.sessionID) {
-    detailRows.push({ label: "Session", value: result.sessionID });
-  }
-  if (result.result) {
-    detailRows.push({ label: "Result", value: result.result });
-  }
-  if (result.code) {
-    detailRows.push({ label: "Code", value: result.code });
-  }
-  if (result.message) {
-    detailRows.push({ label: "Message", value: result.message });
+  if (result.message && !isSuccess) {
+    detailRows.push({ label: "Note", value: result.message });
   }
 
   return (
@@ -151,7 +139,7 @@ export function StorefrontOrderResult({
                 textTransform: "uppercase",
               }}
             >
-              Checkout
+              Order status
             </Typography>
           </Stack>
         </Container>
@@ -306,7 +294,7 @@ export function StorefrontOrderResult({
               variant="overline"
               sx={{ color: "var(--shop-muted)", letterSpacing: 1.2 }}
             >
-              Payment details
+              Order details
             </Typography>
             <Divider sx={{ my: 1.25, borderColor: "var(--shop-border)" }} />
             <Box
@@ -314,7 +302,7 @@ export function StorefrontOrderResult({
               sx={{
                 m: 0,
                 display: "grid",
-                gridTemplateColumns: "120px 1fr",
+                gridTemplateColumns: "140px 1fr",
                 gap: 1,
               }}
             >
@@ -340,20 +328,6 @@ export function StorefrontOrderResult({
                   </Typography>
                 </Box>
               ))}
-              <Box sx={{ display: "contents" }}>
-                <Typography
-                  component="dt"
-                  variant="caption"
-                  sx={{ color: "var(--shop-muted)" }}
-                >
-                  Source
-                </Typography>
-                <Typography component="dd" variant="caption" sx={{ m: 0 }}>
-                  {result.source === "sdk_event"
-                    ? "Drop-in SDK callback"
-                    : "Evonet returnURL"}
-                </Typography>
-              </Box>
             </Box>
           </Box>
 
@@ -425,20 +399,6 @@ export function StorefrontOrderResult({
                 </Button>
               </>
             )}
-            {onBackToBuilder ? (
-              <Button
-                fullWidth
-                variant="text"
-                onClick={onBackToBuilder}
-                sx={{
-                  textTransform: "none",
-                  color: "var(--shop-muted)",
-                  fontWeight: 500,
-                }}
-              >
-                Back to Builder
-              </Button>
-            ) : null}
           </Stack>
         </Stack>
       </Container>
