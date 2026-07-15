@@ -1,6 +1,7 @@
 "use client";
 
 import type { CSSProperties } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Alert,
   Box,
@@ -17,6 +18,7 @@ import { DemoTransactionWarning } from "../DemoTransactionWarning";
 import type { EvonetDropinConfig, EvonetDropinEvent } from "../../types/evonet";
 import type { DemoProduct } from "./demoProduct";
 import type { StorefrontCssVars } from "../../lib/storefrontSnapshot";
+import { StorefrontDropinLoader } from "./StorefrontDropinLoader";
 
 interface StorefrontCheckoutDrawerProps {
   open: boolean;
@@ -34,6 +36,14 @@ interface StorefrontCheckoutDrawerProps {
   onEvent: (event: EvonetDropinEvent) => void;
   /** CSS vars must be set on the portal Paper — Drawer leaves the themed page tree. */
   themeVars?: StorefrontCssVars;
+}
+
+function panelHasDropinUi(root: HTMLElement): boolean {
+  const mount = root.querySelector<HTMLElement>('[id^="evonet-dropin"]');
+  if (mount && mount.childElementCount > 0) return true;
+  if (root.querySelector("iframe")) return true;
+  if (root.querySelector("cil-dropin-components, [class*='dropin']")) return true;
+  return false;
 }
 
 export function StorefrontCheckoutDrawer({
@@ -54,6 +64,72 @@ export function StorefrontCheckoutDrawer({
 }: StorefrontCheckoutDrawerProps) {
   const thumb = product.images[0];
   const panelBg = themeVars?.["--shop-bg"] || "#ffffff";
+  const dropinPanelRef = useRef<HTMLDivElement>(null);
+  const [dropinUiReady, setDropinUiReady] = useState(false);
+  const [sdkConstructed, setSdkConstructed] = useState(false);
+
+  useEffect(() => {
+    if (!open) {
+      setDropinUiReady(false);
+      setSdkConstructed(false);
+      return;
+    }
+    setDropinUiReady(false);
+    setSdkConstructed(false);
+  }, [open, sdkInitGeneration, isCreatingSession]);
+
+  useEffect(() => {
+    if (!open || isCreatingSession || !dropinConfig || dropinUiReady) {
+      return;
+    }
+
+    const root = dropinPanelRef.current;
+    if (!root) return;
+
+    const markReady = () => setDropinUiReady(true);
+
+    if (panelHasDropinUi(root)) {
+      markReady();
+      return;
+    }
+
+    const observer = new MutationObserver(() => {
+      if (panelHasDropinUi(root)) {
+        observer.disconnect();
+        // Let paint settle so the loader doesn't vanish on an empty frame.
+        window.requestAnimationFrame(() => {
+          window.setTimeout(markReady, 120);
+        });
+      }
+    });
+    observer.observe(root, { childList: true, subtree: true });
+
+    // After SDK construct, give UI a beat even if the observer misses custom elements.
+    let constructFallback: number | undefined;
+    if (sdkConstructed) {
+      constructFallback = window.setTimeout(markReady, 1800);
+    }
+
+    const hardFallback = window.setTimeout(markReady, 8000);
+
+    return () => {
+      observer.disconnect();
+      if (constructFallback) window.clearTimeout(constructFallback);
+      window.clearTimeout(hardFallback);
+    };
+  }, [
+    open,
+    isCreatingSession,
+    dropinConfig,
+    sdkInitGeneration,
+    sdkConstructed,
+    dropinUiReady,
+  ]);
+
+  const showLoader =
+    !sessionError &&
+    (isCreatingSession ||
+      Boolean(dropinConfig && sdkInitGeneration > 0 && !dropinUiReady));
 
   return (
     <Drawer
@@ -154,36 +230,48 @@ export function StorefrontCheckoutDrawer({
           </Alert>
         ) : null}
 
-        {isCreatingSession ? (
-          <Alert severity="info" variant="outlined">
-            Preparing secure payment session…
-          </Alert>
-        ) : null}
-
         <Divider sx={{ borderColor: "var(--shop-border)" }} />
 
-        {dropinConfig && sdkInitGeneration > 0 ? (
-          <Box
-            sx={{
-              flex: 1,
-              minHeight: 380,
-              border: "1px solid var(--shop-border)",
-              borderRadius: 2,
-              overflow: "auto",
-              bgcolor: "#fff",
-            }}
-          >
-            <EvonetDropinHost
-              config={dropinConfig}
-              initGeneration={sdkInitGeneration}
-              onEvent={onEvent}
-            />
-          </Box>
-        ) : !isCreatingSession && !sessionError ? (
-          <Typography variant="body2" sx={{ color: "var(--shop-muted)" }}>
-            Buy now or checkout from your bag to load Drop-in here.
-          </Typography>
-        ) : null}
+        <Box
+          ref={dropinPanelRef}
+          sx={{
+            position: "relative",
+            flex: 1,
+            minHeight: 380,
+            border: "1px solid var(--shop-border)",
+            borderRadius: 2,
+            overflow: "hidden",
+            bgcolor: "#fff",
+          }}
+        >
+          {showLoader ? (
+            <StorefrontDropinLoader isCreatingSession={isCreatingSession} />
+          ) : null}
+
+          {dropinConfig && sdkInitGeneration > 0 ? (
+            <Box
+              sx={{
+                opacity: dropinUiReady ? 1 : 0,
+                transition: "opacity 280ms ease",
+                minHeight: 380,
+                pointerEvents: dropinUiReady ? "auto" : "none",
+              }}
+            >
+              <EvonetDropinHost
+                config={dropinConfig}
+                initGeneration={sdkInitGeneration}
+                onEvent={onEvent}
+                onSdkInitApplied={() => setSdkConstructed(true)}
+              />
+            </Box>
+          ) : !isCreatingSession && !sessionError ? (
+            <Box sx={{ p: 2.5 }}>
+              <Typography variant="body2" sx={{ color: "var(--shop-muted)" }}>
+                Buy now or checkout from your bag to load Drop-in here.
+              </Typography>
+            </Box>
+          ) : null}
+        </Box>
 
         <Button
           onClick={onClose}
