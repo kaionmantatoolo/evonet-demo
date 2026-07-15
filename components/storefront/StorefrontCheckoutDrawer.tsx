@@ -244,15 +244,29 @@ export function StorefrontCheckoutDrawer({
             bgcolor: "#fff",
           }}
         >
-          {showLoader ? (
-            <StorefrontDropinLoader isCreatingSession={isCreatingSession} />
+          {(isCreatingSession ||
+            (dropinConfig && sdkInitGeneration > 0) ||
+            showLoader) &&
+          !sessionError ? (
+            <Box
+              sx={{
+                position: "absolute",
+                inset: 0,
+                zIndex: 2,
+                opacity: showLoader ? 1 : 0,
+                transition: "opacity 360ms ease",
+                pointerEvents: showLoader ? "auto" : "none",
+              }}
+            >
+              <StorefrontDropinLoader isCreatingSession={isCreatingSession} />
+            </Box>
           ) : null}
 
           {dropinConfig && sdkInitGeneration > 0 ? (
             <Box
               sx={{
                 opacity: dropinUiReady ? 1 : 0,
-                transition: "opacity 280ms ease",
+                transition: "opacity 420ms ease",
                 minHeight: 380,
                 pointerEvents: dropinUiReady ? "auto" : "none",
               }}

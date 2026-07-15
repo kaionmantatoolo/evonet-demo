@@ -23,6 +23,7 @@ import {
   type StorefrontCheckoutSummary,
 } from "./StorefrontOrderResult";
 import { StorefrontProductCard } from "./StorefrontProductCard";
+import { bagBounce, enterUp } from "./storefrontMotion";
 import {
   parseEvonetReturnParams,
   parseEvonetSdkPaymentEvent,
@@ -90,6 +91,7 @@ export function StorefrontExperience({
   const [orderResult, setOrderResult] = useState<EvonetReturnParams | null>(
     null
   );
+  const [shopViewKey, setShopViewKey] = useState(0);
 
   const paymentReturnFromUrl = useMemo(
     () => parseEvonetReturnParams(searchParams),
@@ -269,6 +271,7 @@ export function StorefrontExperience({
   const handleContinueShopping = () => {
     setOrderResult(null);
     setCheckoutSummary(null);
+    setShopViewKey((k) => k + 1);
     clearPaymentReturnQuery();
   };
 
@@ -309,6 +312,7 @@ export function StorefrontExperience({
     >
       {showOrderResult && orderResult ? (
         <StorefrontOrderResult
+          key={`${orderResult.status}-${orderResult.merchantTransID ?? orderResult.sessionID ?? "result"}`}
           product={product}
           summary={checkoutSummary ?? fallbackSummary}
           result={orderResult}
@@ -319,7 +323,7 @@ export function StorefrontExperience({
           onBackToBuilder={onBackToBuilder ?? handleBack}
         />
       ) : (
-        <>
+        <Box key={shopViewKey} sx={enterUp(0, 420)}>
       <Box
         component="header"
         sx={{
@@ -330,6 +334,7 @@ export function StorefrontExperience({
             "1px solid color-mix(in srgb, var(--shop-border) 80%, transparent)",
           bgcolor: "color-mix(in srgb, var(--shop-bg) 92%, #ffffff)",
           backdropFilter: "blur(14px)",
+          ...enterUp(40, 500),
         }}
       >
         <Container maxWidth="lg" sx={{ py: 1.6 }}>
@@ -377,14 +382,23 @@ export function StorefrontExperience({
               <IconButton
                 aria-label="Open bag"
                 onClick={() => setBagOpen(true)}
-                sx={{ color: "var(--shop-text)" }}
+                sx={{
+                  color: "var(--shop-text)",
+                  transition: "transform 180ms ease",
+                  "&:hover": { transform: "scale(1.06)" },
+                }}
               >
                 <Badge
+                  key={cartQty}
                   badgeContent={cartQty}
                   sx={{
                     "& .MuiBadge-badge": {
                       bgcolor: "var(--shop-action)",
                       color: "var(--shop-action-text)",
+                      animation:
+                        cartQty > 0
+                          ? `${bagBounce} 480ms cubic-bezier(0.22, 1, 0.36, 1)`
+                          : "none",
                     },
                   }}
                 >
@@ -400,6 +414,7 @@ export function StorefrontExperience({
         sx={{
           borderBottom: "1px solid var(--shop-border)",
           bgcolor: "color-mix(in srgb, var(--shop-action) 6%, var(--shop-bg))",
+          ...enterUp(90, 500),
         }}
       >
         <Container maxWidth="lg" sx={{ py: 1 }}>
@@ -439,6 +454,7 @@ export function StorefrontExperience({
           borderTop: "1px solid var(--shop-border)",
           background:
             "linear-gradient(180deg, color-mix(in srgb, var(--shop-primary) 5%, var(--shop-bg)), var(--shop-bg))",
+          ...enterUp(240, 620),
         }}
       >
         <Container maxWidth="lg">
@@ -587,7 +603,7 @@ export function StorefrontExperience({
           </Button>
         }
       />
-        </>
+        </Box>
       )}
     </Box>
   );

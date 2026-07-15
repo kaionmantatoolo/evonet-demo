@@ -3,7 +3,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Box, Portal } from "@mui/material";
 
-const FADE_MS = 320;
+const FADE_MS = 420;
 
 interface StorefrontMorphOverlayProps {
   open: boolean;

@@ -14,6 +14,13 @@ import WarningAmberOutlinedIcon from "@mui/icons-material/WarningAmberOutlined";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import type { EvonetReturnParams } from "../../lib/evonetReturnParams";
 import type { DemoProduct } from "./demoProduct";
+import {
+  enterFade,
+  enterScale,
+  enterUp,
+  ringPulse,
+  softShake,
+} from "./storefrontMotion";
 
 export interface StorefrontCheckoutSummary {
   orderId: string;
@@ -82,6 +89,8 @@ export function StorefrontOrderResult({
   const Icon = chrome.Icon;
   const thumb = product.images[0];
   const isSuccess = result.status === "success";
+  const isNegative =
+    result.status === "failed" || result.status === "cancelled";
 
   const detailRows: { label: string; value: string }[] = [
     { label: "Order", value: summary.orderId },
@@ -112,12 +121,14 @@ export function StorefrontOrderResult({
         bgcolor: "var(--shop-bg, #faf8f5)",
         color: "var(--shop-text, #1c1917)",
         pb: 8,
+        ...enterFade(0, 360),
       }}
     >
       <Box
         sx={{
           borderBottom: "1px solid var(--shop-border, #e7e2d9)",
           bgcolor: "color-mix(in srgb, var(--shop-bg) 92%, #ffffff)",
+          ...enterUp(40, 500),
         }}
       >
         <Container maxWidth="sm" sx={{ py: 1.6 }}>
@@ -134,7 +145,11 @@ export function StorefrontOrderResult({
             </Typography>
             <Typography
               variant="caption"
-              sx={{ color: "var(--shop-muted)", letterSpacing: 1.2, textTransform: "uppercase" }}
+              sx={{
+                color: "var(--shop-muted)",
+                letterSpacing: 1.2,
+                textTransform: "uppercase",
+              }}
             >
               Checkout
             </Typography>
@@ -144,9 +159,57 @@ export function StorefrontOrderResult({
 
       <Container maxWidth="sm" sx={{ pt: { xs: 4, md: 6 } }}>
         <Stack spacing={3.5}>
-          <Box>
-            <Stack direction="row" spacing={1.25} alignItems="center" sx={{ mb: 1.5 }}>
-              <Icon sx={{ fontSize: 28, color: chrome.tone }} />
+          <Box sx={enterUp(90)}>
+            <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mb: 1.75 }}>
+              <Box
+                sx={{
+                  position: "relative",
+                  width: 44,
+                  height: 44,
+                  display: "grid",
+                  placeItems: "center",
+                  ...enterScale(120, 560),
+                }}
+              >
+                {isSuccess ? (
+                  <Box
+                    aria-hidden
+                    sx={{
+                      position: "absolute",
+                      inset: 0,
+                      borderRadius: "50%",
+                      border: "1.5px solid",
+                      borderColor: chrome.tone,
+                      animation: `${ringPulse} 1.1s ease-out 280ms both`,
+                      "@media (prefers-reduced-motion: reduce)": {
+                        animation: "none",
+                        opacity: 0,
+                      },
+                    }}
+                  />
+                ) : null}
+                <Box
+                  sx={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: "50%",
+                    display: "grid",
+                    placeItems: "center",
+                    bgcolor: "color-mix(in srgb, currentColor 10%, transparent)",
+                    color: chrome.tone,
+                    ...(isNegative
+                      ? {
+                          animation: `${softShake} 520ms ease 280ms both`,
+                          "@media (prefers-reduced-motion: reduce)": {
+                            animation: "none",
+                          },
+                        }
+                      : {}),
+                  }}
+                >
+                  <Icon sx={{ fontSize: 26 }} />
+                </Box>
+              </Box>
               <Typography
                 variant="caption"
                 sx={{
@@ -185,6 +248,7 @@ export function StorefrontOrderResult({
               borderRadius: 2.5,
               border: "1px solid var(--shop-border)",
               bgcolor: "var(--shop-surface, #fff)",
+              ...enterUp(180),
             }}
           >
             <Box
@@ -223,7 +287,9 @@ export function StorefrontOrderResult({
                 p: 2,
                 borderRadius: 2.5,
                 bgcolor: "color-mix(in srgb, var(--shop-action) 8%, transparent)",
-                border: "1px solid color-mix(in srgb, var(--shop-action) 22%, transparent)",
+                border:
+                  "1px solid color-mix(in srgb, var(--shop-action) 22%, transparent)",
+                ...enterUp(260),
               }}
             >
               <Typography variant="body2" sx={{ fontWeight: 650, mb: 0.75 }}>
@@ -235,7 +301,7 @@ export function StorefrontOrderResult({
             </Box>
           ) : null}
 
-          <Box>
+          <Box sx={enterUp(isSuccess ? 340 : 260)}>
             <Typography
               variant="overline"
               sx={{ color: "var(--shop-muted)", letterSpacing: 1.2 }}
@@ -264,7 +330,11 @@ export function StorefrontOrderResult({
                   <Typography
                     component="dd"
                     variant="caption"
-                    sx={{ m: 0, fontFamily: "ui-monospace, monospace", wordBreak: "break-all" }}
+                    sx={{
+                      m: 0,
+                      fontFamily: "ui-monospace, monospace",
+                      wordBreak: "break-all",
+                    }}
                   >
                     {row.value}
                   </Typography>
@@ -287,7 +357,11 @@ export function StorefrontOrderResult({
             </Box>
           </Box>
 
-          <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5}>
+          <Stack
+            direction={{ xs: "column", sm: "row" }}
+            spacing={1.5}
+            sx={enterUp(isSuccess ? 480 : 400)}
+          >
             {isSuccess ? (
               <Button
                 fullWidth
@@ -300,8 +374,10 @@ export function StorefrontOrderResult({
                   borderRadius: 2,
                   bgcolor: "var(--shop-action)",
                   color: "var(--shop-action-text)",
+                  transition: "transform 180ms ease, filter 180ms ease",
                   "&:hover": {
                     bgcolor: "color-mix(in srgb, var(--shop-action) 88%, #000)",
+                    transform: "translateY(-1px)",
                   },
                 }}
               >
@@ -321,8 +397,11 @@ export function StorefrontOrderResult({
                       borderRadius: 2,
                       bgcolor: "var(--shop-action)",
                       color: "var(--shop-action-text)",
+                      transition: "transform 180ms ease",
                       "&:hover": {
-                        bgcolor: "color-mix(in srgb, var(--shop-action) 88%, #000)",
+                        bgcolor:
+                          "color-mix(in srgb, var(--shop-action) 88%, #000)",
+                        transform: "translateY(-1px)",
                       },
                     }}
                   >
