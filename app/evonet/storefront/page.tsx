@@ -4,19 +4,19 @@ import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
-  Alert,
   Badge,
   Box,
   Button,
   Container,
   IconButton,
-  Paper,
+  Snackbar,
   Stack,
   Typography,
 } from "@mui/material";
-import ShoppingCartOutlinedIcon from "@mui/icons-material/ShoppingCartOutlined";
+import ShoppingBagOutlinedIcon from "@mui/icons-material/ShoppingBagOutlined";
 import { EvonetPaymentReturnDialog } from "../../../components/EvonetPaymentReturnDialog";
 import { DEMO_PRODUCT } from "../../../components/storefront/demoProduct";
+import { StorefrontBagDrawer } from "../../../components/storefront/StorefrontBagDrawer";
 import { StorefrontCheckoutDrawer } from "../../../components/storefront/StorefrontCheckoutDrawer";
 import { StorefrontProductCard } from "../../../components/storefront/StorefrontProductCard";
 import {
@@ -48,11 +48,18 @@ function StorefrontPage() {
   const [snapshot, setSnapshot] = useState<StorefrontSnapshot | null>(null);
   const [hydrated, setHydrated] = useState(false);
   const [cartQty, setCartQty] = useState(0);
+  const [bagOpen, setBagOpen] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [sessionID, setSessionID] = useState("");
   const [sdkInitGeneration, setSdkInitGeneration] = useState(0);
   const [isCreatingSession, setIsCreatingSession] = useState(false);
   const [sessionError, setSessionError] = useState<string | null>(null);
+  const [selectedSize, setSelectedSize] = useState(DEMO_PRODUCT.sizes[2] ?? "M");
+  const [selectedColorId, setSelectedColorId] = useState(
+    DEMO_PRODUCT.colors[0]?.id ?? "charcoal"
+  );
+  const [justAdded, setJustAdded] = useState(false);
+  const [toastOpen, setToastOpen] = useState(false);
 
   const paymentReturnFromUrl = useMemo(
     () => parseEvonetReturnParams(searchParams),
@@ -83,6 +90,8 @@ function StorefrontPage() {
 
   const currency = snapshot?.currency?.trim() || "HKD";
   const cartTotal = DEMO_PRODUCT.price * Math.max(cartQty, 0);
+  const colorLabel =
+    DEMO_PRODUCT.colors.find((c) => c.id === selectedColorId)?.label ?? "Charcoal";
 
   const dropinConfig: EvonetDropinConfig | null = useMemo(() => {
     if (!snapshot || !sessionID.trim()) return null;
@@ -114,6 +123,7 @@ function StorefrontPage() {
       if (!snapshot) return;
       const qty = Math.max(1, quantity);
       setCartQty((prev) => Math.max(prev, qty));
+      setBagOpen(false);
       setCheckoutOpen(true);
       setSessionError(null);
       setIsCreatingSession(true);
@@ -128,7 +138,7 @@ function StorefrontPage() {
             amount,
             currency,
             orderId: generateOrderId(),
-            description: `${DEMO_PRODUCT.name} × ${qty}`,
+            description: `${DEMO_PRODUCT.name} · ${colorLabel} · ${selectedSize} × ${qty}`,
             environment: snapshot.environment,
             locale: snapshot.locale || "en-US",
           }),
@@ -152,11 +162,14 @@ function StorefrontPage() {
         setIsCreatingSession(false);
       }
     },
-    [currency, snapshot]
+    [colorLabel, currency, selectedSize, snapshot]
   );
 
   const handleAddToCart = () => {
     setCartQty((prev) => prev + 1);
+    setJustAdded(true);
+    setToastOpen(true);
+    window.setTimeout(() => setJustAdded(false), 1600);
   };
 
   const handleBuyNow = () => {
@@ -188,35 +201,59 @@ function StorefrontPage() {
   }, []);
 
   if (!hydrated) {
-    return (
-      <Box sx={{ minHeight: "100vh", bgcolor: "#f8fafc" }} />
-    );
+    return <Box sx={{ minHeight: "100vh", bgcolor: "#f4f1ec" }} />;
   }
 
   if (!snapshot) {
     return (
-      <Box sx={{ minHeight: "100vh", bgcolor: "#f8fafc", py: 8 }}>
-        <Container maxWidth="sm">
-          <Paper sx={{ p: 4, borderRadius: 3 }}>
-            <Stack spacing={2}>
-              <Typography variant="h5" fontWeight={700}>
-                No storefront theme yet
-              </Typography>
-              <Typography color="text.secondary">
-                Open Drop-in Builder, adjust appearance colors, then click{" "}
-                <strong>Open as storefront</strong> to bring the theme here.
-              </Typography>
-              <Button
-                component={Link}
-                href="/evonet/dropin-builder"
-                variant="contained"
-                sx={{ alignSelf: "flex-start", textTransform: "none" }}
-              >
-                Back to Builder
-              </Button>
-            </Stack>
-          </Paper>
-        </Container>
+      <Box
+        sx={{
+          minHeight: "100vh",
+          bgcolor: "#f4f1ec",
+          display: "grid",
+          placeItems: "center",
+          px: 2,
+        }}
+      >
+        <Box
+          sx={{
+            maxWidth: 440,
+            p: 4,
+            borderRadius: 3,
+            bgcolor: "#fff",
+            border: "1px solid #e7e2d9",
+            boxShadow: "0 20px 50px rgba(28, 25, 23, 0.06)",
+          }}
+        >
+          <Typography
+            sx={{
+              fontFamily: "var(--shop-font-display), Georgia, serif",
+              fontSize: "1.75rem",
+              fontWeight: 600,
+              letterSpacing: "-0.03em",
+              mb: 1.25,
+            }}
+          >
+            Open from Builder first
+          </Typography>
+          <Typography sx={{ color: "#78716c", mb: 2.5, lineHeight: 1.6 }}>
+            This storefront picks up appearance colors from Drop-in Builder.
+            Configure your theme, then click <strong>Open as storefront</strong>.
+          </Typography>
+          <Button
+            component={Link}
+            href="/evonet/dropin-builder"
+            variant="contained"
+            sx={{
+              textTransform: "none",
+              fontWeight: 650,
+              bgcolor: "#1c1917",
+              "&:hover": { bgcolor: "#292524" },
+            }}
+          >
+            Back to Builder
+          </Button>
+        </Box>
       </Box>
     );
   }
@@ -226,54 +263,84 @@ function StorefrontPage() {
       component="main"
       sx={{
         minHeight: "100vh",
+        fontFamily: "var(--shop-font-sans), system-ui, sans-serif",
         bgcolor: "var(--shop-bg)",
         color: "var(--shop-text)",
+        backgroundImage:
+          "radial-gradient(ellipse 80% 50% at 50% -10%, color-mix(in srgb, var(--shop-primary) 10%, transparent), transparent 70%)",
         ...cssVars,
       }}
     >
       <Box
         component="header"
         sx={{
-          borderBottom: "1px solid var(--shop-border)",
-          bgcolor: "color-mix(in srgb, var(--shop-bg) 92%, var(--shop-primary))",
           position: "sticky",
           top: 0,
-          zIndex: 10,
-          backdropFilter: "blur(8px)",
+          zIndex: 20,
+          borderBottom: "1px solid color-mix(in srgb, var(--shop-border) 80%, transparent)",
+          bgcolor: "color-mix(in srgb, var(--shop-bg) 86%, transparent)",
+          backdropFilter: "blur(14px)",
         }}
       >
-        <Container maxWidth="lg" sx={{ py: 1.75 }}>
-          <Stack
-            direction="row"
-            alignItems="center"
-            justifyContent="space-between"
-            spacing={2}
-          >
-            <Box>
-              <Typography variant="h6" sx={{ fontWeight: 700, letterSpacing: -0.3 }}>
-                Evonet Demo Store
+        <Container maxWidth="lg" sx={{ py: 1.6 }}>
+          <Stack direction="row" alignItems="center" justifyContent="space-between">
+            <Stack direction="row" spacing={3} alignItems="center">
+              <Typography
+                component={Link}
+                href="/evonet/storefront"
+                sx={{
+                  fontFamily: "var(--shop-font-display)",
+                  fontWeight: 650,
+                  fontSize: "1.2rem",
+                  letterSpacing: "-0.03em",
+                  color: "inherit",
+                  textDecoration: "none",
+                }}
+              >
+                {DEMO_PRODUCT.brand}
               </Typography>
-              <Typography variant="caption" sx={{ color: "var(--shop-muted)" }}>
-                Themed from Drop-in Builder · {snapshot.environment} ·{" "}
-                {snapshot.locale}
+              <Typography
+                variant="caption"
+                sx={{
+                  display: { xs: "none", sm: "block" },
+                  color: "var(--shop-muted)",
+                  letterSpacing: 1.5,
+                  textTransform: "uppercase",
+                }}
+              >
+                New season
               </Typography>
-            </Box>
-            <Stack direction="row" spacing={1} alignItems="center">
+            </Stack>
+
+            <Stack direction="row" spacing={0.5} alignItems="center">
               <Button
                 component={Link}
                 href="/evonet/dropin-builder"
                 size="small"
-                sx={{ textTransform: "none", color: "var(--shop-text)" }}
+                sx={{
+                  textTransform: "none",
+                  color: "var(--shop-muted)",
+                  fontWeight: 500,
+                  display: { xs: "none", sm: "inline-flex" },
+                }}
               >
-                Back to Builder
+                Builder
               </Button>
               <IconButton
-                aria-label="Open cart"
-                onClick={() => setCheckoutOpen(true)}
-                sx={{ color: "var(--shop-action)" }}
+                aria-label="Open bag"
+                onClick={() => setBagOpen(true)}
+                sx={{ color: "var(--shop-text)" }}
               >
-                <Badge badgeContent={cartQty} color="error">
-                  <ShoppingCartOutlinedIcon />
+                <Badge
+                  badgeContent={cartQty}
+                  sx={{
+                    "& .MuiBadge-badge": {
+                      bgcolor: "var(--shop-action)",
+                      color: "var(--shop-action-text)",
+                    },
+                  }}
+                >
+                  <ShoppingBagOutlinedIcon />
                 </Badge>
               </IconButton>
             </Stack>
@@ -281,111 +348,166 @@ function StorefrontPage() {
         </Container>
       </Box>
 
-      <Container maxWidth="lg" sx={{ py: { xs: 3, md: 5 } }}>
-        <Stack spacing={3}>
-          <Box>
-            <Typography
-              variant="h3"
-              sx={{
-                fontWeight: 700,
-                letterSpacing: -0.8,
-                color: "var(--shop-text)",
-                mb: 1,
-              }}
-            >
-              Shop
-            </Typography>
-            <Typography sx={{ color: "var(--shop-muted)", maxWidth: 560 }}>
-              Listing preview wired to your Builder appearance. Add to cart or buy
-              now to create a session and open Drop-in checkout.
-            </Typography>
-          </Box>
+      <Box
+        sx={{
+          borderBottom: "1px solid var(--shop-border)",
+          bgcolor: "color-mix(in srgb, var(--shop-action) 6%, var(--shop-bg))",
+        }}
+      >
+        <Container maxWidth="lg" sx={{ py: 1 }}>
+          <Typography
+            variant="body2"
+            sx={{
+              textAlign: "center",
+              color: "var(--shop-muted)",
+              letterSpacing: 0.2,
+            }}
+          >
+            Complimentary shipping on orders over {currency} 500 · Easy 30-day returns
+          </Typography>
+        </Container>
+      </Box>
 
-          <StorefrontProductCard
-            product={DEMO_PRODUCT}
-            currency={currency}
-            onAddToCart={handleAddToCart}
-            onBuyNow={handleBuyNow}
-          />
-
-          {cartQty > 0 ? (
-            <Paper
-              elevation={0}
-              sx={{
-                p: 2,
-                borderRadius: "var(--shop-radius)",
-                border: "1px solid var(--shop-border)",
-                bgcolor: "var(--shop-surface)",
-              }}
-            >
-              <Stack
-                direction={{ xs: "column", sm: "row" }}
-                spacing={1.5}
-                alignItems={{ sm: "center" }}
-                justifyContent="space-between"
-              >
-                <Box>
-                  <Typography fontWeight={700}>
-                    Cart · {DEMO_PRODUCT.name} × {cartQty}
-                  </Typography>
-                  <Typography variant="body2" sx={{ color: "var(--shop-muted)" }}>
-                    Subtotal {currency} {cartTotal.toFixed(2)}
-                  </Typography>
-                </Box>
-                <Stack direction="row" spacing={1}>
-                  <Button
-                    size="small"
-                    onClick={() => setCartQty((q) => Math.max(0, q - 1))}
-                    sx={{ textTransform: "none", color: "var(--shop-muted)" }}
-                  >
-                    −
-                  </Button>
-                  <Button
-                    size="small"
-                    onClick={() => setCartQty((q) => q + 1)}
-                    sx={{ textTransform: "none", color: "var(--shop-muted)" }}
-                  >
-                    +
-                  </Button>
-                  <Button
-                    variant="contained"
-                    onClick={handlePayFromCart}
-                    sx={{
-                      textTransform: "none",
-                      fontWeight: 600,
-                      bgcolor: "var(--shop-action)",
-                      color: "var(--shop-action-text)",
-                      "&:hover": {
-                        bgcolor: "var(--shop-action)",
-                        filter: "brightness(1.05)",
-                      },
-                    }}
-                  >
-                    Pay with Drop-in
-                  </Button>
-                </Stack>
-              </Stack>
-            </Paper>
-          ) : (
-            <Alert
-              severity="info"
-              variant="outlined"
-              sx={{
-                borderColor: "var(--shop-border)",
-                color: "var(--shop-text)",
-                bgcolor: "transparent",
-              }}
-            >
-              Cart is empty. Use Add to cart or Buy now to start checkout.
-            </Alert>
-          )}
-        </Stack>
+      <Container maxWidth="lg" sx={{ py: { xs: 3.5, md: 6 } }}>
+        <StorefrontProductCard
+          product={DEMO_PRODUCT}
+          currency={currency}
+          selectedSize={selectedSize}
+          selectedColorId={selectedColorId}
+          onSizeChange={setSelectedSize}
+          onColorChange={setSelectedColorId}
+          onAddToCart={handleAddToCart}
+          onBuyNow={handleBuyNow}
+          justAdded={justAdded}
+        />
       </Container>
+
+      <Box
+        component="section"
+        sx={{
+          mt: { xs: 2, md: 4 },
+          py: { xs: 5, md: 7 },
+          borderTop: "1px solid var(--shop-border)",
+          background:
+            "linear-gradient(180deg, color-mix(in srgb, var(--shop-primary) 5%, var(--shop-bg)), var(--shop-bg))",
+        }}
+      >
+        <Container maxWidth="lg">
+          <Box
+            sx={{
+              display: "grid",
+              gap: { xs: 3, md: 5 },
+              gridTemplateColumns: { xs: "1fr", md: "1fr 1.2fr" },
+              alignItems: "center",
+            }}
+          >
+            <Box
+              sx={{
+                borderRadius: 3,
+                overflow: "hidden",
+                aspectRatio: "4 / 5",
+                bgcolor: "#ece8e1",
+                boxShadow: "0 28px 70px rgba(15, 23, 42, 0.1)",
+              }}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <Box
+                component="img"
+                src={DEMO_PRODUCT.images[1]?.src}
+                alt={DEMO_PRODUCT.images[1]?.alt ?? ""}
+                sx={{ width: "100%", height: "100%", objectFit: "cover" }}
+              />
+            </Box>
+            <Box sx={{ maxWidth: 480 }}>
+              <Typography
+                sx={{
+                  fontFamily: "var(--shop-font-display)",
+                  fontSize: { xs: "1.85rem", md: "2.35rem" },
+                  fontWeight: 550,
+                  letterSpacing: "-0.035em",
+                  lineHeight: 1.15,
+                  mb: 2,
+                }}
+              >
+                Built for everyday motion. Styled for a clean checkout.
+              </Typography>
+              <Typography sx={{ color: "var(--shop-muted)", lineHeight: 1.7, mb: 3 }}>
+                This storefront inherits your Drop-in Builder palette—CTAs, accents,
+                and the payment panel all speak the same visual language when you
+                pay with Evonet.
+              </Typography>
+              <Button
+                variant="outlined"
+                onClick={() => setBagOpen(true)}
+                sx={{
+                  textTransform: "none",
+                  fontWeight: 600,
+                  borderColor: "var(--shop-action)",
+                  color: "var(--shop-action)",
+                  borderRadius: 2,
+                  px: 2.5,
+                  py: 1.1,
+                }}
+              >
+                View bag
+              </Button>
+            </Box>
+          </Box>
+        </Container>
+      </Box>
+
+      <Box
+        component="footer"
+        sx={{
+          borderTop: "1px solid var(--shop-border)",
+          py: 3.5,
+          mt: 2,
+        }}
+      >
+        <Container maxWidth="lg">
+          <Stack
+            direction={{ xs: "column", sm: "row" }}
+            justifyContent="space-between"
+            spacing={1.5}
+          >
+            <Typography
+              sx={{
+                fontFamily: "var(--shop-font-display)",
+                fontWeight: 600,
+                letterSpacing: "-0.02em",
+              }}
+            >
+              {DEMO_PRODUCT.brand}
+            </Typography>
+            <Typography variant="caption" sx={{ color: "var(--shop-muted)" }}>
+              Demo storefront · Theme from Builder · {snapshot.environment} ·{" "}
+              {snapshot.locale}
+            </Typography>
+          </Stack>
+        </Container>
+      </Box>
+
+      <StorefrontBagDrawer
+        open={bagOpen}
+        onClose={() => setBagOpen(false)}
+        product={DEMO_PRODUCT}
+        quantity={cartQty}
+        currency={currency}
+        size={selectedSize}
+        colorLabel={colorLabel}
+        onIncrement={() => setCartQty((q) => q + 1)}
+        onDecrement={() => setCartQty((q) => Math.max(0, q - 1))}
+        onCheckout={handlePayFromCart}
+      />
 
       <StorefrontCheckoutDrawer
         open={checkoutOpen}
         onClose={() => setCheckoutOpen(false)}
+        product={DEMO_PRODUCT}
         currency={currency}
+        quantity={Math.max(cartQty, 1)}
+        size={selectedSize}
+        colorLabel={colorLabel}
         total={cartQty > 0 ? cartTotal : DEMO_PRODUCT.price}
         isCreatingSession={isCreatingSession}
         sessionError={sessionError}
@@ -403,10 +525,30 @@ function StorefrontPage() {
           setPaymentReturnPrompt(null);
           clearPaymentReturnQuery();
           setCheckoutOpen(false);
+          setBagOpen(false);
           setSessionID("");
           setSdkInitGeneration(0);
           setCartQty(0);
         }}
+      />
+
+      <Snackbar
+        open={toastOpen}
+        autoHideDuration={2200}
+        onClose={() => setToastOpen(false)}
+        message="Added to bag"
+        action={
+          <Button
+            color="inherit"
+            size="small"
+            onClick={() => {
+              setToastOpen(false);
+              setBagOpen(true);
+            }}
+          >
+            View
+          </Button>
+        }
       />
     </Box>
   );

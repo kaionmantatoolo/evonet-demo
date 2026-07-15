@@ -75,13 +75,13 @@ export function appearanceToStorefrontCssVars(
 
   return {
     "--shop-bg": background,
-    "--shop-surface": background,
+    "--shop-surface": "#ffffff",
     "--shop-primary": primary,
     "--shop-action": action,
     "--shop-action-text": inverse,
-    "--shop-text": primary === action ? "#111827" : primary,
-    "--shop-muted": secondary,
-    "--shop-border": asHex(appearance?.colorBoxStroke, "#e5e7eb"),
+    "--shop-text": primary === action || primary === background ? "#1c1917" : primary,
+    "--shop-muted": secondary === action ? "#78716c" : secondary,
+    "--shop-border": asHex(appearance?.colorBoxStroke, "#e7e5e4"),
     "--shop-radius": radius,
   };
 }
