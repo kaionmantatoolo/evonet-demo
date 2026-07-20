@@ -18,6 +18,7 @@ import {
   MenuItem,
   Paper,
   Select,
+  Snackbar,
   Stack,
   Switch,
   TextField,
@@ -42,6 +43,11 @@ import {
   isEvonetProductionEnvironment,
 } from "../../../lib/evonetEnvironment";
 import {
+  sdkEnvironmentForTarget,
+  targetFromSdkEnvironment,
+  type EvonetTarget,
+} from "../../../lib/evonetTarget";
+import {
   parseEvonetReturnParams,
   parseEvonetSdkPaymentEvent,
   stripEvonetReturnQuery,
@@ -62,7 +68,20 @@ const DEFAULT_SESSION_ID =
   process.env.NEXT_PUBLIC_EVONET_SESSION_ID ?? "REPLACE_WITH_REAL_SESSION_ID";
 const DEFAULT_CURRENCY =
   process.env.NEXT_PUBLIC_EVONET_DEFAULT_CURRENCY ?? "HKD";
-const IS_PROD_ENVIRONMENT = isEvonetProductionEnvironment(DEFAULT_ENVIRONMENT);
+const TARGET_OVERRIDE_STORAGE_KEY = "evonet-demo-target-override";
+const ENV_CHIP_TAP_WINDOW_MS = 2000;
+const ENV_CHIP_TAPS_REQUIRED = 5;
+
+function readStoredTargetOverride(): EvonetTarget | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = sessionStorage.getItem(TARGET_OVERRIDE_STORAGE_KEY);
+    if (raw === "UAT" || raw === "PROD") return raw;
+  } catch {
+    /* ignore */
+  }
+  return null;
+}
 
 function generateOrderId(): string {
   const suffix =
@@ -248,7 +267,7 @@ function EvonetDropinTestPage() {
     `EVT-${Date.now().toString().slice(-6)}`
   );
   const [description, setDescription] = useState<string>(
-    IS_PROD_ENVIRONMENT
+    isEvonetProductionEnvironment(DEFAULT_ENVIRONMENT)
       ? "Production validation transaction"
       : "UAT validation transaction"
   );
@@ -338,6 +357,9 @@ function EvonetDropinTestPage() {
   const [copySdkPayloadHint, setCopySdkPayloadHint] = useState<string | null>(
     null
   );
+  const [targetSwitchHint, setTargetSwitchHint] = useState<string | null>(null);
+  const envChipTapCountRef = useRef(0);
+  const envChipTapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [events, setEvents] = useState<EvonetDropinEvent[]>([]);
   const [userAgent, setUserAgent] = useState<string>("Detecting user agent…");
@@ -626,6 +648,14 @@ function EvonetDropinTestPage() {
     }
   }, []);
 
+  useEffect(() => {
+    return () => {
+      if (envChipTapTimerRef.current) {
+        clearTimeout(envChipTapTimerRef.current);
+      }
+    };
+  }, []);
+
   const clearPaymentReturnQuery = useCallback(() => {
     const next = stripEvonetReturnQuery(
       new URLSearchParams(searchParams.toString())
@@ -634,7 +664,10 @@ function EvonetDropinTestPage() {
     router.replace(qs ? `${pathname}?${qs}` : pathname);
   }, [pathname, router, searchParams]);
 
-  const handleCreateSession = async (options?: { initDropin?: boolean }) => {
+  const handleCreateSession = async (options?: {
+    initDropin?: boolean;
+    environmentOverride?: string;
+  }) => {
     setSessionError(null);
     if (saveCardForNextPurchase && !userInfoReference.trim()) {
       setSessionError(
@@ -654,6 +687,9 @@ function EvonetDropinTestPage() {
       return;
     }
 
+    const envForSession = options?.environmentOverride ?? environment;
+    const targetForSession = targetFromSdkEnvironment(envForSession);
+
     const newOrderId = generateOrderId();
     setOrderId(newOrderId);
 
@@ -669,7 +705,8 @@ function EvonetDropinTestPage() {
           currency,
           orderId: newOrderId,
           description,
-          environment,
+          environment: envForSession,
+          target: targetForSession,
           locale,
           ...(saveCardForNextPurchase
             ? {
@@ -710,7 +747,7 @@ function EvonetDropinTestPage() {
       if (options?.initDropin) {
         prevSdkFingerprintRef.current = buildDropinSdkFingerprint({
           sessionID: sid,
-          environment,
+          environment: envForSession,
           mode,
           locale,
           verifyPaymentBrand,
@@ -732,6 +769,52 @@ function EvonetDropinTestPage() {
     }
   };
 
+  const handleEnvironmentChipTap = () => {
+    if (envChipTapTimerRef.current) {
+      clearTimeout(envChipTapTimerRef.current);
+    }
+    envChipTapCountRef.current += 1;
+    const taps = envChipTapCountRef.current;
+
+    if (taps < ENV_CHIP_TAPS_REQUIRED) {
+      envChipTapTimerRef.current = setTimeout(() => {
+        envChipTapCountRef.current = 0;
+        envChipTapTimerRef.current = null;
+      }, ENV_CHIP_TAP_WINDOW_MS);
+      return;
+    }
+
+    envChipTapCountRef.current = 0;
+    envChipTapTimerRef.current = null;
+
+    const nextTarget: EvonetTarget =
+      targetFromSdkEnvironment(environment) === "PROD" ? "UAT" : "PROD";
+    const nextEnv = sdkEnvironmentForTarget(nextTarget);
+
+    try {
+      sessionStorage.setItem(TARGET_OVERRIDE_STORAGE_KEY, nextTarget);
+    } catch {
+      /* ignore */
+    }
+
+    setEnvironment(nextEnv);
+    setDescription(
+      nextTarget === "PROD"
+        ? "Production validation transaction"
+        : "UAT validation transaction"
+    );
+    setTargetSwitchHint(`Switched to ${nextTarget}`);
+    setSessionId(DEFAULT_SESSION_ID);
+    setSdkInitGeneration(0);
+    setEvents([]);
+    setSessionError(null);
+
+    void handleCreateSession({
+      initDropin: true,
+      environmentOverride: nextEnv,
+    });
+  };
+
   // On first load: create session via interaction API, then initialize Drop-in (host destroys old instance before re-init).
   // Skip when this tab is a wallet returnURL landing (e.g. Alipay/WeChat).
   useEffect(() => {
@@ -745,11 +828,29 @@ function EvonetDropinTestPage() {
     const ac = new AbortController();
     let cancelled = false;
 
+    const storedTarget = readStoredTargetOverride();
+    const envForLoad = storedTarget
+      ? sdkEnvironmentForTarget(storedTarget)
+      : environment;
+    if (storedTarget && envForLoad !== environment) {
+      setEnvironment(envForLoad);
+      setDescription(
+        storedTarget === "PROD"
+          ? "Production validation transaction"
+          : "UAT validation transaction"
+      );
+    }
+
     const snap = {
       amount,
       currency,
-      description,
-      environment,
+      description:
+        storedTarget === "PROD"
+          ? "Production validation transaction"
+          : storedTarget === "UAT"
+            ? "UAT validation transaction"
+            : description,
+      environment: envForLoad,
       locale,
       saveCardForNextPurchase,
       userInfoReference,
@@ -798,6 +899,7 @@ function EvonetDropinTestPage() {
             orderId: newOrderId,
             description: snap.description,
             environment: snap.environment,
+            target: targetFromSdkEnvironment(snap.environment),
             locale: snap.locale,
             ...(snap.saveCardForNextPurchase
               ? {
@@ -915,7 +1017,8 @@ function EvonetDropinTestPage() {
                 size="small"
                 variant="outlined"
                 label={environment}
-                sx={{ fontFamily: "monospace" }}
+                onClick={handleEnvironmentChipTap}
+                sx={{ fontFamily: "monospace", cursor: "pointer" }}
               />
               <Chip
                 size="small"
@@ -1786,7 +1889,7 @@ function EvonetDropinTestPage() {
                   </Typography>
                 </Box>
                 <Box sx={{ px: 2, pt: 2 }}>
-                  <DemoTransactionWarning />
+                  <DemoTransactionWarning environment={environment} />
                 </Box>
                 {binPromoMessage && (
                   <Box sx={{ px: { xs: 2, lg: 3 }, pt: 2 }}>
@@ -1936,6 +2039,14 @@ function EvonetDropinTestPage() {
           clearPaymentReturnQuery();
           void handleCreateSession({ initDropin: true });
         }}
+      />
+
+      <Snackbar
+        open={Boolean(targetSwitchHint)}
+        autoHideDuration={2500}
+        onClose={() => setTargetSwitchHint(null)}
+        message={targetSwitchHint}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
       />
     </Box>
   );

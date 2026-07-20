@@ -1,6 +1,7 @@
 /**
  * UAT / PROD target switch via NEXT_PUBLIC_EVONET_TARGET (single Vercel switch).
  * Dual credential sets: EVONET_UAT_* / EVONET_PROD_*; legacy EVONET_* as fallback.
+ * Session API may pass a runtime override (e.g. Dev Console five-tap toggle).
  */
 
 export type EvonetTarget = "UAT" | "PROD";
@@ -54,6 +55,18 @@ export function parseEvonetTarget(raw: string | undefined | null): EvonetTarget 
   return "PROD";
 }
 
+/** Drop-in SDK environment string for a target. */
+export function sdkEnvironmentForTarget(target: EvonetTarget): string {
+  return DEFAULT_SDK_ENVIRONMENT[target];
+}
+
+/** Map Drop-in environment (e.g. HKG_prod, UAT) to credential target. */
+export function targetFromSdkEnvironment(
+  environment: string | undefined | null
+): EvonetTarget {
+  return parseEvonetTarget(environment);
+}
+
 /**
  * Single switch: NEXT_PUBLIC_EVONET_TARGET=UAT|PROD
  * (readable by client UI and server session API).
@@ -81,9 +94,17 @@ function pickPrefixedOrLegacy(
   return legacy || legacyFallback;
 }
 
-/** Resolve Interaction API credentials and URL for the current target. */
-export function resolveEvonetServerConfig(): EvonetServerConfig {
-  const target = getEvonetTarget();
+/**
+ * Resolve Interaction API credentials and URL.
+ * @param override — runtime target (session body / five-tap); falls back to env.
+ */
+export function resolveEvonetServerConfig(
+  override?: EvonetTarget | string | null
+): EvonetServerConfig {
+  const target =
+    override != null && String(override).trim() !== ""
+      ? parseEvonetTarget(override)
+      : getEvonetTarget();
 
   const interactionUrl =
     pickPrefixedOrLegacy(target, "INTERACTION_URL", "EVONET_INTERACTION_URL") ||

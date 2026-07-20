@@ -115,6 +115,11 @@ export interface EvonetInteractionRequest {
   environment: EvonetEnvironment;
   locale: string;
   /**
+   * Optional runtime credential target override (UAT | PROD).
+   * When omitted, derived from `environment` or NEXT_PUBLIC_EVONET_TARGET.
+   */
+  target?: "UAT" | "PROD" | string;
+  /**
    * When true, interaction payload includes `userInfo.reference` and
    * `paymentMethod.recurringProcessingModel` so Drop-in can offer save-card / token flows.
    */

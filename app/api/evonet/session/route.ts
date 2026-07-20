@@ -18,15 +18,6 @@ const EVONET_WEBHOOK_URL =
   process.env.EVONET_WEBHOOK_URL ?? "http://localhost:3000/api/evonet/webhook";
 
 export async function POST(req: NextRequest) {
-  const {
-    target,
-    interactionUrl,
-    signKey: EVONET_SIGN_KEY,
-    keyId: EVONET_KEY_ID,
-    storeId: EVONET_STORE_ID,
-    signType: EVONET_SIGN_TYPE,
-  } = resolveEvonetServerConfig();
-
   let body: Partial<EvonetInteractionRequest>;
 
   try {
@@ -45,11 +36,23 @@ export async function POST(req: NextRequest) {
     description,
     environment,
     locale,
+    target: bodyTarget,
     saveCardForNextPurchase,
     userInfoReference,
     includeRecurringProcessingModel,
     recurringProcessingModel,
   } = body;
+
+  const {
+    target,
+    interactionUrl,
+    signKey: EVONET_SIGN_KEY,
+    keyId: EVONET_KEY_ID,
+    storeId: EVONET_STORE_ID,
+    signType: EVONET_SIGN_TYPE,
+  } = resolveEvonetServerConfig(
+    bodyTarget ?? (environment != null ? String(environment) : undefined)
+  );
 
   if (
     amount == null ||

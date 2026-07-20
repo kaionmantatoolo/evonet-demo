@@ -1,12 +1,20 @@
 import { Alert, type AlertProps } from "@mui/material";
 import { isEvonetProductionEnvironment } from "../lib/evonetEnvironment";
 
+type DemoTransactionWarningProps = AlertProps & {
+  /** When set, gates visibility from this value instead of build-time env. */
+  environment?: string;
+};
+
 /**
- * Shown only when NEXT_PUBLIC_EVONET_ENVIRONMENT looks like production
- * (e.g. HKG_prod). Hidden on UAT / test environments.
+ * Shown when the active environment looks like production (e.g. HKG_prod).
+ * Pass `environment` for runtime toggles; otherwise uses NEXT_PUBLIC defaults.
  */
-export function DemoTransactionWarning(props: AlertProps) {
-  if (!isEvonetProductionEnvironment()) {
+export function DemoTransactionWarning({
+  environment,
+  ...props
+}: DemoTransactionWarningProps) {
+  if (!isEvonetProductionEnvironment(environment)) {
     return null;
   }
 
