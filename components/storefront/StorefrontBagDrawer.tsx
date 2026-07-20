@@ -9,6 +9,8 @@ import {
   IconButton,
   Stack,
   Typography,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import type { DemoProduct } from "./demoProduct";
@@ -48,16 +50,18 @@ export function StorefrontBagDrawer({
   onCheckout,
   themeVars,
 }: StorefrontBagDrawerProps) {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const quantity = cartLineCount(lines);
   const total = product.price * quantity;
   const panelBg = themeVars?.["--shop-bg"] || "#ffffff";
 
   return (
     <Drawer
-      anchor="right"
+      anchor={isMobile ? "bottom" : "right"}
       open={open}
       onClose={onClose}
-      sx={{ zIndex: (theme) => theme.zIndex.modal + 10 }}
+      sx={{ zIndex: (t) => t.zIndex.modal + 10 }}
       ModalProps={{
         BackdropProps: {
           sx: {
@@ -73,30 +77,62 @@ export function StorefrontBagDrawer({
         },
         sx: {
           width: { xs: "100%", sm: 400 },
+          height: { xs: "auto", sm: "100%" },
+          maxHeight: { xs: "88dvh", sm: "100%" },
+          borderTopLeftRadius: { xs: 18, sm: 0 },
+          borderTopRightRadius: { xs: 18, sm: 0 },
           color: "var(--shop-text, #1c1917)",
-          boxShadow: "-12px 0 40px rgba(28, 25, 23, 0.12)",
+          boxShadow: {
+            xs: "0 -12px 40px rgba(28, 25, 23, 0.14)",
+            sm: "-12px 0 40px rgba(28, 25, 23, 0.12)",
+          },
         },
       }}
     >
-      <Stack spacing={2.5} sx={{ p: 2.5, height: "100%", bgcolor: panelBg }}>
+      <Stack
+        spacing={2}
+        sx={{
+          p: { xs: 2, sm: 2.5 },
+          pb: {
+            xs: "max(16px, env(safe-area-inset-bottom))",
+            sm: 2.5,
+          },
+          height: { sm: "100%" },
+          maxHeight: { xs: "88dvh", sm: "100%" },
+          bgcolor: panelBg,
+        }}
+      >
+        {isMobile ? (
+          <Box sx={{ display: "flex", justifyContent: "center", mt: -0.5 }}>
+            <Box
+              sx={{
+                width: 36,
+                height: 4,
+                borderRadius: 999,
+                bgcolor: "color-mix(in srgb, var(--shop-muted) 35%, transparent)",
+              }}
+            />
+          </Box>
+        ) : null}
+
         <Stack direction="row" alignItems="center" justifyContent="space-between">
           <Typography
             sx={{
               fontFamily: "var(--shop-font-display)",
               fontWeight: 600,
-              fontSize: "1.35rem",
+              fontSize: { xs: "1.2rem", sm: "1.35rem" },
               letterSpacing: "-0.02em",
             }}
           >
             Your bag
           </Typography>
-          <IconButton onClick={onClose} aria-label="Close bag">
+          <IconButton onClick={onClose} aria-label="Close bag" size="small">
             <CloseIcon />
           </IconButton>
         </Stack>
 
         {quantity < 1 ? (
-          <Stack spacing={2} sx={{ flex: 1, justifyContent: "center", py: 6 }}>
+          <Stack spacing={2} sx={{ flex: 1, justifyContent: "center", py: 4 }}>
             <Typography sx={{ color: "var(--shop-muted)" }}>
               Your bag is empty. Add the Studio Hoodie to continue.
             </Typography>
@@ -117,79 +153,83 @@ export function StorefrontBagDrawer({
               {lines.map((line) => {
                 const thumb = productThumbForColor(product, line.colorId);
                 return (
-                <Box
-                  key={line.id}
-                  sx={{
-                    display: "grid",
-                    gridTemplateColumns: "88px 1fr",
-                    gap: 1.5,
-                  }}
-                >
                   <Box
+                    key={line.id}
                     sx={{
-                      width: 88,
-                      height: 110,
-                      borderRadius: 2,
-                      overflow: "hidden",
-                      bgcolor: "#ece8e1",
+                      display: "grid",
+                      gridTemplateColumns: "72px 1fr",
+                      gap: 1.35,
                     }}
                   >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <Box
-                      component="img"
-                      src={thumb?.src}
-                      alt={thumb?.alt ?? product.name}
-                      sx={{ width: "100%", height: "100%", objectFit: "cover" }}
-                    />
-                  </Box>
-                  <Stack spacing={0.75} justifyContent="space-between">
-                    <Box>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-                        {product.name}
-                      </Typography>
-                      <Typography
-                        variant="caption"
-                        sx={{ color: "var(--shop-muted)" }}
-                      >
-                        {formatCartLineLabel(line)}
-                      </Typography>
-                      <Typography
-                        variant="body2"
-                        sx={{ mt: 0.75, fontWeight: 650 }}
-                      >
-                        {currency} {product.price.toFixed(2)}
-                      </Typography>
-                    </Box>
-                    <Stack direction="row" spacing={1} alignItems="center">
-                      <Button
-                        size="small"
-                        onClick={() => onDecrement(line.id)}
-                        aria-label={`Decrease ${formatCartLineLabel(line)}`}
-                        sx={shopQtyButtonSx}
-                      >
-                        −
-                      </Button>
-                      <Typography
+                      sx={{
+                        width: 72,
+                        height: 90,
+                        borderRadius: 2,
+                        overflow: "hidden",
+                        bgcolor: "#ece8e1",
+                      }}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <Box
+                        component="img"
+                        src={thumb?.src}
+                        alt={thumb?.alt ?? product.name}
                         sx={{
-                          minWidth: 24,
-                          textAlign: "center",
-                          fontWeight: 650,
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
                         }}
-                      >
-                        {line.quantity}
-                      </Typography>
-                      <Button
-                        size="small"
-                        onClick={() => onIncrement(line.id)}
-                        aria-label={`Increase ${formatCartLineLabel(line)}`}
-                        sx={shopQtyButtonSx}
-                      >
-                        +
-                      </Button>
+                      />
+                    </Box>
+                    <Stack spacing={0.75} justifyContent="space-between">
+                      <Box>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                          {product.name}
+                        </Typography>
+                        <Typography
+                          variant="caption"
+                          sx={{ color: "var(--shop-muted)" }}
+                        >
+                          {formatCartLineLabel(line)}
+                        </Typography>
+                        <Typography
+                          variant="body2"
+                          sx={{ mt: 0.5, fontWeight: 650 }}
+                        >
+                          {currency} {product.price.toFixed(2)}
+                        </Typography>
+                      </Box>
+                      <Stack direction="row" spacing={1} alignItems="center">
+                        <Button
+                          size="small"
+                          onClick={() => onDecrement(line.id)}
+                          aria-label={`Decrease ${formatCartLineLabel(line)}`}
+                          sx={shopQtyButtonSx}
+                        >
+                          −
+                        </Button>
+                        <Typography
+                          sx={{
+                            minWidth: 24,
+                            textAlign: "center",
+                            fontWeight: 650,
+                          }}
+                        >
+                          {line.quantity}
+                        </Typography>
+                        <Button
+                          size="small"
+                          onClick={() => onIncrement(line.id)}
+                          aria-label={`Increase ${formatCartLineLabel(line)}`}
+                          sx={shopQtyButtonSx}
+                        >
+                          +
+                        </Button>
+                      </Stack>
                     </Stack>
-                  </Stack>
-                </Box>
-              );
+                  </Box>
+                );
               })}
             </Stack>
 
@@ -212,7 +252,7 @@ export function StorefrontBagDrawer({
                 size="large"
                 variant="contained"
                 onClick={onCheckout}
-                sx={{ ...shopPrimaryButtonSx, mt: 1 }}
+                sx={{ ...shopPrimaryButtonSx, mt: 0.5 }}
               >
                 Checkout
               </Button>

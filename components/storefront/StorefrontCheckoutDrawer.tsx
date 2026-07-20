@@ -367,8 +367,12 @@ export function StorefrontCheckoutDrawer({
           ref={dropinPanelRef}
           sx={{
             position: "relative",
-            flex: 1,
-            minHeight: { xs: 280, sm: 380 },
+            flex: "0 1 auto",
+            minHeight: 0,
+            maxHeight: {
+              xs: "calc(94dvh - 200px)",
+              sm: "calc(100vh - 280px)",
+            },
             mx: { xs: 2, sm: 2.5 },
             mb: { xs: 1, sm: 1.5 },
             border: "1px solid var(--shop-border)",
@@ -385,12 +389,13 @@ export function StorefrontCheckoutDrawer({
           !sessionError ? (
             <Box
               sx={{
-                position: "absolute",
-                inset: 0,
+                position: showLoader ? "relative" : "absolute",
+                inset: showLoader ? undefined : 0,
                 zIndex: 2,
                 opacity: showLoader ? 1 : 0,
                 transition: "opacity 360ms ease",
                 pointerEvents: showLoader ? "auto" : "none",
+                minHeight: showLoader ? 200 : undefined,
               }}
             >
               <StorefrontDropinLoader isCreatingSession={isCreatingSession} />
@@ -402,14 +407,8 @@ export function StorefrontCheckoutDrawer({
               sx={{
                 opacity: dropinUiReady ? 1 : 0,
                 transition: "opacity 420ms ease",
-                minHeight: { xs: "100%", sm: 380 },
                 pointerEvents: dropinUiReady ? "auto" : "none",
-                // Let Drop-in payment methods expand fully on mobile.
-                "& [id^='evonet-dropin']": {
-                  minHeight: { xs: 420, sm: 320 },
-                  px: { xs: 1.25, sm: 3 },
-                  py: { xs: 1.25, sm: 3 },
-                },
+                // Content-sized frame — avoid a tall empty Drop-in shell.
                 "& iframe": {
                   maxWidth: "100%",
                 },
@@ -420,6 +419,7 @@ export function StorefrontCheckoutDrawer({
                 initGeneration={sdkInitGeneration}
                 onEvent={onEvent}
                 onSdkInitApplied={() => setSdkConstructed(true)}
+                compact
               />
             </Box>
           ) : !isCreatingSession && !sessionError ? (

@@ -182,6 +182,11 @@ interface EvonetDropinHostProps {
   onEvent?: (event: EvonetDropinEvent) => void;
   /** Called after each successful `new DropInSDK(...)` with a serializable payload. */
   onSdkInitApplied?: (info: SdkInitAppliedInfo) => void;
+  /**
+   * Tighter host chrome for constrained surfaces (e.g. storefront checkout sheet).
+   * Avoids a tall empty frame before payment methods paint.
+   */
+  compact?: boolean;
 }
 
 export function EvonetDropinHost({
@@ -189,6 +194,7 @@ export function EvonetDropinHost({
   initGeneration,
   onEvent,
   onSdkInitApplied,
+  compact = false,
 }: EvonetDropinHostProps) {
   // Unique per host — Builder + storefront checkout can both mount Drop-in;
   // a shared `#evonet-dropin-root` made the SDK bind to the hidden Builder node.
@@ -738,18 +744,18 @@ export function EvonetDropinHost({
   return (
     <Box sx={{ width: "100%" }}>
       {!scriptLoaded && (
-        <Alert severity="warning" variant="outlined" sx={{ mb: 2 }}>
+        <Alert severity="warning" variant="outlined" sx={{ mb: compact ? 1 : 2 }}>
           Loading Evonet Drop-in SDK in the browser…
         </Alert>
       )}
       <Box
         id={containerId}
         sx={{
-          minHeight: 320,
+          minHeight: compact ? 0 : 320,
           width: "100%",
           bgcolor: "background.paper",
-          px: { xs: 1.25, sm: 3 },
-          py: { xs: 1.25, sm: 3 },
+          px: compact ? { xs: 1, sm: 1.5 } : { xs: 1.25, sm: 3 },
+          py: compact ? { xs: 1, sm: 1.25 } : { xs: 1.25, sm: 3 },
         }}
       />
       <style jsx global>{`

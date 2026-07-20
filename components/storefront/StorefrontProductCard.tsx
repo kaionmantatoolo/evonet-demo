@@ -313,7 +313,10 @@ export function StorefrontProductCard({
           </Stack>
         </Box>
 
-        <Stack spacing={1.25} sx={{ pt: 0.5 }}>
+        <Stack
+          spacing={1.25}
+          sx={{ pt: 0.5, display: { xs: "none", md: "flex" } }}
+        >
           <Button
             fullWidth
             size="large"
@@ -341,6 +344,53 @@ export function StorefrontProductCard({
             {justAdded ? "Added to bag" : "Add to bag"}
           </Button>
         </Stack>
+
+        {/* Mobile sticky CTA — always within thumb reach */}
+        <Box
+          sx={{
+            display: { xs: "block", md: "none" },
+            position: "fixed",
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: 30,
+            px: 1.5,
+            pt: 1.25,
+            pb: "max(12px, env(safe-area-inset-bottom))",
+            bgcolor: "color-mix(in srgb, var(--shop-bg) 88%, #ffffff)",
+            borderTop: "1px solid var(--shop-border)",
+            backdropFilter: "blur(14px)",
+            boxShadow: "0 -10px 30px rgba(28, 25, 23, 0.08)",
+          }}
+        >
+          <Stack direction="row" spacing={1}>
+            <Button
+              fullWidth
+              variant="outlined"
+              onClick={onAddToCart}
+              sx={{
+                ...shopSecondaryButtonSx,
+                py: 1.25,
+                bgcolor: justAdded
+                  ? "color-mix(in srgb, var(--shop-action) 10%, transparent)"
+                  : "var(--shop-surface, #fff)",
+                animation: justAdded
+                  ? `${bagBounce} 480ms cubic-bezier(0.22, 1, 0.36, 1)`
+                  : "none",
+              }}
+            >
+              {justAdded ? "Added" : "Add"}
+            </Button>
+            <Button
+              fullWidth
+              variant="contained"
+              onClick={onBuyNow}
+              sx={{ ...shopPrimaryButtonSx, py: 1.25, flex: 1.4 }}
+            >
+              Buy · {currency} {product.price.toFixed(2)}
+            </Button>
+          </Stack>
+        </Box>
 
         <Stack spacing={1} sx={{ pt: 0.5 }}>
           {product.highlights.map((item, index) => (

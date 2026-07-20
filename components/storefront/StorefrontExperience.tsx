@@ -429,9 +429,16 @@ export function StorefrontExperience({
                   textTransform: "none",
                   color: "var(--shop-muted)",
                   fontWeight: 500,
+                  minWidth: 0,
+                  px: { xs: 0.75, sm: 1.5 },
                 }}
               >
-                Back to Builder
+                <Box component="span" sx={{ display: { xs: "none", sm: "inline" } }}>
+                  Back to Builder
+                </Box>
+                <Box component="span" sx={{ display: { xs: "inline", sm: "none" } }}>
+                  Builder
+                </Box>
               </Button>
               <IconButton
                 aria-label="Open bag"
@@ -486,7 +493,10 @@ export function StorefrontExperience({
         </Container>
       </Box>
 
-      <Container maxWidth="lg" sx={{ py: { xs: 3.5, md: 6 } }}>
+      <Container
+        maxWidth="lg"
+        sx={{ py: { xs: 2.5, md: 6 }, pb: { xs: 12, md: 6 } }}
+      >
         <StorefrontProductCard
           product={product}
           currency={currency}
@@ -503,8 +513,9 @@ export function StorefrontExperience({
       <Box
         component="section"
         sx={{
-          mt: { xs: 2, md: 4 },
-          py: { xs: 5, md: 7 },
+          mt: { xs: 1, md: 4 },
+          py: { xs: 4, md: 7 },
+          pb: { xs: 12, md: 7 },
           borderTop: "1px solid var(--shop-border)",
           background:
             "linear-gradient(180deg, color-mix(in srgb, var(--shop-primary) 5%, var(--shop-bg)), var(--shop-bg))",

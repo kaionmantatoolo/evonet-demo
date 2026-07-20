@@ -25,6 +25,8 @@ import {
   Typography,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import StorefrontOutlinedIcon from "@mui/icons-material/StorefrontOutlined";
+import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import {
   EvonetDropinHost,
   type SdkInitAppliedInfo,
@@ -1610,41 +1612,63 @@ function DropinBuilderPage() {
               <Stack spacing={2}>
                 <Stack
                   direction={{ xs: "column", sm: "row" }}
-                  spacing={1}
-                  alignItems={{ xs: "flex-start", sm: "center" }}
+                  spacing={1.25}
+                  alignItems={{ xs: "stretch", sm: "center" }}
                   justifyContent="space-between"
                 >
                   <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
                     Drop-in Preview
                   </Typography>
-                  <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
-                    <Button
-                      size="small"
-                      variant="outlined"
-                      onClick={openAsStorefront}
-                      sx={{ textTransform: "none" }}
-                    >
-                      Open as storefront
-                    </Button>
-                    <FormControlLabel
-                      control={
-                        <Switch
-                          checked={livePreview}
-                          onChange={(event) => setLivePreview(event.target.checked)}
-                          sx={{
-                            "& .MuiSwitch-switchBase.Mui-checked": {
-                              color: "#3B82F6",
-                            },
-                            "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
-                              bgcolor: "#3B82F6",
-                            },
-                          }}
-                        />
-                      }
-                      label="Auto refresh"
-                    />
-                  </Stack>
+                  <FormControlLabel
+                    sx={{ m: 0, alignSelf: { xs: "flex-start", sm: "center" } }}
+                    control={
+                      <Switch
+                        checked={livePreview}
+                        onChange={(event) => setLivePreview(event.target.checked)}
+                        sx={{
+                          "& .MuiSwitch-switchBase.Mui-checked": {
+                            color: "#3B82F6",
+                          },
+                          "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
+                            bgcolor: "#3B82F6",
+                          },
+                        }}
+                      />
+                    }
+                    label="Auto refresh"
+                  />
                 </Stack>
+
+                <Button
+                  fullWidth
+                  variant="contained"
+                  size="large"
+                  onClick={openAsStorefront}
+                  startIcon={<StorefrontOutlinedIcon />}
+                  endIcon={<ArrowForwardIcon />}
+                  sx={{
+                    textTransform: "none",
+                    fontWeight: 700,
+                    fontSize: "0.98rem",
+                    letterSpacing: "-0.01em",
+                    py: 1.35,
+                    borderRadius: 2.5,
+                    bgcolor: "#111827",
+                    boxShadow: "0 10px 28px rgba(17, 24, 39, 0.22)",
+                    "&:hover": {
+                      bgcolor: "#1f2937",
+                      boxShadow: "0 14px 32px rgba(17, 24, 39, 0.28)",
+                    },
+                  }}
+                >
+                  Open as storefront
+                </Button>
+                <Typography
+                  variant="caption"
+                  sx={{ color: "#6B7280", mt: -0.5, display: "block" }}
+                >
+                  Preview this theme in a full ecommerce checkout demo.
+                </Typography>
 
                 <Button
                   variant="contained"

@@ -49,8 +49,9 @@ export function StorefrontDropinLoader(_props: StorefrontDropinLoaderProps) {
       sx={{
         height: "100%",
         width: "100%",
+        minHeight: 200,
         px: { xs: 2, sm: 3 },
-        py: { xs: 2, sm: 3 },
+        py: { xs: 2, sm: 2.5 },
         bgcolor: "#ffffff",
       }}
     >
