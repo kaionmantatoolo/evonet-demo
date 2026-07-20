@@ -1,12 +1,18 @@
+import { getEvonetTarget } from "./evonetTarget";
+
 /**
- * Client-readable Evonet environment from NEXT_PUBLIC_EVONET_ENVIRONMENT.
- * Used for UI defaults and gated production safety notes.
+ * Client-readable Evonet Drop-in environment string.
+ * Priority:
+ * 1. NEXT_PUBLIC_EVONET_ENVIRONMENT (explicit override)
+ * 2. Derived from NEXT_PUBLIC_EVONET_TARGET (UAT → UAT, PROD → HKG_prod)
  */
 export function getEvonetEnvironment(): string {
-  return (
-    (process.env.NEXT_PUBLIC_EVONET_ENVIRONMENT as string | undefined)?.trim() ||
-    "HKG_prod"
-  );
+  const explicit = (
+    process.env.NEXT_PUBLIC_EVONET_ENVIRONMENT as string | undefined
+  )?.trim();
+  if (explicit) return explicit;
+
+  return getEvonetTarget() === "UAT" ? "UAT" : "HKG_prod";
 }
 
 /** True for values like HKG_prod, BKK_prod, TYO_prod, or plain "prod". */

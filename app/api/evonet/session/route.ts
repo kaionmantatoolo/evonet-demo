@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
+import { resolveEvonetServerConfig } from "../../../../lib/evonetTarget";
 import type {
-  EvonetEnvironment,
   EvonetInteractionRequest,
   EvonetInteractionResponse,
   EvonetRecurringProcessingModel,
@@ -12,21 +12,21 @@ const RECURRING_MODELS: EvonetRecurringProcessingModel[] = [
   "Unscheduled",
 ];
 
-const EVONET_INTERACTION_URL =
-  process.env.EVONET_INTERACTION_URL ?? "https://REPLACE_WITH_INTERACTION_URL";
-
-const EVONET_SIGN_KEY = process.env.EVONET_SIGN_KEY ?? "";
-const EVONET_KEY_ID = process.env.EVONET_KEY_ID ?? "";
-
 const EVONET_RETURN_URL =
   process.env.EVONET_RETURN_URL ?? "http://localhost:3000/evonet/dropin-test";
 const EVONET_WEBHOOK_URL =
   process.env.EVONET_WEBHOOK_URL ?? "http://localhost:3000/api/evonet/webhook";
 
-const EVONET_STORE_ID = process.env.EVONET_STORE_ID ?? "";
-const EVONET_SIGN_TYPE = process.env.EVONET_SIGN_TYPE ?? "SHA256";
-
 export async function POST(req: NextRequest) {
+  const {
+    target,
+    interactionUrl,
+    signKey: EVONET_SIGN_KEY,
+    keyId: EVONET_KEY_ID,
+    storeId: EVONET_STORE_ID,
+    signType: EVONET_SIGN_TYPE,
+  } = resolveEvonetServerConfig();
+
   let body: Partial<EvonetInteractionRequest>;
 
   try {
@@ -100,9 +100,11 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  if (!EVONET_INTERACTION_URL || EVONET_INTERACTION_URL.includes("REPLACE")) {
+  if (!interactionUrl || interactionUrl.includes("REPLACE")) {
     return NextResponse.json(
-      { error: "EVONET_INTERACTION_URL is not configured on the server." },
+      {
+        error: `Evonet interaction URL is not configured for target ${target}. Set EVONET_${target}_INTERACTION_URL or EVONET_INTERACTION_URL.`,
+      },
       { status: 500 }
     );
   }
@@ -110,8 +112,7 @@ export async function POST(req: NextRequest) {
   if (!EVONET_SIGN_KEY || !EVONET_KEY_ID) {
     return NextResponse.json(
       {
-        error:
-          "EVONET_SIGN_KEY / EVONET_KEY_ID are not configured. These are required to call Evonet interaction API.",
+        error: `EVONET_${target}_SIGN_KEY / EVONET_${target}_KEY_ID (or legacy EVONET_SIGN_KEY / EVONET_KEY_ID) are not configured for target ${target}.`,
       },
       { status: 500 }
     );
@@ -149,8 +150,6 @@ export async function POST(req: NextRequest) {
       payload.paymentMethod = { recurringProcessingModel: recurringModel };
     }
   }
-
-  const interactionUrl = EVONET_INTERACTION_URL;
 
   try {
     const dateTime = new Date().toISOString().replace(/\.\d{3}Z$/, "+00:00");
@@ -251,11 +250,9 @@ export async function POST(req: NextRequest) {
         rawMessage.toLowerCase().includes("store") &&
         rawMessage.toLowerCase().includes("not found")
       ) {
-        errorMessage =
-          "Store not found (B0001). Your KeyID may not be linked to a valid store, or the interaction API may require a store ID in the URL. Add EVONET_STORE_ID to .env.local with your store number (from Evonet Portal), or contact Evonet (contact@evonetglobal.com) to verify your store configuration.";
+        errorMessage = `Store not found (B0001). Your KeyID may not be linked to a valid store for target ${target}. Set EVONET_${target}_STORE_ID (or EVONET_STORE_ID) from the Evonet Portal, or contact Evonet (contact@evonetglobal.com).`;
       } else if (code === "B0001") {
-        errorMessage =
-          "Store not found (B0001). Add EVONET_STORE_ID to .env.local with your store number from the Evonet Portal, or contact Evonet to verify your store is active.";
+        errorMessage = `Store not found (B0001). Add EVONET_${target}_STORE_ID (or EVONET_STORE_ID) from the Evonet Portal, or contact Evonet to verify your store is active.`;
       }
 
       return NextResponse.json(
