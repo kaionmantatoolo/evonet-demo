@@ -28,6 +28,8 @@ import {
   EvonetDropinHost,
   type SdkInitAppliedInfo,
 } from "../../../components/EvonetDropinHost";
+import { pageEnter, sectionEnter } from "../../../lib/pageMotion";
+import { VIEWPORT_HEIGHT } from "../../../lib/responsiveLayout";
 import { DemoTransactionWarning } from "../../../components/DemoTransactionWarning";
 import { EvonetPaymentReturnDialog } from "../../../components/EvonetPaymentReturnDialog";
 import {
@@ -975,19 +977,23 @@ function EvonetDropinTestPage() {
   }, []);
 
   return (
-    <Box sx={{ minHeight: "100vh", bgcolor: "#F4F6F8" }}>
-      <Container maxWidth={false} sx={{ py: 2, px: { xs: 2, md: 3 }, maxWidth: 1600 }}>
+    <Box sx={{ minHeight: VIEWPORT_HEIGHT, bgcolor: "#F4F6F8", ...pageEnter() }}>
+      <Container
+        maxWidth={false}
+        sx={{ py: { xs: 1.5, md: 2 }, px: { xs: 1.5, md: 3 }, maxWidth: 1600 }}
+      >
         {/* Status bar — what devs check first */}
         <Paper
           elevation={0}
           variant="outlined"
           sx={{
-            px: 2,
+            px: { xs: 1.5, sm: 2 },
             py: 1.25,
             mb: 2,
             borderRadius: 2,
             borderColor: "#E2E8F0",
             bgcolor: "#FFFFFF",
+            ...sectionEnter(20),
           }}
         >
           <Stack
@@ -996,7 +1002,14 @@ function EvonetDropinTestPage() {
             alignItems={{ lg: "center" }}
             justifyContent="space-between"
           >
-            <Stack direction="row" alignItems="center" spacing={1} flexWrap="wrap" useFlexGap>
+            <Stack
+              direction="row"
+              alignItems="center"
+              spacing={1}
+              flexWrap="wrap"
+              useFlexGap
+              sx={{ maxWidth: "100%" }}
+            >
               <Typography variant="subtitle1" fontWeight={700} color="text.primary">
                 Drop-in Dev Console
               </Typography>
@@ -1054,17 +1067,19 @@ function EvonetDropinTestPage() {
         </Paper>
 
         <Grid container spacing={2}>
-          <Grid item xs={12} lg={4}>
-            <Stack spacing={2}>
+          <Grid item xs={12} lg={4} sx={{ order: { xs: 2, lg: 1 } }}>
+            <Stack spacing={2} sx={sectionEnter(60)}>
               <Paper
                 variant="outlined"
                 sx={{
-                  p: { xs: 2, lg: 2 },
+                  p: { xs: 1.5, lg: 2 },
                   borderRadius: 2,
                   borderColor: "#E2E8F0",
                   bgcolor: "#FFFFFF",
-                  maxHeight: { lg: "calc(100vh - 120px)" },
+                  maxHeight: { lg: `calc(${VIEWPORT_HEIGHT} - 120px)` },
                   overflowY: { lg: "auto" },
+                  WebkitOverflowScrolling: "touch",
+                  minHeight: 0,
                 }}
               >
                 <Stack spacing={3}>
@@ -1328,7 +1343,7 @@ function EvonetDropinTestPage() {
                     </Grid>
                   </Box>
 
-                  <Accordion defaultExpanded disableGutters sx={{ border: "1px solid", borderColor: "divider", borderRadius: 1, "&:before": { display: "none" } }}>
+                  <Accordion defaultExpanded={false} disableGutters sx={{ border: "1px solid", borderColor: "divider", borderRadius: 1, "&:before": { display: "none" } }}>
                     <AccordionSummary sx={{ px: 2, minHeight: 48 }}>
                       <Typography variant="subtitle2" fontWeight={600}>
                         Payment UI
@@ -1516,7 +1531,7 @@ function EvonetDropinTestPage() {
                     </AccordionDetails>
                   </Accordion>
 
-                  <Accordion defaultExpanded disableGutters sx={{ border: "1px solid", borderColor: "divider", borderRadius: 1, "&:before": { display: "none" } }}>
+                  <Accordion defaultExpanded={false} disableGutters sx={{ border: "1px solid", borderColor: "divider", borderRadius: 1, "&:before": { display: "none" } }}>
                     <AccordionSummary sx={{ px: 2, minHeight: 48 }}>
                       <Typography variant="subtitle2" fontWeight={600}>
                         BIN verification
@@ -1854,15 +1869,18 @@ function EvonetDropinTestPage() {
             </Stack>
           </Grid>
 
-          <Grid item xs={12} lg={8}>
-            <Stack spacing={2}>
+          <Grid item xs={12} lg={8} sx={{ order: { xs: 1, lg: 2 } }}>
+            <Stack spacing={2} sx={sectionEnter(40)}>
               <Paper
+                id="dropin-test-preview"
                 variant="outlined"
                 sx={{
-                  overflow: "hidden",
+                  overflow: "auto",
                   borderRadius: 2,
                   borderColor: "#E2E8F0",
                   bgcolor: "#FFFFFF",
+                  minHeight: 0,
+                  WebkitOverflowScrolling: "touch",
                 }}
               >
                 <Box

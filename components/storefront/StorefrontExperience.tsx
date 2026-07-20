@@ -356,7 +356,7 @@ export function StorefrontExperience({
       className={`${display.variable} ${sans.variable}`}
       component="main"
       sx={{
-        minHeight: "100vh",
+        minHeight: "100dvh",
         fontFamily: "var(--shop-font-sans), system-ui, sans-serif",
         bgcolor: "var(--shop-bg)",
         color: "var(--shop-text)",
@@ -475,6 +475,7 @@ export function StorefrontExperience({
         sx={{
           borderBottom: "1px solid var(--shop-border)",
           bgcolor: "color-mix(in srgb, var(--shop-action) 6%, var(--shop-bg))",
+          display: { xs: "none", sm: "block" },
           ...enterUp(90, 500),
         }}
       >
@@ -495,7 +496,7 @@ export function StorefrontExperience({
 
       <Container
         maxWidth="lg"
-        sx={{ py: { xs: 2.5, md: 6 }, pb: { xs: 12, md: 6 } }}
+        sx={{ py: { xs: 2, md: 6 }, pb: { xs: 11, md: 6 } }}
       >
         <StorefrontProductCard
           product={product}
@@ -513,9 +514,9 @@ export function StorefrontExperience({
       <Box
         component="section"
         sx={{
-          mt: { xs: 1, md: 4 },
-          py: { xs: 4, md: 7 },
-          pb: { xs: 12, md: 7 },
+          mt: { xs: 0.5, md: 4 },
+          py: { xs: 3.5, md: 7 },
+          pb: { xs: 11, md: 7 },
           borderTop: "1px solid var(--shop-border)",
           background:
             "linear-gradient(180deg, color-mix(in srgb, var(--shop-primary) 5%, var(--shop-bg)), var(--shop-bg))",
@@ -681,7 +682,7 @@ export function StorefrontEmptyState() {
   return (
     <Box
       sx={{
-        minHeight: "100vh",
+        minHeight: "100dvh",
         bgcolor: "#f4f1ec",
         display: "grid",
         placeItems: "center",

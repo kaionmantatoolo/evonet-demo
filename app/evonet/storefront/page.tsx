@@ -21,7 +21,7 @@ function StorefrontPage() {
   }, []);
 
   if (!hydrated) {
-    return <Box sx={{ minHeight: "100vh", bgcolor: "#f4f1ec" }} />;
+    return <Box sx={{ minHeight: "100dvh", bgcolor: "#f4f1ec" }} />;
   }
 
   if (!snapshot) {

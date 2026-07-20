@@ -166,7 +166,7 @@ export function StorefrontProductCard({
         </Stack>
       </Stack>
 
-      <Stack spacing={2.75} sx={{ pt: { md: 1 }, ...enterUp(160) }}>
+      <Stack spacing={2.75} sx={{ pt: { md: 1 }, pb: { xs: 1, md: 0 }, ...enterUp(160) }}>
         <Box>
           <Typography
             variant="overline"
@@ -185,7 +185,7 @@ export function StorefrontProductCard({
               mt: 0.75,
               fontFamily: "var(--shop-font-display)",
               fontWeight: 550,
-              fontSize: { xs: "2rem", md: "2.55rem" },
+              fontSize: { xs: "1.65rem", sm: "2rem", md: "2.55rem" },
               lineHeight: 1.08,
               letterSpacing: "-0.035em",
               color: "var(--shop-text)",

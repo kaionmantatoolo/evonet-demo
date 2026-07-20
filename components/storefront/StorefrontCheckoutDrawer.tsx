@@ -27,6 +27,11 @@ import {
   type StorefrontCartLine,
 } from "./cartTypes";
 import { shopGhostButtonSx } from "./storefrontButtons";
+import { sheetSlide } from "../../lib/pageMotion";
+import {
+  SHEET_MAX_HEIGHT,
+  VIEWPORT_HEIGHT,
+} from "../../lib/responsiveLayout";
 
 interface StorefrontCheckoutDrawerProps {
   open: boolean;
@@ -160,8 +165,8 @@ export function StorefrontCheckoutDrawer({
         },
         sx: {
           width: { xs: "100%", sm: 460, md: 500 },
-          height: { xs: "min(94dvh, 940px)", sm: "100%" },
-          maxHeight: { xs: "94dvh", sm: "100%" },
+          height: { xs: SHEET_MAX_HEIGHT, sm: "100%" },
+          maxHeight: { xs: SHEET_MAX_HEIGHT, sm: "100%" },
           borderTopLeftRadius: { xs: 18, sm: 0 },
           borderTopRightRadius: { xs: 18, sm: 0 },
           color: "var(--shop-text, #1c1917)",
@@ -170,6 +175,8 @@ export function StorefrontCheckoutDrawer({
             sm: "-12px 0 40px rgba(28, 25, 23, 0.12)",
           },
           overflow: "hidden",
+          display: "flex",
+          flexDirection: "column",
         },
       }}
     >
@@ -178,8 +185,10 @@ export function StorefrontCheckoutDrawer({
         sx={{
           height: "100%",
           maxHeight: "100%",
+          minHeight: 0,
           bgcolor: panelBg,
           overflow: "hidden",
+          ...sheetSlide(),
         }}
       >
         {isMobile ? (
@@ -367,11 +376,11 @@ export function StorefrontCheckoutDrawer({
           ref={dropinPanelRef}
           sx={{
             position: "relative",
-            flex: "0 1 auto",
+            flex: "1 1 auto",
             minHeight: 0,
             maxHeight: {
-              xs: "calc(94dvh - 200px)",
-              sm: "calc(100vh - 280px)",
+              xs: `calc(${VIEWPORT_HEIGHT} - 220px)`,
+              sm: `calc(${VIEWPORT_HEIGHT} - 260px)`,
             },
             mx: { xs: 2, sm: 2.5 },
             mb: { xs: 1, sm: 1.5 },

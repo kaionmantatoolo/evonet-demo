@@ -31,6 +31,7 @@ import {
   shopPrimaryButtonSx,
   shopSecondaryButtonSx,
 } from "./storefrontButtons";
+import { detailDlGridSx } from "../../lib/responsiveLayout";
 
 export interface StorefrontCheckoutSummary {
   orderId: string;
@@ -330,12 +331,7 @@ export function StorefrontOrderResult({
             <Divider sx={{ my: 1.25, borderColor: "var(--shop-border)" }} />
             <Box
               component="dl"
-              sx={{
-                m: 0,
-                display: "grid",
-                gridTemplateColumns: "140px 1fr",
-                gap: 1,
-              }}
+              sx={detailDlGridSx}
             >
               {detailRows.map((row) => (
                 <Box key={row.label} sx={{ display: "contents" }}>

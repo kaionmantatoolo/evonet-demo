@@ -26,6 +26,8 @@ import {
   shopQtyButtonSx,
   shopSecondaryButtonSx,
 } from "./storefrontButtons";
+import { sheetSlide } from "../../lib/pageMotion";
+import { BAG_SHEET_MAX_HEIGHT } from "../../lib/responsiveLayout";
 
 interface StorefrontBagDrawerProps {
   open: boolean;
@@ -78,7 +80,7 @@ export function StorefrontBagDrawer({
         sx: {
           width: { xs: "100%", sm: 400 },
           height: { xs: "auto", sm: "100%" },
-          maxHeight: { xs: "88dvh", sm: "100%" },
+          maxHeight: { xs: BAG_SHEET_MAX_HEIGHT, sm: "100%" },
           borderTopLeftRadius: { xs: 18, sm: 0 },
           borderTopRightRadius: { xs: 18, sm: 0 },
           color: "var(--shop-text, #1c1917)",
@@ -86,6 +88,7 @@ export function StorefrontBagDrawer({
             xs: "0 -12px 40px rgba(28, 25, 23, 0.14)",
             sm: "-12px 0 40px rgba(28, 25, 23, 0.12)",
           },
+          overflow: "hidden",
         },
       }}
     >
@@ -98,8 +101,9 @@ export function StorefrontBagDrawer({
             sm: 2.5,
           },
           height: { sm: "100%" },
-          maxHeight: { xs: "88dvh", sm: "100%" },
+          maxHeight: { xs: BAG_SHEET_MAX_HEIGHT, sm: "100%" },
           bgcolor: panelBg,
+          ...sheetSlide(),
         }}
       >
         {isMobile ? (

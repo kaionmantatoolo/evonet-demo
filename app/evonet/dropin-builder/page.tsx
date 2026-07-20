@@ -27,6 +27,9 @@ import {
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import StorefrontOutlinedIcon from "@mui/icons-material/StorefrontOutlined";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
+import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
+import { pageEnter, sectionEnter } from "../../../lib/pageMotion";
+import { VIEWPORT_HEIGHT } from "../../../lib/responsiveLayout";
 import {
   EvonetDropinHost,
   type SdkInitAppliedInfo,
@@ -770,38 +773,42 @@ function DropinBuilderPage() {
   }, []);
 
   return (
-    <Box sx={{ minHeight: { sm: "100vh" } }}>
+    <Box sx={{ minHeight: { md: VIEWPORT_HEIGHT }, ...pageEnter() }}>
       <Box sx={builderStageMorphSx(builderWarped)}>
         <Container
           maxWidth="xl"
           sx={{
-            py: { xs: 4, sm: 2 },
-            height: { sm: "100vh" },
-            overflow: { sm: "hidden" },
+            py: { xs: 2.5, sm: 3, md: 2 },
+            height: { md: VIEWPORT_HEIGHT },
+            overflow: { md: "hidden" },
           }}
           suppressHydrationWarning
         >
       <Box
         sx={{
           display: "grid",
-          gap: 3,
-          gridTemplateColumns: { xs: "1fr", sm: "minmax(0, 1.7fr) minmax(300px, 1fr)" },
+          gap: { xs: 2, md: 3 },
+          gridTemplateColumns: {
+            xs: "1fr",
+            md: "minmax(0, 1.7fr) minmax(320px, 1fr)",
+          },
           alignItems: "start",
-          height: { sm: "calc(100vh - 32px)" },
+          height: { md: `calc(${VIEWPORT_HEIGHT} - 32px)` },
         }}
       >
         <Box
           sx={{
-            minHeight: { sm: 0 },
-            height: { sm: "100%" },
-            overflowY: { sm: "auto" },
-            pr: { sm: 1 },
+            minHeight: { md: 0 },
+            height: { md: "100%" },
+            overflowY: { md: "auto" },
+            WebkitOverflowScrolling: "touch",
+            pr: { md: 1 },
           }}
         >
-          <Stack spacing={3}>
+          <Stack spacing={{ xs: 2, md: 3 }} sx={sectionEnter(40)}>
             <Paper
               sx={{
-                p: 3,
+                p: { xs: 2, sm: 3 },
                 borderRadius: 3,
                 border: "1px solid",
                 borderColor: "#E5E7EB",
@@ -818,7 +825,12 @@ function DropinBuilderPage() {
                 >
                   <Typography
                     variant="h4"
-                    sx={{ fontWeight: 700, letterSpacing: -0.3, color: "#1F2937" }}
+                    sx={{
+                      fontWeight: 700,
+                      letterSpacing: -0.3,
+                      color: "#1F2937",
+                      fontSize: { xs: "1.55rem", sm: "2rem", md: "2.125rem" },
+                    }}
                   >
                     Drop-in Builder
                   </Typography>
@@ -833,10 +845,48 @@ function DropinBuilderPage() {
                     sx={{ fontFamily: "monospace", cursor: "pointer" }}
                   />
                 </Stack>
-                <Typography variant="body1" sx={{ color: "#4B5563", maxWidth: 760 }}>
+                <Typography
+                  variant="body1"
+                  sx={{
+                    color: "#4B5563",
+                    maxWidth: 760,
+                    fontSize: { xs: "0.95rem", sm: "1rem" },
+                  }}
+                >
                   Configure Evonet Drop-in SDK options with a guided interface,
                   preview the result instantly, and copy JSON in one click.
                 </Typography>
+                <Stack
+                  direction={{ xs: "column", sm: "row" }}
+                  spacing={1}
+                  sx={{ display: { xs: "flex", md: "none" } }}
+                >
+                  <Button
+                    fullWidth
+                    variant="contained"
+                    onClick={openAsStorefront}
+                    startIcon={<StorefrontOutlinedIcon />}
+                    sx={{
+                      textTransform: "none",
+                      fontWeight: 700,
+                      borderRadius: 2.5,
+                      bgcolor: "#111827",
+                      py: 1.2,
+                    }}
+                  >
+                    Open as storefront
+                  </Button>
+                  <Button
+                    fullWidth
+                    variant="outlined"
+                    component="a"
+                    href="#builder-preview"
+                    startIcon={<VisibilityOutlinedIcon />}
+                    sx={{ textTransform: "none", fontWeight: 600, borderRadius: 2.5 }}
+                  >
+                    Jump to preview
+                  </Button>
+                </Stack>
               </Stack>
             </Paper>
 
@@ -1595,18 +1645,27 @@ function DropinBuilderPage() {
           </Stack>
         </Box>
 
-        <Box sx={{ minHeight: { sm: 0 }, height: { sm: "100%" } }}>
-          <Box sx={{ height: { sm: "100%" } }}>
+        <Box
+          id="builder-preview"
+          sx={{
+            minHeight: { md: 0 },
+            height: { md: "100%" },
+            scrollMarginTop: 16,
+          }}
+        >
+          <Box sx={{ height: { md: "100%" }, ...sectionEnter(80) }}>
             <Paper
               sx={{
-                p: 3,
+                p: { xs: 2, sm: 3 },
                 borderRadius: 3,
                 border: "1px solid",
                 borderColor: "#E5E7EB",
                 bgcolor: "#FFFFFF",
                 boxShadow: "0 8px 24px rgba(15, 23, 42, 0.06)",
-                height: { sm: "100%" },
-                overflowY: { sm: "auto" },
+                height: { md: "100%" },
+                overflowY: { md: "auto" },
+                WebkitOverflowScrolling: "touch",
+                minHeight: 0,
               }}
             >
               <Stack spacing={2}>

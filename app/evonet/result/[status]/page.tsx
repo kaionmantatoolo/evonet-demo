@@ -2,7 +2,20 @@
 
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
-import { Alert, Box, Button, Container, Paper, Stack, Typography } from "@mui/material";
+import {
+  Alert,
+  Box,
+  Button,
+  Container,
+  Paper,
+  Stack,
+  Typography,
+} from "@mui/material";
+import { enterScale, pageEnter, sectionEnter } from "../../../../lib/pageMotion";
+import {
+  detailDlGridSx,
+  VIEWPORT_HEIGHT,
+} from "../../../../lib/responsiveLayout";
 
 const STATUS_CONFIG: Record<
   string,
@@ -27,88 +40,153 @@ export default function EvonetResultPage() {
   const message = search.get("message");
 
   return (
-    <Box sx={{ minHeight: "100vh", bgcolor: "background.default", py: { xs: 4, md: 8 } }}>
+    <Box
+      sx={{
+        minHeight: VIEWPORT_HEIGHT,
+        bgcolor: "background.default",
+        py: { xs: 3, sm: 4, md: 8 },
+        ...pageEnter(),
+      }}
+    >
       <Container maxWidth="sm">
-        <Paper elevation={2} sx={{ p: { xs: 2.5, sm: 3 }, borderRadius: 3 }}>
-          <Stack spacing={2}>
-            <Alert severity={config.severity} variant="outlined">
+        <Paper
+          elevation={2}
+          sx={{
+            p: { xs: 2, sm: 3 },
+            borderRadius: 3,
+            ...sectionEnter(40),
+          }}
+        >
+          <Stack spacing={2.25}>
+            <Alert
+              severity={config.severity}
+              variant="outlined"
+              sx={enterScale(80)}
+            >
               <Typography variant="subtitle1" fontWeight={700}>
                 {config.title}
               </Typography>
             </Alert>
 
-            <Box>
+            <Box sx={sectionEnter(140)}>
               <Typography variant="body2" color="text.secondary">
                 Transaction details
               </Typography>
-              <Box
-                component="dl"
-                sx={{
-                  mt: 1,
-                  mb: 0,
-                  display: "grid",
-                  gridTemplateColumns: "140px 1fr",
-                  gap: 1,
-                }}
-              >
+              <Box component="dl" sx={{ ...detailDlGridSx, mt: 1 }}>
                 <Typography component="dt" variant="caption" color="text.secondary">
                   Status
                 </Typography>
-                <Typography component="dd" variant="caption" sx={{ m: 0, fontFamily: "monospace" }}>
+                <Typography
+                  component="dd"
+                  variant="caption"
+                  sx={{ m: 0, fontFamily: "monospace" }}
+                >
                   {status}
                 </Typography>
 
-                {sessionID && (
+                {sessionID ? (
                   <>
-                    <Typography component="dt" variant="caption" color="text.secondary">
+                    <Typography
+                      component="dt"
+                      variant="caption"
+                      color="text.secondary"
+                    >
                       sessionID
                     </Typography>
-                    <Typography component="dd" variant="caption" sx={{ m: 0, fontFamily: "monospace", wordBreak: "break-all" }}>
+                    <Typography
+                      component="dd"
+                      variant="caption"
+                      sx={{
+                        m: 0,
+                        fontFamily: "monospace",
+                        wordBreak: "break-all",
+                      }}
+                    >
                       {sessionID}
                     </Typography>
                   </>
-                )}
+                ) : null}
 
-                {merchantTransID && (
+                {merchantTransID ? (
                   <>
-                    <Typography component="dt" variant="caption" color="text.secondary">
+                    <Typography
+                      component="dt"
+                      variant="caption"
+                      color="text.secondary"
+                    >
                       merchantTransID
                     </Typography>
-                    <Typography component="dd" variant="caption" sx={{ m: 0, fontFamily: "monospace", wordBreak: "break-all" }}>
+                    <Typography
+                      component="dd"
+                      variant="caption"
+                      sx={{
+                        m: 0,
+                        fontFamily: "monospace",
+                        wordBreak: "break-all",
+                      }}
+                    >
                       {merchantTransID}
                     </Typography>
                   </>
-                )}
+                ) : null}
 
-                {code && (
+                {code ? (
                   <>
-                    <Typography component="dt" variant="caption" color="text.secondary">
+                    <Typography
+                      component="dt"
+                      variant="caption"
+                      color="text.secondary"
+                    >
                       Code
                     </Typography>
-                    <Typography component="dd" variant="caption" sx={{ m: 0, fontFamily: "monospace" }}>
+                    <Typography
+                      component="dd"
+                      variant="caption"
+                      sx={{ m: 0, fontFamily: "monospace" }}
+                    >
                       {code}
                     </Typography>
                   </>
-                )}
+                ) : null}
 
-                {message && (
+                {message ? (
                   <>
-                    <Typography component="dt" variant="caption" color="text.secondary">
+                    <Typography
+                      component="dt"
+                      variant="caption"
+                      color="text.secondary"
+                    >
                       Message
                     </Typography>
                     <Typography component="dd" variant="caption" sx={{ m: 0 }}>
                       {message}
                     </Typography>
                   </>
-                )}
+                ) : null}
               </Box>
             </Box>
 
-            <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5}>
-              <Button component={Link} href="/" variant="contained">
+            <Stack
+              direction={{ xs: "column", sm: "row" }}
+              spacing={1.5}
+              sx={sectionEnter(220)}
+            >
+              <Button
+                component={Link}
+                href="/"
+                variant="contained"
+                fullWidth
+                sx={{ textTransform: "none", fontWeight: 650, borderRadius: 2 }}
+              >
                 Back to Home
               </Button>
-              <Button component={Link} href="/evonet/dropin-test" variant="outlined">
+              <Button
+                component={Link}
+                href="/evonet/dropin-test"
+                variant="outlined"
+                fullWidth
+                sx={{ textTransform: "none", fontWeight: 600, borderRadius: 2 }}
+              >
                 Back to Drop-in test
               </Button>
             </Stack>
@@ -118,4 +196,3 @@ export default function EvonetResultPage() {
     </Box>
   );
 }
-
