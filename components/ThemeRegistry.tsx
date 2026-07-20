@@ -21,6 +21,14 @@ export default function ThemeRegistry({ children }: { children: ReactNode }) {
     <AppRouterCacheProvider options={{ key: "mui" }}>
       <ThemeProvider theme={theme}>
         <CssBaseline />
+        {/* Global mobile safety: prevent horizontal bleed / iOS rubber-band traps */}
+        <style>{`
+          html, body {
+            max-width: 100%;
+            overflow-x: hidden;
+            -webkit-text-size-adjust: 100%;
+          }
+        `}</style>
         {children}
       </ThemeProvider>
     </AppRouterCacheProvider>

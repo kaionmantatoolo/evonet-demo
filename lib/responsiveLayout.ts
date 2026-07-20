@@ -9,11 +9,16 @@ export const TWO_PANE_SPLIT_BP = "md" as const;
 /** Full viewport height that respects mobile browser chrome. */
 export const VIEWPORT_HEIGHT = "100dvh";
 
-/** Bottom sheet max height with safe breathing room. */
-export const SHEET_MAX_HEIGHT = "min(94dvh, 940px)";
+/**
+ * Checkout bottom sheet — nearly full screen on iPhone.
+ * Uses dvh + safe-area so Safari chrome / home indicator do not clip Drop-in.
+ */
+export const SHEET_MAX_HEIGHT =
+  "calc(100dvh - env(safe-area-inset-top, 0px))";
 
 /** Bag sheet — slightly shorter so checkout sheet feels primary. */
-export const BAG_SHEET_MAX_HEIGHT = "min(88dvh, 820px)";
+export const BAG_SHEET_MAX_HEIGHT =
+  "min(calc(100dvh - env(safe-area-inset-top, 0px) - 48px), 820px)";
 
 /** Sticky mobile CTA clearance under page content. */
 export const STICKY_CTA_CLEARANCE = { xs: 12, md: 0 } as const;

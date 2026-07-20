@@ -28,10 +28,7 @@ import {
 } from "./cartTypes";
 import { shopGhostButtonSx } from "./storefrontButtons";
 import { sheetSlide } from "../../lib/pageMotion";
-import {
-  SHEET_MAX_HEIGHT,
-  VIEWPORT_HEIGHT,
-} from "../../lib/responsiveLayout";
+import { SHEET_MAX_HEIGHT } from "../../lib/responsiveLayout";
 
 interface StorefrontCheckoutDrawerProps {
   open: boolean;
@@ -165,6 +162,7 @@ export function StorefrontCheckoutDrawer({
         },
         sx: {
           width: { xs: "100%", sm: 460, md: 500 },
+          // iPhone: full usable height; avoid nested maxHeight that clips Drop-in.
           height: { xs: SHEET_MAX_HEIGHT, sm: "100%" },
           maxHeight: { xs: SHEET_MAX_HEIGHT, sm: "100%" },
           borderTopLeftRadius: { xs: 18, sm: 0 },
@@ -174,7 +172,10 @@ export function StorefrontCheckoutDrawer({
             xs: "0 -12px 40px rgba(28, 25, 23, 0.14)",
             sm: "-12px 0 40px rgba(28, 25, 23, 0.12)",
           },
-          overflow: "hidden",
+          // Mobile: scroll the whole sheet (iframe-friendly on iOS Safari).
+          // Desktop: clip and scroll only the Drop-in pane.
+          overflow: { xs: "auto", sm: "hidden" },
+          WebkitOverflowScrolling: "touch",
           display: "flex",
           flexDirection: "column",
         },
@@ -183,11 +184,11 @@ export function StorefrontCheckoutDrawer({
       <Stack
         spacing={0}
         sx={{
-          height: "100%",
-          maxHeight: "100%",
-          minHeight: 0,
+          height: { xs: "auto", sm: "100%" },
+          minHeight: { xs: "100%", sm: 0 },
+          maxHeight: { sm: "100%" },
           bgcolor: panelBg,
-          overflow: "hidden",
+          overflow: { xs: "visible", sm: "hidden" },
           ...sheetSlide(),
         }}
       >
@@ -376,17 +377,15 @@ export function StorefrontCheckoutDrawer({
           ref={dropinPanelRef}
           sx={{
             position: "relative",
-            flex: "1 1 auto",
-            minHeight: 0,
-            maxHeight: {
-              xs: `calc(${VIEWPORT_HEIGHT} - 220px)`,
-              sm: `calc(${VIEWPORT_HEIGHT} - 260px)`,
-            },
+            // Mobile: grow with Drop-in content (parent sheet scrolls).
+            // Desktop: fill remaining drawer height and scroll inside.
+            flex: { xs: "0 0 auto", sm: "1 1 auto" },
+            minHeight: { xs: 280, sm: 0 },
             mx: { xs: 2, sm: 2.5 },
             mb: { xs: 1, sm: 1.5 },
             border: "1px solid var(--shop-border)",
             borderRadius: 2,
-            overflow: "auto",
+            overflow: { xs: "visible", sm: "auto" },
             WebkitOverflowScrolling: "touch",
             bgcolor: "#fff",
             overscrollBehavior: "contain",

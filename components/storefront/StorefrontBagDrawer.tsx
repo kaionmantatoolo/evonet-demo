@@ -88,7 +88,8 @@ export function StorefrontBagDrawer({
             xs: "0 -12px 40px rgba(28, 25, 23, 0.14)",
             sm: "-12px 0 40px rgba(28, 25, 23, 0.12)",
           },
-          overflow: "hidden",
+          overflow: { xs: "auto", sm: "hidden" },
+          WebkitOverflowScrolling: "touch",
         },
       }}
     >
@@ -101,7 +102,7 @@ export function StorefrontBagDrawer({
             sm: 2.5,
           },
           height: { sm: "100%" },
-          maxHeight: { xs: BAG_SHEET_MAX_HEIGHT, sm: "100%" },
+          maxHeight: { xs: "none", sm: "100%" },
           bgcolor: panelBg,
           ...sheetSlide(),
         }}

@@ -759,10 +759,16 @@ export function EvonetDropinHost({
         }}
       />
       <style jsx global>{`
+        #${containerId} {
+          overflow: visible !important;
+        }
         #${containerId} iframe {
           display: block;
           width: 100% !important;
+          max-width: 100% !important;
           border: 0 !important;
+          /* Let Evonet set height; never clip payment UI on iOS. */
+          min-height: 0;
         }
       `}</style>
     </Box>
