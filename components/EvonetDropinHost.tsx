@@ -748,8 +748,8 @@ export function EvonetDropinHost({
           minHeight: 320,
           width: "100%",
           bgcolor: "background.paper",
-          px: { xs: 2, sm: 3 },
-          py: { xs: 2, sm: 3 },
+          px: { xs: 1.25, sm: 3 },
+          py: { xs: 1.25, sm: 3 },
         }}
       />
       <style jsx global>{`

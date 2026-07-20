@@ -11,6 +11,8 @@ import {
   IconButton,
   Stack,
   Typography,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import { EvonetDropinHost } from "../EvonetDropinHost";
@@ -24,6 +26,7 @@ import {
   formatCartLineLabel,
   type StorefrontCartLine,
 } from "./cartTypes";
+import { shopGhostButtonSx } from "./storefrontButtons";
 
 interface StorefrontCheckoutDrawerProps {
   open: boolean;
@@ -63,10 +66,13 @@ export function StorefrontCheckoutDrawer({
   onEvent,
   themeVars,
 }: StorefrontCheckoutDrawerProps) {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const panelBg = themeVars?.["--shop-bg"] || "#ffffff";
   const dropinPanelRef = useRef<HTMLDivElement>(null);
   const [dropinUiReady, setDropinUiReady] = useState(false);
   const [sdkConstructed, setSdkConstructed] = useState(false);
+  const [summaryOpen, setSummaryOpen] = useState(true);
 
   useEffect(() => {
     if (!open) {
@@ -76,7 +82,9 @@ export function StorefrontCheckoutDrawer({
     }
     setDropinUiReady(false);
     setSdkConstructed(false);
-  }, [open, sdkInitGeneration, isCreatingSession]);
+    // On mobile, start compact so Drop-in gets vertical room immediately.
+    setSummaryOpen(!isMobile);
+  }, [open, sdkInitGeneration, isCreatingSession, isMobile]);
 
   useEffect(() => {
     if (!open || isCreatingSession || !dropinConfig || dropinUiReady) {
@@ -96,7 +104,6 @@ export function StorefrontCheckoutDrawer({
     const observer = new MutationObserver(() => {
       if (panelHasDropinUi(root)) {
         observer.disconnect();
-        // Let paint settle so the loader doesn't vanish on an empty frame.
         window.requestAnimationFrame(() => {
           window.setTimeout(markReady, 120);
         });
@@ -104,7 +111,6 @@ export function StorefrontCheckoutDrawer({
     });
     observer.observe(root, { childList: true, subtree: true });
 
-    // After SDK construct, give UI a beat even if the observer misses custom elements.
     let constructFallback: number | undefined;
     if (sdkConstructed) {
       constructFallback = window.setTimeout(markReady, 1800);
@@ -131,15 +137,15 @@ export function StorefrontCheckoutDrawer({
     (isCreatingSession ||
       Boolean(dropinConfig && sdkInitGeneration > 0 && !dropinUiReady));
 
+  const lineCount = lines.reduce((sum, line) => sum + line.quantity, 0);
+
   return (
     <Drawer
-      anchor="right"
+      anchor={isMobile ? "bottom" : "right"}
       open={open}
       onClose={onClose}
-      // Above storefront fade overlay (modal + 4) so Buy now / bag checkout is visible.
       sx={{ zIndex: (theme) => theme.zIndex.modal + 10 }}
       ModalProps={{
-        // Keep the shop page readable — avoid the default heavy dim overlay.
         BackdropProps: {
           sx: {
             bgcolor: "rgba(28, 25, 23, 0.08)",
@@ -154,120 +160,223 @@ export function StorefrontCheckoutDrawer({
         },
         sx: {
           width: { xs: "100%", sm: 460, md: 500 },
+          height: { xs: "min(94dvh, 940px)", sm: "100%" },
+          maxHeight: { xs: "94dvh", sm: "100%" },
+          borderTopLeftRadius: { xs: 18, sm: 0 },
+          borderTopRightRadius: { xs: 18, sm: 0 },
           color: "var(--shop-text, #1c1917)",
-          boxShadow: "-12px 0 40px rgba(28, 25, 23, 0.12)",
+          boxShadow: {
+            xs: "0 -12px 40px rgba(28, 25, 23, 0.14)",
+            sm: "-12px 0 40px rgba(28, 25, 23, 0.12)",
+          },
+          overflow: "hidden",
         },
       }}
     >
-      <Stack spacing={2} sx={{ p: 2.5, height: "100%", bgcolor: panelBg }}>
-        <Stack direction="row" alignItems="center" justifyContent="space-between">
+      <Stack
+        spacing={0}
+        sx={{
+          height: "100%",
+          maxHeight: "100%",
+          bgcolor: panelBg,
+          overflow: "hidden",
+        }}
+      >
+        {isMobile ? (
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "center",
+              pt: 1,
+              pb: 0.5,
+              flexShrink: 0,
+            }}
+          >
+            <Box
+              sx={{
+                width: 36,
+                height: 4,
+                borderRadius: 999,
+                bgcolor: "color-mix(in srgb, var(--shop-muted) 35%, transparent)",
+              }}
+            />
+          </Box>
+        ) : null}
+
+        <Stack
+          direction="row"
+          alignItems="center"
+          justifyContent="space-between"
+          sx={{ px: { xs: 2, sm: 2.5 }, pt: { xs: 0.5, sm: 2.5 }, pb: 1.25, flexShrink: 0 }}
+        >
           <Box>
             <Typography
               sx={{
                 fontFamily: "var(--shop-font-display)",
                 fontWeight: 600,
-                fontSize: "1.35rem",
+                fontSize: { xs: "1.2rem", sm: "1.35rem" },
                 letterSpacing: "-0.02em",
               }}
             >
               Secure checkout
             </Typography>
-            <Typography variant="body2" sx={{ color: "var(--shop-muted)" }}>
+            <Typography
+              variant="body2"
+              sx={{ color: "var(--shop-muted)", display: { xs: "none", sm: "block" } }}
+            >
               Powered by Evonet Drop-in
             </Typography>
           </Box>
-          <IconButton onClick={onClose} aria-label="Close checkout">
+          <IconButton onClick={onClose} aria-label="Close checkout" size="small">
             <CloseIcon />
           </IconButton>
         </Stack>
 
         <Box
           sx={{
-            p: 1.5,
+            mx: { xs: 2, sm: 2.5 },
+            mb: 1.25,
             borderRadius: 2,
             border: "1px solid var(--shop-border)",
             bgcolor: "var(--shop-surface)",
+            overflow: "hidden",
+            flexShrink: 0,
           }}
         >
-          <Stack spacing={1.25}>
-            {lines.map((line) => {
-              const thumb = productThumbForColor(product, line.colorId);
-              return (
-              <Box
-                key={line.id}
-                sx={{
-                  display: "grid",
-                  gridTemplateColumns: "56px 1fr auto",
-                  gap: 1.25,
-                  alignItems: "center",
-                }}
-              >
-                <Box
-                  sx={{
-                    width: 56,
-                    height: 56,
-                    borderRadius: 1.25,
-                    overflow: "hidden",
-                    bgcolor: "#ece8e1",
-                  }}
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <Box
-                    component="img"
-                    src={thumb?.src}
-                    alt={thumb?.alt ?? product.name}
-                    sx={{ width: "100%", height: "100%", objectFit: "cover" }}
-                  />
-                </Box>
-                <Box sx={{ minWidth: 0 }}>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-                    {product.name}
-                  </Typography>
-                  <Typography
-                    variant="caption"
-                    sx={{ color: "var(--shop-muted)", display: "block" }}
-                  >
-                    {formatCartLineLabel(line)} · Qty {line.quantity}
-                  </Typography>
-                </Box>
-                <Typography variant="body2" sx={{ fontWeight: 650 }}>
-                  {currency} {(product.price * line.quantity).toFixed(2)}
-                </Typography>
-              </Box>
-            );
-            })}
-            <Divider sx={{ borderColor: "var(--shop-border)" }} />
-            <Stack direction="row" justifyContent="space-between">
-              <Typography variant="body2" sx={{ color: "var(--shop-muted)" }}>
-                Total
-              </Typography>
+          <Box
+            component="button"
+            type="button"
+            onClick={() => setSummaryOpen((v) => !v)}
+            aria-expanded={summaryOpen}
+            sx={{
+              width: "100%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 1,
+              px: 1.5,
+              py: 1.15,
+              border: 0,
+              bgcolor: "transparent",
+              cursor: "pointer",
+              color: "inherit",
+              textAlign: "left",
+              font: "inherit",
+            }}
+          >
+            <Typography variant="body2" sx={{ fontWeight: 650 }}>
+              Order · {lineCount} item{lineCount === 1 ? "" : "s"}
+            </Typography>
+            <Stack direction="row" spacing={1} alignItems="center">
               <Typography variant="body2" sx={{ fontWeight: 700 }}>
                 {currency} {total.toFixed(2)}
               </Typography>
+              <Typography
+                variant="caption"
+                sx={{ color: "var(--shop-muted)", minWidth: 14 }}
+              >
+                {summaryOpen ? "−" : "+"}
+              </Typography>
             </Stack>
-          </Stack>
+          </Box>
+
+          {summaryOpen ? (
+            <Box sx={{ px: 1.5, pb: 1.35 }}>
+              <Divider sx={{ borderColor: "var(--shop-border)", mb: 1.25 }} />
+              <Stack spacing={1.1}>
+                {lines.map((line) => {
+                  const thumb = productThumbForColor(product, line.colorId);
+                  return (
+                    <Box
+                      key={line.id}
+                      sx={{
+                        display: "grid",
+                        gridTemplateColumns: "48px 1fr auto",
+                        gap: 1.1,
+                        alignItems: "center",
+                      }}
+                    >
+                      <Box
+                        sx={{
+                          width: 48,
+                          height: 48,
+                          borderRadius: 1.25,
+                          overflow: "hidden",
+                          bgcolor: "#ece8e1",
+                        }}
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <Box
+                          component="img"
+                          src={thumb?.src}
+                          alt={thumb?.alt ?? product.name}
+                          sx={{
+                            width: "100%",
+                            height: "100%",
+                            objectFit: "cover",
+                          }}
+                        />
+                      </Box>
+                      <Box sx={{ minWidth: 0 }}>
+                        <Typography
+                          variant="subtitle2"
+                          sx={{
+                            fontWeight: 700,
+                            fontSize: "0.85rem",
+                            lineHeight: 1.25,
+                          }}
+                        >
+                          {product.name}
+                        </Typography>
+                        <Typography
+                          variant="caption"
+                          sx={{ color: "var(--shop-muted)", display: "block" }}
+                        >
+                          {formatCartLineLabel(line)} · Qty {line.quantity}
+                        </Typography>
+                      </Box>
+                      <Typography
+                        variant="body2"
+                        sx={{ fontWeight: 650, fontSize: "0.85rem" }}
+                      >
+                        {currency} {(product.price * line.quantity).toFixed(2)}
+                      </Typography>
+                    </Box>
+                  );
+                })}
+              </Stack>
+            </Box>
+          ) : null}
         </Box>
 
-        <DemoTransactionWarning />
-
-        {sessionError ? (
-          <Alert severity="error" variant="outlined">
-            {sessionError}
-          </Alert>
+        {!isMobile ? (
+          <Box sx={{ px: { sm: 2.5 }, mb: 1.25, flexShrink: 0 }}>
+            <DemoTransactionWarning />
+          </Box>
         ) : null}
 
-        <Divider sx={{ borderColor: "var(--shop-border)" }} />
+        {sessionError ? (
+          <Box sx={{ px: { xs: 2, sm: 2.5 }, mb: 1, flexShrink: 0 }}>
+            <Alert severity="error" variant="outlined">
+              {sessionError}
+            </Alert>
+          </Box>
+        ) : null}
 
         <Box
           ref={dropinPanelRef}
           sx={{
             position: "relative",
             flex: 1,
-            minHeight: 380,
+            minHeight: { xs: 280, sm: 380 },
+            mx: { xs: 2, sm: 2.5 },
+            mb: { xs: 1, sm: 1.5 },
             border: "1px solid var(--shop-border)",
             borderRadius: 2,
-            overflow: "hidden",
+            overflow: "auto",
+            WebkitOverflowScrolling: "touch",
             bgcolor: "#fff",
+            overscrollBehavior: "contain",
           }}
         >
           {(isCreatingSession ||
@@ -293,8 +402,17 @@ export function StorefrontCheckoutDrawer({
               sx={{
                 opacity: dropinUiReady ? 1 : 0,
                 transition: "opacity 420ms ease",
-                minHeight: 380,
+                minHeight: { xs: "100%", sm: 380 },
                 pointerEvents: dropinUiReady ? "auto" : "none",
+                // Let Drop-in payment methods expand fully on mobile.
+                "& [id^='evonet-dropin']": {
+                  minHeight: { xs: 420, sm: 320 },
+                  px: { xs: 1.25, sm: 3 },
+                  py: { xs: 1.25, sm: 3 },
+                },
+                "& iframe": {
+                  maxWidth: "100%",
+                },
               }}
             >
               <EvonetDropinHost
@@ -313,13 +431,18 @@ export function StorefrontCheckoutDrawer({
           ) : null}
         </Box>
 
-        <Button
-          onClick={onClose}
-          variant="text"
-          sx={{ textTransform: "none", color: "var(--shop-muted)" }}
+        <Box
+          sx={{
+            px: { xs: 2, sm: 2.5 },
+            pb: { xs: "max(12px, env(safe-area-inset-bottom))", sm: 2.5 },
+            pt: 0.5,
+            flexShrink: 0,
+          }}
         >
-          Continue shopping
-        </Button>
+          <Button fullWidth onClick={onClose} sx={shopGhostButtonSx}>
+            Continue shopping
+          </Button>
+        </Box>
       </Stack>
     </Drawer>
   );

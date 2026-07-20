@@ -19,6 +19,11 @@ import {
   formatCartLineLabel,
   type StorefrontCartLine,
 } from "./cartTypes";
+import {
+  shopPrimaryButtonSx,
+  shopQtyButtonSx,
+  shopSecondaryButtonSx,
+} from "./storefrontButtons";
 
 interface StorefrontBagDrawerProps {
   open: boolean;
@@ -98,12 +103,7 @@ export function StorefrontBagDrawer({
             <Button
               onClick={onClose}
               variant="outlined"
-              sx={{
-                alignSelf: "flex-start",
-                textTransform: "none",
-                borderColor: "var(--shop-border, #e7e5e4)",
-                color: "var(--shop-text, #1c1917)",
-              }}
+              sx={{ ...shopSecondaryButtonSx, alignSelf: "flex-start" }}
             >
               Keep browsing
             </Button>
@@ -165,11 +165,7 @@ export function StorefrontBagDrawer({
                         size="small"
                         onClick={() => onDecrement(line.id)}
                         aria-label={`Decrease ${formatCartLineLabel(line)}`}
-                        sx={{
-                          minWidth: 36,
-                          border: "1px solid var(--shop-border, #e7e5e4)",
-                          color: "var(--shop-text, #1c1917)",
-                        }}
+                        sx={shopQtyButtonSx}
                       >
                         −
                       </Button>
@@ -186,11 +182,7 @@ export function StorefrontBagDrawer({
                         size="small"
                         onClick={() => onIncrement(line.id)}
                         aria-label={`Increase ${formatCartLineLabel(line)}`}
-                        sx={{
-                          minWidth: 36,
-                          border: "1px solid var(--shop-border, #e7e5e4)",
-                          color: "var(--shop-text, #1c1917)",
-                        }}
+                        sx={shopQtyButtonSx}
                       >
                         +
                       </Button>
@@ -220,19 +212,7 @@ export function StorefrontBagDrawer({
                 size="large"
                 variant="contained"
                 onClick={onCheckout}
-                sx={{
-                  mt: 1,
-                  py: 1.4,
-                  textTransform: "none",
-                  fontWeight: 650,
-                  borderRadius: 2,
-                  bgcolor: "var(--shop-action, #1c1917)",
-                  color: "var(--shop-action-text, #ffffff)",
-                  "&:hover": {
-                    bgcolor: "var(--shop-action, #1c1917)",
-                    filter: "brightness(1.05)",
-                  },
-                }}
+                sx={{ ...shopPrimaryButtonSx, mt: 1 }}
               >
                 Checkout
               </Button>

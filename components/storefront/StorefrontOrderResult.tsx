@@ -27,6 +27,10 @@ import {
   ringPulse,
   softShake,
 } from "./storefrontMotion";
+import {
+  shopPrimaryButtonSx,
+  shopSecondaryButtonSx,
+} from "./storefrontButtons";
 
 export interface StorefrontCheckoutSummary {
   orderId: string;
@@ -368,19 +372,7 @@ export function StorefrontOrderResult({
                 fullWidth
                 variant="contained"
                 onClick={onContinueShopping}
-                sx={{
-                  textTransform: "none",
-                  fontWeight: 650,
-                  py: 1.35,
-                  borderRadius: 2,
-                  bgcolor: "var(--shop-action)",
-                  color: "var(--shop-action-text)",
-                  transition: "transform 180ms ease, filter 180ms ease",
-                  "&:hover": {
-                    bgcolor: "color-mix(in srgb, var(--shop-action) 88%, #000)",
-                    transform: "translateY(-1px)",
-                  },
-                }}
+                sx={shopPrimaryButtonSx}
               >
                 Continue shopping
               </Button>
@@ -391,20 +383,7 @@ export function StorefrontOrderResult({
                     fullWidth
                     variant="contained"
                     onClick={onTryAgain}
-                    sx={{
-                      textTransform: "none",
-                      fontWeight: 650,
-                      py: 1.35,
-                      borderRadius: 2,
-                      bgcolor: "var(--shop-action)",
-                      color: "var(--shop-action-text)",
-                      transition: "transform 180ms ease",
-                      "&:hover": {
-                        bgcolor:
-                          "color-mix(in srgb, var(--shop-action) 88%, #000)",
-                        transform: "translateY(-1px)",
-                      },
-                    }}
+                    sx={shopPrimaryButtonSx}
                   >
                     Try checkout again
                   </Button>
@@ -413,14 +392,7 @@ export function StorefrontOrderResult({
                   fullWidth
                   variant="outlined"
                   onClick={onContinueShopping}
-                  sx={{
-                    textTransform: "none",
-                    fontWeight: 600,
-                    py: 1.35,
-                    borderRadius: 2,
-                    borderColor: "var(--shop-border)",
-                    color: "var(--shop-text)",
-                  }}
+                  sx={shopSecondaryButtonSx}
                 >
                   Back to product
                 </Button>

@@ -30,6 +30,7 @@ import {
   formatCartLineLabel,
   type StorefrontCartLine,
 } from "./cartTypes";
+import { shopSecondaryButtonSx } from "./storefrontButtons";
 import {
   parseEvonetReturnParams,
   parseEvonetSdkPaymentEvent,
@@ -564,15 +565,7 @@ export function StorefrontExperience({
               <Button
                 variant="outlined"
                 onClick={() => setBagOpen(true)}
-                sx={{
-                  textTransform: "none",
-                  fontWeight: 600,
-                  borderColor: "var(--shop-action)",
-                  color: "var(--shop-action)",
-                  borderRadius: 2,
-                  px: 2.5,
-                  py: 1.1,
-                }}
+                sx={shopSecondaryButtonSx}
               >
                 View bag
               </Button>

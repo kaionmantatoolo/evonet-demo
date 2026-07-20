@@ -11,6 +11,11 @@ import {
 } from "@mui/material";
 import type { DemoProduct } from "./demoProduct";
 import { productImagesForColor } from "./demoProduct";
+import {
+  shopPrimaryButtonSx,
+  shopSecondaryButtonSx,
+  shopSizeButtonSx,
+} from "./storefrontButtons";
 import { bagBounce, enterUp } from "./storefrontMotion";
 
 interface StorefrontProductCardProps {
@@ -299,25 +304,7 @@ export function StorefrontProductCard({
                   key={size}
                   onClick={() => onSizeChange(size)}
                   variant={selected ? "contained" : "outlined"}
-                  sx={{
-                    minWidth: 52,
-                    px: 1.5,
-                    py: 0.9,
-                    textTransform: "none",
-                    fontWeight: 600,
-                    borderRadius: 1.5,
-                    borderColor: selected ? "var(--shop-action)" : "var(--shop-border)",
-                    bgcolor: selected ? "var(--shop-action)" : "transparent",
-                    color: selected ? "var(--shop-action-text)" : "var(--shop-text)",
-                    transition: "transform 160ms ease, background-color 160ms ease",
-                    "&:hover": {
-                      borderColor: "var(--shop-action)",
-                      bgcolor: selected
-                        ? "var(--shop-action)"
-                        : "color-mix(in srgb, var(--shop-action) 8%, transparent)",
-                      transform: "translateY(-1px)",
-                    },
-                  }}
+                  sx={shopSizeButtonSx(selected)}
                 >
                   {size}
                 </Button>
@@ -332,27 +319,7 @@ export function StorefrontProductCard({
             size="large"
             variant="contained"
             onClick={onBuyNow}
-            sx={{
-              py: 1.45,
-              textTransform: "none",
-              fontWeight: 650,
-              fontSize: "1rem",
-              borderRadius: 2,
-              bgcolor: "var(--shop-action)",
-              color: "var(--shop-action-text)",
-              boxShadow:
-                "0 10px 28px color-mix(in srgb, var(--shop-action) 28%, transparent)",
-              transition:
-                "transform 180ms ease, filter 180ms ease, box-shadow 180ms ease",
-              "&:hover": {
-                bgcolor: "var(--shop-action)",
-                filter: "brightness(1.06)",
-                transform: "translateY(-2px)",
-                boxShadow:
-                  "0 14px 32px color-mix(in srgb, var(--shop-action) 34%, transparent)",
-              },
-              "&:active": { transform: "translateY(0)" },
-            }}
+            sx={shopPrimaryButtonSx}
           >
             Buy now — {currency} {product.price.toFixed(2)}
           </Button>
@@ -362,23 +329,13 @@ export function StorefrontProductCard({
             variant="outlined"
             onClick={onAddToCart}
             sx={{
-              py: 1.35,
-              textTransform: "none",
-              fontWeight: 600,
-              borderRadius: 2,
-              borderColor: "var(--shop-action)",
-              color: "var(--shop-action)",
+              ...shopSecondaryButtonSx,
               bgcolor: justAdded
                 ? "color-mix(in srgb, var(--shop-action) 10%, transparent)"
                 : "transparent",
-              transition: "transform 180ms ease, background-color 180ms ease",
               animation: justAdded
                 ? `${bagBounce} 480ms cubic-bezier(0.22, 1, 0.36, 1)`
                 : "none",
-              "&:hover": {
-                borderColor: "var(--shop-action)",
-                bgcolor: "color-mix(in srgb, var(--shop-action) 8%, transparent)",
-              },
             }}
           >
             {justAdded ? "Added to bag" : "Add to bag"}
