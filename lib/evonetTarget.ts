@@ -58,11 +58,15 @@ export function parseEvonetTarget(raw: string | undefined | null): EvonetTarget 
  * Single switch: NEXT_PUBLIC_EVONET_TARGET=UAT|PROD
  * (readable by client UI and server session API).
  * Legacy EVONET_TARGET is still accepted as a fallback.
+ *
+ * IMPORTANT: use static `process.env.NEXT_PUBLIC_*` access so Next.js inlines
+ * the value into the client bundle. Dynamic `process.env[name]` is empty in
+ * the browser and would always fall back to PROD.
  */
 export function getEvonetTarget(): EvonetTarget {
-  return parseEvonetTarget(
-    envTrim("NEXT_PUBLIC_EVONET_TARGET") || envTrim("EVONET_TARGET") || undefined
-  );
+  const fromPublic = process.env.NEXT_PUBLIC_EVONET_TARGET?.trim();
+  const fromServer = process.env.EVONET_TARGET?.trim();
+  return parseEvonetTarget(fromPublic || fromServer || undefined);
 }
 
 function pickPrefixedOrLegacy(
