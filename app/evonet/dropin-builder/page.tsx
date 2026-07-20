@@ -18,6 +18,7 @@ import {
   MenuItem,
   Paper,
   Select,
+  Snackbar,
   Stack,
   Switch,
   TextField,
@@ -34,7 +35,17 @@ import {
   CODE_PANEL_PRE_SX,
   DEV_CONSOLE_SECTION_TITLE_SX,
 } from "../../../lib/codePanelStyles";
-import { getEvonetEnvironment } from "../../../lib/evonetEnvironment";
+import {
+  getEvonetEnvironment,
+  isEvonetProductionEnvironment,
+} from "../../../lib/evonetEnvironment";
+import {
+  readStoredTargetOverride,
+  sdkEnvironmentForTarget,
+  targetFromSdkEnvironment,
+  writeStoredTargetOverride,
+  type EvonetTarget,
+} from "../../../lib/evonetTarget";
 import {
   parseEvonetReturnParams,
   parseEvonetSdkPaymentEvent,
@@ -66,6 +77,8 @@ import type {
 const DEFAULT_ENVIRONMENT = getEvonetEnvironment();
 const DEFAULT_SESSION_ID =
   process.env.NEXT_PUBLIC_EVONET_SESSION_ID ?? "REPLACE_WITH_REAL_SESSION_ID";
+const ENV_CHIP_TAP_WINDOW_MS = 2000;
+const ENV_CHIP_TAPS_REQUIRED = 5;
 
 const TYPOGRAPHY_GROUPS = [
   "button",
@@ -295,6 +308,9 @@ function DropinBuilderPage() {
 
   const [copyBuilderHint, setCopyBuilderHint] = useState<string | null>(null);
   const [copySdkHint, setCopySdkHint] = useState<string | null>(null);
+  const [targetSwitchHint, setTargetSwitchHint] = useState<string | null>(null);
+  const envChipTapCountRef = useRef(0);
+  const envChipTapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (!builderWarped) return;
@@ -307,6 +323,14 @@ function DropinBuilderPage() {
 
   useEffect(() => {
     setMountedAt(new Date().toISOString());
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (envChipTapTimerRef.current) {
+        clearTimeout(envChipTapTimerRef.current);
+      }
+    };
   }, []);
 
   const sdkUiOption: EvonetSdkUiOption = useMemo(
@@ -607,7 +631,9 @@ function DropinBuilderPage() {
     window.setTimeout(() => setBuilderWarped(false), STOREFRONT_MORPH_MS);
   }, []);
 
-  const handleCreateSession = async () => {
+  const handleCreateSession = async (options?: {
+    environmentOverride?: string;
+  }) => {
     setSessionError(null);
     if (saveCardForNextPurchase && !userInfoReference.trim()) {
       setSessionError(
@@ -621,6 +647,8 @@ function DropinBuilderPage() {
       if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
         throw new Error("Amount must be a positive number.");
       }
+      const envForSession = options?.environmentOverride ?? environment;
+      const targetForSession = targetFromSdkEnvironment(envForSession);
       const response = await fetch("/api/evonet/session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -629,7 +657,8 @@ function DropinBuilderPage() {
           currency: orderCurrency.trim() || "HKD",
           orderId: generateOrderId(),
           description: orderDescription.trim() || "Drop-in Builder Session",
-          environment,
+          environment: envForSession,
+          target: targetForSession,
           locale: locale.trim() || "en-US",
           ...(saveCardForNextPurchase
             ? {
@@ -664,6 +693,39 @@ function DropinBuilderPage() {
     }
   };
 
+  const handleEnvironmentChipTap = () => {
+    if (envChipTapTimerRef.current) {
+      clearTimeout(envChipTapTimerRef.current);
+    }
+    envChipTapCountRef.current += 1;
+    const taps = envChipTapCountRef.current;
+
+    if (taps < ENV_CHIP_TAPS_REQUIRED) {
+      envChipTapTimerRef.current = setTimeout(() => {
+        envChipTapCountRef.current = 0;
+        envChipTapTimerRef.current = null;
+      }, ENV_CHIP_TAP_WINDOW_MS);
+      return;
+    }
+
+    envChipTapCountRef.current = 0;
+    envChipTapTimerRef.current = null;
+
+    const nextTarget: EvonetTarget =
+      targetFromSdkEnvironment(environment) === "PROD" ? "UAT" : "PROD";
+    const nextEnv = sdkEnvironmentForTarget(nextTarget);
+
+    writeStoredTargetOverride(nextTarget);
+    setEnvironment(nextEnv);
+    setTargetSwitchHint(`Switched to ${nextTarget}`);
+    setSessionID(DEFAULT_SESSION_ID);
+    setSdkInitGeneration(0);
+    setPreviewEvents([]);
+    setSessionError(null);
+
+    void handleCreateSession({ environmentOverride: nextEnv });
+  };
+
   const handleResetTheme = () => {
     setColorAction("#111827");
     setColorBackground("#ffffff");
@@ -691,6 +753,13 @@ function DropinBuilderPage() {
       typeof window !== "undefined" &&
       parseEvonetReturnParams(new URLSearchParams(window.location.search))
     ) {
+      return;
+    }
+    const storedTarget = readStoredTargetOverride();
+    if (storedTarget) {
+      const envForLoad = sdkEnvironmentForTarget(storedTarget);
+      setEnvironment(envForLoad);
+      void handleCreateSession({ environmentOverride: envForLoad });
       return;
     }
     void handleCreateSession();
@@ -738,12 +807,30 @@ function DropinBuilderPage() {
               }}
             >
               <Stack spacing={1.5}>
-                <Typography
-                  variant="h4"
-                  sx={{ fontWeight: 700, letterSpacing: -0.3, color: "#1F2937" }}
+                <Stack
+                  direction="row"
+                  alignItems="center"
+                  spacing={1}
+                  flexWrap="wrap"
+                  useFlexGap
                 >
-                  Drop-in Builder
-                </Typography>
+                  <Typography
+                    variant="h4"
+                    sx={{ fontWeight: 700, letterSpacing: -0.3, color: "#1F2937" }}
+                  >
+                    Drop-in Builder
+                  </Typography>
+                  {isEvonetProductionEnvironment(environment) ? (
+                    <Chip size="small" color="error" label="PROD" />
+                  ) : null}
+                  <Chip
+                    size="small"
+                    variant="outlined"
+                    label={environment}
+                    onClick={handleEnvironmentChipTap}
+                    sx={{ fontFamily: "monospace", cursor: "pointer" }}
+                  />
+                </Stack>
                 <Typography variant="body1" sx={{ color: "#4B5563", maxWidth: 760 }}>
                   Configure Evonet Drop-in SDK options with a guided interface,
                   preview the result instantly, and copy JSON in one click.
@@ -804,7 +891,7 @@ function DropinBuilderPage() {
                   <Button
                     fullWidth
                     variant="outlined"
-                    onClick={handleCreateSession}
+                    onClick={() => void handleCreateSession()}
                     disabled={isCreatingSession}
                     sx={{ height: 56 }}
                   >
@@ -1585,7 +1672,7 @@ function DropinBuilderPage() {
                   </Alert>
                 ) : null}
 
-                <DemoTransactionWarning sx={{ mb: 1.5 }} />
+                <DemoTransactionWarning environment={environment} sx={{ mb: 1.5 }} />
 
                 <Box sx={{ border: "1px solid #D1D5DB", borderRadius: 2, p: 1 }}>
                   <EvonetDropinHost
@@ -1761,6 +1848,14 @@ function DropinBuilderPage() {
           />
         </Suspense>
       </StorefrontMorphOverlay>
+
+      <Snackbar
+        open={Boolean(targetSwitchHint)}
+        autoHideDuration={2500}
+        onClose={() => setTargetSwitchHint(null)}
+        message={targetSwitchHint}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      />
     </Box>
   );
 }

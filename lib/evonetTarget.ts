@@ -6,6 +6,29 @@
 
 export type EvonetTarget = "UAT" | "PROD";
 
+/** sessionStorage key for Dev Console / Builder five-tap runtime override. */
+export const EVONET_TARGET_OVERRIDE_STORAGE_KEY = "evonet-demo-target-override";
+
+export function readStoredTargetOverride(): EvonetTarget | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = sessionStorage.getItem(EVONET_TARGET_OVERRIDE_STORAGE_KEY);
+    if (raw === "UAT" || raw === "PROD") return raw;
+  } catch {
+    /* ignore */
+  }
+  return null;
+}
+
+export function writeStoredTargetOverride(target: EvonetTarget): void {
+  if (typeof window === "undefined") return;
+  try {
+    sessionStorage.setItem(EVONET_TARGET_OVERRIDE_STORAGE_KEY, target);
+  } catch {
+    /* ignore */
+  }
+}
+
 export interface EvonetServerConfig {
   target: EvonetTarget;
   interactionUrl: string;

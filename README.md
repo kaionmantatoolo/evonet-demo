@@ -31,7 +31,7 @@ Store **both** credential sets once, then switch with one variable:
 
 Change it on Vercel, then **Redeploy**.
 
-On **Drop-in Dev Console**, tap the environment chip next to the title **5 times** within 2 seconds to runtime-toggle UAT ↔ PROD (UI + session credentials). Preference is kept in `sessionStorage` for that tab; both credential sets must be configured on the server.
+On **Drop-in Dev Console** and **Drop-in Builder**, tap the environment chip next to the title **5 times** within 2 seconds to runtime-toggle UAT ↔ PROD (UI + session credentials). Preference is kept in `sessionStorage` for that tab (shared across both pages); both credential sets must be configured on the server.
 
 | Target | Interaction URL (default) | Credentials | Drop-in env |
 |--------|---------------------------|-------------|-------------|

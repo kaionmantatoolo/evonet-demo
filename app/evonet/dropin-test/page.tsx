@@ -43,8 +43,10 @@ import {
   isEvonetProductionEnvironment,
 } from "../../../lib/evonetEnvironment";
 import {
+  readStoredTargetOverride,
   sdkEnvironmentForTarget,
   targetFromSdkEnvironment,
+  writeStoredTargetOverride,
   type EvonetTarget,
 } from "../../../lib/evonetTarget";
 import {
@@ -68,20 +70,8 @@ const DEFAULT_SESSION_ID =
   process.env.NEXT_PUBLIC_EVONET_SESSION_ID ?? "REPLACE_WITH_REAL_SESSION_ID";
 const DEFAULT_CURRENCY =
   process.env.NEXT_PUBLIC_EVONET_DEFAULT_CURRENCY ?? "HKD";
-const TARGET_OVERRIDE_STORAGE_KEY = "evonet-demo-target-override";
 const ENV_CHIP_TAP_WINDOW_MS = 2000;
 const ENV_CHIP_TAPS_REQUIRED = 5;
-
-function readStoredTargetOverride(): EvonetTarget | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const raw = sessionStorage.getItem(TARGET_OVERRIDE_STORAGE_KEY);
-    if (raw === "UAT" || raw === "PROD") return raw;
-  } catch {
-    /* ignore */
-  }
-  return null;
-}
 
 function generateOrderId(): string {
   const suffix =
@@ -792,7 +782,7 @@ function EvonetDropinTestPage() {
     const nextEnv = sdkEnvironmentForTarget(nextTarget);
 
     try {
-      sessionStorage.setItem(TARGET_OVERRIDE_STORAGE_KEY, nextTarget);
+      writeStoredTargetOverride(nextTarget);
     } catch {
       /* ignore */
     }
