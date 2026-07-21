@@ -1,14 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import {
   Box,
   Button,
   Chip,
   Divider,
+  Portal,
   Stack,
   Typography,
 } from "@mui/material";
+import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
+import ShoppingBagOutlinedIcon from "@mui/icons-material/ShoppingBagOutlined";
 import type { DemoProduct } from "./demoProduct";
 import { productImagesForColor } from "./demoProduct";
 import {
@@ -17,6 +20,7 @@ import {
   shopSizeButtonSx,
 } from "./storefrontButtons";
 import { bagBounce, enterUp } from "./storefrontMotion";
+import type { StorefrontCssVars } from "../../lib/storefrontSnapshot";
 
 interface StorefrontProductCardProps {
   product: DemoProduct;
@@ -28,6 +32,8 @@ interface StorefrontProductCardProps {
   onAddToCart: () => void;
   onBuyNow: () => void;
   justAdded: boolean;
+  /** Needed when sticky CTA is portaled outside the themed tree. */
+  themeVars?: StorefrontCssVars;
 }
 
 export function StorefrontProductCard({
@@ -40,6 +46,7 @@ export function StorefrontProductCard({
   onAddToCart,
   onBuyNow,
   justAdded,
+  themeVars,
 }: StorefrontProductCardProps) {
   const [activeImage, setActiveImage] = useState(0);
   const colorImages = productImagesForColor(product, selectedColorId);
@@ -345,52 +352,74 @@ export function StorefrontProductCard({
           </Button>
         </Stack>
 
-        {/* Mobile sticky CTA — always within thumb reach */}
-        <Box
-          sx={{
-            display: { xs: "block", md: "none" },
-            position: "fixed",
-            left: 0,
-            right: 0,
-            bottom: 0,
-            zIndex: 30,
-            px: 1.5,
-            pt: 1.25,
-            pb: "max(12px, env(safe-area-inset-bottom))",
-            bgcolor: "color-mix(in srgb, var(--shop-bg) 88%, #ffffff)",
-            borderTop: "1px solid var(--shop-border)",
-            backdropFilter: "blur(14px)",
-            boxShadow: "0 -10px 30px rgba(28, 25, 23, 0.08)",
-          }}
-        >
-          <Stack direction="row" spacing={1}>
-            <Button
-              fullWidth
-              variant="outlined"
-              onClick={onAddToCart}
-              sx={{
-                ...shopSecondaryButtonSx,
-                py: 1.25,
-                bgcolor: justAdded
-                  ? "color-mix(in srgb, var(--shop-action) 10%, transparent)"
-                  : "var(--shop-surface, #fff)",
-                animation: justAdded
-                  ? `${bagBounce} 480ms cubic-bezier(0.22, 1, 0.36, 1)`
-                  : "none",
-              }}
-            >
-              {justAdded ? "Added" : "Add"}
-            </Button>
-            <Button
-              fullWidth
-              variant="contained"
-              onClick={onBuyNow}
-              sx={{ ...shopPrimaryButtonSx, py: 1.25, flex: 1.4 }}
-            >
-              Buy · {currency} {product.price.toFixed(2)}
-            </Button>
-          </Stack>
-        </Box>
+        {/* Mobile sticky CTA — portaled so parent enterUp/transform cannot trap fixed */}
+        <Portal>
+          <Box
+            style={themeVars as CSSProperties | undefined}
+            sx={{
+              display: { xs: "block", md: "none" },
+              position: "fixed",
+              left: 0,
+              right: 0,
+              bottom: 0,
+              zIndex: (theme) => theme.zIndex.modal + 6,
+              px: 1.5,
+              pt: 1.1,
+              pb: "max(12px, env(safe-area-inset-bottom))",
+              bgcolor: "var(--shop-bg, #f4f1ec)",
+              borderTop: "1px solid var(--shop-border, #e7e2d9)",
+              boxShadow: "0 -8px 24px rgba(28, 25, 23, 0.08)",
+            }}
+          >
+            <Stack direction="row" spacing={1} alignItems="stretch" sx={{ width: "100%" }}>
+              <Button
+                variant="outlined"
+                onClick={onAddToCart}
+                aria-label={justAdded ? "Added to bag" : "Add to bag"}
+                sx={{
+                  ...shopSecondaryButtonSx,
+                  flex: "0 0 auto",
+                  minWidth: 52,
+                  width: 52,
+                  px: 0,
+                  py: 1.35,
+                  borderRadius: "12px",
+                  bgcolor: justAdded
+                    ? "color-mix(in srgb, var(--shop-action) 10%, transparent)"
+                    : "var(--shop-surface, #fff)",
+                  animation: justAdded
+                    ? `${bagBounce} 480ms cubic-bezier(0.22, 1, 0.36, 1)`
+                    : "none",
+                }}
+              >
+                {justAdded ? (
+                  <CheckRoundedIcon fontSize="small" />
+                ) : (
+                  <ShoppingBagOutlinedIcon fontSize="small" />
+                )}
+              </Button>
+              <Button
+                variant="contained"
+                onClick={onBuyNow}
+                sx={{
+                  ...shopPrimaryButtonSx,
+                  flex: "1 1 auto",
+                  minWidth: 0,
+                  width: "auto",
+                  py: 1.35,
+                  px: 1.5,
+                  fontSize: "0.92rem",
+                  borderRadius: "12px",
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                }}
+              >
+                Buy now · {currency} {product.price.toFixed(2)}
+              </Button>
+            </Stack>
+          </Box>
+        </Portal>
 
         <Stack spacing={1} sx={{ pt: 0.5 }}>
           {product.highlights.map((item, index) => (

@@ -165,7 +165,7 @@ export const appleGlassPanelSx: AppleSx = {
   backdropFilter: "blur(32px) saturate(1.5)",
   WebkitBackdropFilter: "blur(32px) saturate(1.5)",
   border: "1px solid rgba(0, 0, 0, 0.12)",
-  borderRadius: 3,
+  borderRadius: 0,
   boxShadow: [
     "inset 0 1px 0 rgba(255,255,255,0.7)",
     "0 8px 28px rgba(0,0,0,0.06)",
@@ -173,10 +173,10 @@ export const appleGlassPanelSx: AppleSx = {
   overflow: "hidden",
 };
 
-/** Settings-style grouped inset section (iOS 12pt corner radius). */
+/** Settings-style grouped inset section — square to match Builder/Dev Console. */
 export const appleGroupedSectionSx: AppleSx = {
   bgcolor: apple.secondaryGroupedBackground,
-  borderRadius: "12px",
+  borderRadius: 0,
   border: appleHairline,
   overflow: "hidden",
   boxShadow: "none",
@@ -208,13 +208,13 @@ export const appleSectionHeaderSx: AppleSx = {
   color: apple.secondaryLabel,
 };
 
-/** Primary capsule CTA. */
+/** Primary CTA — square language aligned with Builder cards. */
 export const appleCapsuleButtonSx: AppleSx = {
   textTransform: "none",
   fontWeight: 600,
   fontSize: "0.9375rem",
   letterSpacing: "-0.01em",
-  borderRadius: 999,
+  borderRadius: 0,
   px: 2.5,
   py: 1,
   bgcolor: apple.systemBlue,
@@ -229,13 +229,13 @@ export const appleCapsuleButtonSx: AppleSx = {
   },
 };
 
-/** Secondary / outline capsule. */
+/** Secondary / outline CTA. */
 export const appleCapsuleOutlineSx: AppleSx = {
   textTransform: "none",
   fontWeight: 600,
   fontSize: "0.9375rem",
   letterSpacing: "-0.01em",
-  borderRadius: 999,
+  borderRadius: 0,
   px: 2.5,
   py: 0.95,
   border: `1.5px solid ${apple.systemBlue}`,

@@ -389,6 +389,8 @@ export function StorefrontCheckoutDrawer({
             WebkitOverflowScrolling: "touch",
             bgcolor: "#fff",
             overscrollBehavior: "contain",
+            maxWidth: "100%",
+            boxSizing: "border-box",
           }}
         >
           {(isCreatingSession ||
@@ -416,6 +418,9 @@ export function StorefrontCheckoutDrawer({
                 opacity: dropinUiReady ? 1 : 0,
                 transition: "opacity 420ms ease",
                 pointerEvents: dropinUiReady ? "auto" : "none",
+                p: { xs: 1.5, sm: 2 },
+                maxWidth: "100%",
+                boxSizing: "border-box",
                 // Content-sized frame — avoid a tall empty Drop-in shell.
                 "& iframe": {
                   maxWidth: "100%",

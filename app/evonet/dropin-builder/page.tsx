@@ -2,32 +2,32 @@
 
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { Alert, Box, Snackbar } from "@mui/material";
+import {
+  ArrowRight,
+  Eye,
+  Store,
+} from "lucide-react";
 import {
   Accordion,
-  AccordionDetails,
-  AccordionSummary,
-  Alert,
-  Box,
-  Button,
-  Chip,
-  Container,
-  FormControl,
-  FormControlLabel,
-  Grid,
-  InputLabel,
-  MenuItem,
-  Paper,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
   Select,
-  Snackbar,
-  Stack,
-  Switch,
-  TextField,
-  Typography,
-} from "@mui/material";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import StorefrontOutlinedIcon from "@mui/icons-material/StorefrontOutlined";
-import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
-import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
 import { pageEnter, sectionEnter } from "../../../lib/pageMotion";
 import { VIEWPORT_HEIGHT } from "../../../lib/responsiveLayout";
 import {
@@ -280,8 +280,8 @@ function DropinBuilderPage() {
   );
   const [tncUrl, setTncUrl] = useState("");
 
-  const [colorAction, setColorAction] = useState("#111827");
-  const [colorBackground, setColorBackground] = useState("#ffffff");
+  const [colorAction, setColorAction] = useState("");
+  const [colorBackground, setColorBackground] = useState("");
   const [colorBoxStroke, setColorBoxStroke] = useState("");
   const [colorDisabled, setColorDisabled] = useState("");
   const [colorError, setColorError] = useState("");
@@ -395,9 +395,7 @@ function DropinBuilderPage() {
   }, [borderRadiusInput]);
 
   const sdkAppearance: EvonetSdkAppearance = useMemo(() => {
-    const appearance: EvonetSdkAppearance = {
-      colorBackground: colorBackground.trim() || "#ffffff",
-    };
+    const appearance: EvonetSdkAppearance = {};
     const put = (key: keyof EvonetSdkAppearance, value: string) => {
       const v = value.trim();
       if (v) {
@@ -406,6 +404,7 @@ function DropinBuilderPage() {
         (appearance as Record<string, unknown>)[key as string] = normalized;
       }
     };
+    put("colorBackground", colorBackground);
     put("colorAction", colorAction);
     put("colorBoxStroke", colorBoxStroke);
     put("colorDisabled", colorDisabled);
@@ -732,8 +731,8 @@ function DropinBuilderPage() {
   };
 
   const handleResetTheme = () => {
-    setColorAction("#111827");
-    setColorBackground("#ffffff");
+    setColorAction("");
+    setColorBackground("");
     setColorBoxStroke("");
     setColorDisabled("");
     setColorError("");
@@ -773,1162 +772,330 @@ function DropinBuilderPage() {
   }, []);
 
   return (
-    <Box sx={{ minHeight: { md: VIEWPORT_HEIGHT }, ...pageEnter() }}>
+    <Box sx={{ minHeight: { md: VIEWPORT_HEIGHT }, overflowX: "hidden", ...pageEnter() }}>
       <Box sx={builderStageMorphSx(builderWarped)}>
-        <Container
-          maxWidth="xl"
-          sx={{
-            py: { xs: 2.5, sm: 3, md: 2 },
-            height: { md: VIEWPORT_HEIGHT },
-            overflow: { md: "hidden" },
-          }}
+        <main
+          className="mx-auto h-auto max-w-7xl overflow-x-hidden px-3 py-5 sm:px-6 md:h-[var(--builder-height)] md:overflow-hidden md:py-4 lg:px-8"
+          style={{ "--builder-height": VIEWPORT_HEIGHT } as React.CSSProperties}
           suppressHydrationWarning
         >
-      <Box
-        sx={{
-          display: "grid",
-          gap: { xs: 2, md: 3 },
-          gridTemplateColumns: {
-            xs: "1fr",
-            md: "minmax(0, 1.7fr) minmax(320px, 1fr)",
-          },
-          alignItems: "start",
-          height: { md: `calc(${VIEWPORT_HEIGHT} - 32px)` },
-        }}
-      >
-        <Box
-          sx={{
-            minHeight: { md: 0 },
-            height: { md: "100%" },
-            overflowY: { md: "auto" },
-            WebkitOverflowScrolling: "touch",
-            pr: { md: 1 },
-          }}
-        >
-          <Stack spacing={{ xs: 2, md: 3 }} sx={sectionEnter(40)}>
-            <Paper
-              sx={{
-                p: { xs: 2, sm: 3 },
-                borderRadius: 3,
-                border: "1px solid",
-                borderColor: "#E5E7EB",
-                bgcolor: "#FFFFFF",
-              }}
+          <div className="grid min-w-0 items-start gap-5 md:h-[calc(var(--builder-height)-2rem)] md:grid-cols-[minmax(0,1.7fr)_minmax(320px,1fr)] md:gap-6">
+            <Box
+              className="min-h-0 min-w-0 space-y-5 md:h-full md:overflow-y-auto md:px-0.5 md:pr-2"
+              sx={sectionEnter(40)}
             >
-              <Stack spacing={1.5}>
-                <Stack
-                  direction="row"
-                  alignItems="center"
-                  spacing={1}
-                  flexWrap="wrap"
-                  useFlexGap
-                >
-                  <Typography
-                    variant="h4"
-                    sx={{
-                      fontWeight: 700,
-                      letterSpacing: -0.3,
-                      color: "#1F2937",
-                      fontSize: { xs: "1.55rem", sm: "2rem", md: "2.125rem" },
-                    }}
-                  >
-                    Drop-in Builder
-                  </Typography>
-                  {isEvonetProductionEnvironment(environment) ? (
-                    <Chip size="small" color="error" label="PROD" />
-                  ) : null}
-                  <Chip
-                    size="small"
-                    variant="outlined"
-                    label={environment}
-                    onClick={handleEnvironmentChipTap}
-                    sx={{ fontFamily: "monospace", cursor: "pointer" }}
-                  />
-                </Stack>
-                <Typography
-                  variant="body1"
-                  sx={{
-                    color: "#4B5563",
-                    maxWidth: 760,
-                    fontSize: { xs: "0.95rem", sm: "1rem" },
-                  }}
-                >
-                  Configure Evonet Drop-in SDK options with a guided interface,
-                  preview the result instantly, and copy JSON in one click.
-                </Typography>
-                <Stack
-                  direction={{ xs: "column", sm: "row" }}
-                  spacing={1}
-                  sx={{ display: { xs: "flex", md: "none" } }}
-                >
-                  <Button
-                    fullWidth
-                    variant="contained"
-                    onClick={openAsStorefront}
-                    startIcon={<StorefrontOutlinedIcon />}
-                    sx={{
-                      textTransform: "none",
-                      fontWeight: 700,
-                      borderRadius: 2.5,
-                      bgcolor: "#111827",
-                      py: 1.2,
-                    }}
-                  >
-                    Open as storefront
-                  </Button>
-                  <Button
-                    fullWidth
-                    variant="outlined"
-                    component="a"
-                    href="#builder-preview"
-                    startIcon={<VisibilityOutlinedIcon />}
-                    sx={{ textTransform: "none", fontWeight: 600, borderRadius: 2.5 }}
-                  >
-                    Jump to preview
-                  </Button>
-                </Stack>
-              </Stack>
-            </Paper>
+              <Card>
+                <CardHeader className="space-y-3 pb-4">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <CardTitle className="text-2xl tracking-tight sm:text-3xl">
+                      Drop-in Builder
+                    </CardTitle>
+                    {isEvonetProductionEnvironment(environment) ? (
+                      <Badge variant="destructive">PROD</Badge>
+                    ) : null}
+                    <Badge
+                      variant="outline"
+                      className="cursor-pointer font-mono"
+                      onClick={handleEnvironmentChipTap}
+                    >
+                      {environment}
+                    </Badge>
+                  </div>
+                  <p className="max-w-3xl text-sm text-muted-foreground sm:text-base">
+                    Configure Evonet Drop-in SDK options with a guided interface,
+                    preview the result instantly, and copy JSON in one click.
+                  </p>
+                  <div className="mt-1 flex w-full flex-col gap-3 md:hidden">
+                    <Button className="w-full" size="lg" onClick={openAsStorefront}>
+                      <Store data-icon="inline-start" />
+                      Open as storefront
+                    </Button>
+                    <Button variant="outline" className="w-full" size="lg" asChild>
+                      <a href="#builder-preview">
+                        <Eye data-icon="inline-start" />
+                        Jump to preview
+                      </a>
+                    </Button>
+                  </div>
+                </CardHeader>
+              </Card>
 
-            <Paper
-              sx={{
-                p: 3,
-                borderRadius: 3,
-                border: "1px solid",
-                borderColor: "#E5E7EB",
-                bgcolor: "#FFFFFF",
-              }}
-            >
-              <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: "#1F2937" }}>
-                Order Info
-              </Typography>
-              <Grid container spacing={2}>
-                <Grid item xs={12} md={3}>
-                  <TextField
-                    fullWidth
-                    label="Amount"
-                    value={orderAmount}
-                    onChange={(event) => setOrderAmount(event.target.value)}
-                    placeholder="128.00"
-                    inputProps={{ "aria-label": "Order amount" }}
-                  />
-                </Grid>
-                <Grid item xs={12} md={3}>
-                  <TextField
-                    fullWidth
-                    label="Currency"
-                    value={orderCurrency}
-                    onChange={(event) => setOrderCurrency(event.target.value)}
-                    placeholder="HKD"
-                    inputProps={{ "aria-label": "Order currency" }}
-                  />
-                </Grid>
-                <Grid item xs={12} md={3}>
-                  <TextField
-                    fullWidth
-                    select
-                    label="Locale"
-                    value={locale}
-                    onChange={(event) => setLocale(event.target.value)}
-                    helperText="Used for session and Drop-in locale."
-                    inputProps={{ "aria-label": "Session locale" }}
-                  >
-                    <MenuItem value="en-US">en-US</MenuItem>
-                    <MenuItem value="zh-TW">zh-TW</MenuItem>
-                    <MenuItem value="zh-CN">zh-CN</MenuItem>
-                    <MenuItem value="ja-JP">ja-JP</MenuItem>
-                  </TextField>
-                </Grid>
-                <Grid item xs={12} md={3}>
-                  <Button
-                    fullWidth
-                    variant="outlined"
-                    onClick={() => void handleCreateSession()}
-                    disabled={isCreatingSession}
-                    sx={{ height: 56 }}
-                  >
+              <Card>
+                <CardHeader><CardTitle className="text-base">Order Info</CardTitle></CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid gap-4 sm:grid-cols-3">
+                    <div className="space-y-2">
+                      <Label htmlFor="order-amount">Amount</Label>
+                      <Input id="order-amount" value={orderAmount} onChange={(event) => setOrderAmount(event.target.value)} placeholder="128.00" aria-label="Order amount" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="order-currency">Currency</Label>
+                      <Input id="order-currency" value={orderCurrency} onChange={(event) => setOrderCurrency(event.target.value)} placeholder="HKD" aria-label="Order currency" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Locale</Label>
+                      <Select value={locale} onValueChange={setLocale}>
+                        <SelectTrigger className="w-full" aria-label="Session locale"><SelectValue /></SelectTrigger>
+                        <SelectContent>{["en-US", "zh-TW", "zh-CN", "ja-JP"].map((value) => <SelectItem key={value} value={value}>{value}</SelectItem>)}</SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground">Used for session and Drop-in locale.</p>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="order-description">Description</Label>
+                    <Input id="order-description" value={orderDescription} onChange={(event) => setOrderDescription(event.target.value)} placeholder="Drop-in Builder Session" aria-label="Order description" />
+                  </div>
+                  <Button variant="outline" onClick={() => void handleCreateSession()} disabled={isCreatingSession}>
                     {isCreatingSession ? "Creating Session..." : "Refresh Session ID"}
                   </Button>
-                </Grid>
-                <Grid item xs={12}>
-                  <TextField
-                    fullWidth
-                    label="Description"
-                    value={orderDescription}
-                    onChange={(event) => setOrderDescription(event.target.value)}
-                    placeholder="Drop-in Builder Session"
-                    inputProps={{ "aria-label": "Order description" }}
-                  />
-                </Grid>
-                <Grid item xs={12}>
-                  <Box
-                    sx={{
-                      border: "1px solid #E5E7EB",
-                      borderRadius: 2,
-                      px: 2,
-                      py: 1.5,
-                      bgcolor: "#FAFAFA",
-                    }}
-                  >
-                    <FormControlLabel
-                      sx={{ m: 0, alignItems: "flex-start" }}
-                      control={
-                        <Switch
-                          checked={saveCardForNextPurchase}
-                          onChange={(event) =>
-                            setSaveCardForNextPurchase(event.target.checked)
-                          }
-                          inputProps={{
-                            "aria-label": "Allow save card for next purchase",
-                          }}
-                          sx={{
-                            mt: 0.25,
-                            "& .MuiSwitch-switchBase.Mui-checked": {
-                              color: "#3B82F6",
-                            },
-                            "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
-                              bgcolor: "#3B82F6",
-                            },
-                          }}
-                        />
-                      }
-                      label={
-                        <Box>
-                          <Typography variant="body2" sx={{ color: "#1F2937", fontWeight: 600 }}>
-                            Allow save card for next purchase (Interaction)
-                          </Typography>
-                          <Typography variant="caption" sx={{ color: "#6B7280", display: "block" }}>
-                            Sends userInfo.reference and paymentMethod.recurringProcessingModel on
-                            POST interaction. Requires merchant capability; after changing this,
-                            use Refresh Session ID.
-                          </Typography>
-                        </Box>
-                      }
-                    />
-                  </Box>
-                </Grid>
-                <Grid item xs={12}>
-                  <FormControlLabel
-                    sx={{ m: 0 }}
-                    control={
-                      <Switch
-                        checked={includeRecurringProcessingModel}
-                        onChange={(event) =>
-                          setIncludeRecurringProcessingModel(event.target.checked)
-                        }
-                        disabled={!saveCardForNextPurchase}
-                        inputProps={{
-                          "aria-label":
-                            "Include paymentMethod recurringProcessingModel",
-                        }}
-                      />
-                    }
-                    label={
-                      <Box>
-                        <Typography variant="body2" sx={{ color: "#1F2937", fontWeight: 600 }}>
-                          Include paymentMethod.recurringProcessingModel
-                        </Typography>
-                        <Typography variant="caption" sx={{ color: "#6B7280", display: "block" }}>
-                          Turn this off to send only userInfo.reference and omit the paymentMethod
-                          object.
-                        </Typography>
-                      </Box>
-                    }
-                  />
-                </Grid>
-                <Grid item xs={12} md={6}>
-                  <TextField
-                    fullWidth
-                    label="User reference (userInfo.reference)"
-                    value={userInfoReference}
-                    onChange={(event) => setUserInfoReference(event.target.value)}
-                    placeholder="e.g. your_customer_id_123"
-                    disabled={!saveCardForNextPurchase}
-                    required={saveCardForNextPurchase}
-                    helperText={
-                      saveCardForNextPurchase
-                        ? "Stable shopper ID in your system; used to associate stored tokens."
-                        : "Enable the option above to send this field."
-                    }
-                    inputProps={{ "aria-label": "User reference for interaction" }}
-                  />
-                </Grid>
-                <Grid item xs={12} md={6}>
-                  <FormControl
-                    fullWidth
-                    disabled={!saveCardForNextPurchase || !includeRecurringProcessingModel}
-                  >
-                    <InputLabel id="recurring-model-label">Recurring model</InputLabel>
-                    <Select
-                      labelId="recurring-model-label"
-                      label="Recurring model"
-                      value={recurringProcessingModel}
-                      onChange={(event) =>
-                        setRecurringProcessingModel(
-                          event.target.value as EvonetRecurringProcessingModel
-                        )
-                      }
-                      inputProps={{ "aria-label": "Recurring processing model" }}
-                    >
-                      {RECURRING_MODEL_OPTIONS.map((opt) => (
-                        <MenuItem key={opt.value} value={opt.value}>
-                          {opt.label}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                </Grid>
-                <Grid item xs={12}>
-                  <Alert severity="info" variant="outlined">
-                    Current Session ID: {sessionID || "N/A"}
-                  </Alert>
-                </Grid>
-                {sessionError ? (
-                  <Grid item xs={12}>
-                    <Alert severity="error" variant="outlined">
-                      {sessionError}
-                    </Alert>
-                  </Grid>
-                ) : null}
-              </Grid>
-            </Paper>
+                  <div className="rounded-none border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-950">
+                    <span className="font-medium">Current Session ID:</span>{" "}
+                    <span className="break-all font-mono text-xs">{sessionID || "N/A"}</span>
+                  </div>
+                  {sessionError ? <Alert severity="error" variant="outlined">{sessionError}</Alert> : null}
+                  <Accordion type="single" collapsible className="rounded-none border px-3">
+                    <AccordionItem value="save-card" className="border-0">
+                      <AccordionTrigger>Save card for next purchase</AccordionTrigger>
+                      <AccordionContent className="space-y-4 pt-2">
+                        <div className="flex items-start justify-between gap-4 rounded-none border p-3">
+                          <div>
+                            <Label htmlFor="save-card" className="font-medium">Allow save card for next purchase</Label>
+                            <p className="mt-1 text-xs text-muted-foreground">Sends userInfo.reference and paymentMethod.recurringProcessingModel. Refresh the session after changing this.</p>
+                          </div>
+                          <Switch id="save-card" checked={saveCardForNextPurchase} onCheckedChange={setSaveCardForNextPurchase} aria-label="Allow save card for next purchase" />
+                        </div>
+                        <div className="grid gap-4 sm:grid-cols-2">
+                          <div className="space-y-2">
+                            <Label htmlFor="user-reference">User reference (userInfo.reference)</Label>
+                            <Input id="user-reference" value={userInfoReference} onChange={(event) => setUserInfoReference(event.target.value)} placeholder="your_customer_id_123" disabled={!saveCardForNextPurchase} required={saveCardForNextPurchase} />
+                            <p className="text-xs text-muted-foreground">Stable shopper ID used to associate stored tokens.</p>
+                          </div>
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-between gap-3">
+                              <Label htmlFor="recurring-enabled">Include recurring processing model</Label>
+                              <Switch id="recurring-enabled" checked={includeRecurringProcessingModel} onCheckedChange={setIncludeRecurringProcessingModel} disabled={!saveCardForNextPurchase} />
+                            </div>
+                            <Select value={recurringProcessingModel} onValueChange={(value) => setRecurringProcessingModel(value as EvonetRecurringProcessingModel)} disabled={!saveCardForNextPurchase || !includeRecurringProcessingModel}>
+                              <SelectTrigger className="w-full" aria-label="Recurring processing model"><SelectValue placeholder="Recurring model" /></SelectTrigger>
+                              <SelectContent>{RECURRING_MODEL_OPTIONS.map((option) => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}</SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
+                  </Accordion>
+                </CardContent>
+              </Card>
 
-            <Paper
-              sx={{
-                p: 3,
-                borderRadius: 3,
-                border: "1px solid",
-                borderColor: "#E5E7EB",
-                bgcolor: "#FFFFFF",
-              }}
-            >
-              <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: "#1F2937" }}>
-                Payment UI
-              </Typography>
-              <Grid container spacing={1.75}>
-                {[
-                  {
-                    checked: showSaveImage,
-                    onChange: setShowSaveImage,
-                    label: "Show Save Image",
-                    caption: "Allow saving QR code to device (not card storage).",
-                  },
-                  {
-                    checked: columnsLayout,
-                    onChange: setColumnsLayout,
-                    label: "Columns Layout",
-                  },
-                  {
-                    checked: showCardHolderName,
-                    onChange: setShowCardHolderName,
-                    label: "Show Card Holder Name",
-                  },
-                  {
-                    checked: cvvForSavedCard,
-                    onChange: setCvvForSavedCard,
-                    label: "CVV For Saved Card",
-                  },
-                  {
-                    checked: showScanCardButton,
-                    onChange: setShowScanCardButton,
-                    label: "Show Scan Card Button",
-                  },
-                  {
-                    checked: autoInvokeCardScanner,
-                    onChange: setAutoInvokeCardScanner,
-                    label: "Auto Invoke Card Scanner",
-                  },
-                  {
-                    checked: showTnC,
-                    onChange: setShowTnC,
-                    label: "Show Terms and Conditions",
-                  },
-                ].map((item) => (
-                  <Grid item key={item.label} xs={12} sm={6} md={4}>
-                    <Box
-                      sx={{
-                        border: "1px solid #E5E7EB",
-                        borderRadius: 2,
-                        px: 1.5,
-                        py: 1.25,
-                        minHeight: 56,
-                        display: "flex",
-                        alignItems: "center",
-                        bgcolor: "#FAFAFA",
-                      }}
-                    >
-                      <FormControlLabel
-                        sx={{ m: 0, width: "100%", alignItems: "flex-start" }}
-                        control={
-                          <Switch
-                            checked={item.checked}
-                            onChange={(event) => item.onChange(event.target.checked)}
-                            sx={{
-                              mr: 1,
-                              mt: item.caption ? 0.25 : 0,
-                              "& .MuiSwitch-switchBase.Mui-checked": {
-                                color: "#3B82F6",
-                              },
-                              "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
-                                bgcolor: "#3B82F6",
-                              },
-                            }}
-                          />
-                        }
-                        label={
-                          <Box>
-                            <Typography variant="body2" sx={{ color: "#1F2937" }}>
-                              {item.label}
-                            </Typography>
-                            {"caption" in item && item.caption ? (
-                              <Typography
-                                variant="caption"
-                                sx={{ color: "#6B7280", display: "block", mt: 0.25 }}
-                              >
-                                {item.caption}
-                              </Typography>
-                            ) : null}
-                          </Box>
-                        }
-                      />
-                    </Box>
-                  </Grid>
-                ))}
-                <Grid item xs={12} sm={6} md={4}>
-                  <FormControl fullWidth size="small" disabled={!showTnC}>
-                    <InputLabel id="builder-tnc-mode-label">TnC Mode</InputLabel>
-                    <Select
-                      labelId="builder-tnc-mode-label"
-                      label="TnC Mode"
-                      value={tncMode}
-                      onChange={(event) =>
-                        setTncMode(event.target.value as "checkbox" | "click2accept")
-                      }
-                    >
-                      <MenuItem value="checkbox">checkbox</MenuItem>
-                      <MenuItem value="click2accept">click2accept</MenuItem>
-                    </Select>
-                  </FormControl>
-                </Grid>
-                <Grid item xs={12} sm={6} md={8}>
-                  <TextField
-                    fullWidth
-                    size="small"
-                    disabled={!showTnC}
-                    label="TnC URL"
-                    value={tncUrl}
-                    onChange={(event) => setTncUrl(event.target.value)}
-                    placeholder="https://example.com/tnc"
-                    inputProps={{ "aria-label": "Terms and conditions URL" }}
-                  />
-                </Grid>
-              </Grid>
-            </Paper>
+              <Card>
+                <CardHeader><CardTitle className="text-base">Payment UI</CardTitle></CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {[
+                      [showSaveImage, setShowSaveImage, "Show Save Image", "Allow saving QR code to device (not card storage)."],
+                      [columnsLayout, setColumnsLayout, "Columns Layout"],
+                      [showCardHolderName, setShowCardHolderName, "Show Card Holder Name"],
+                      [cvvForSavedCard, setCvvForSavedCard, "CVV For Saved Card"],
+                    ].map(([checked, onChange, label, caption]) => (
+                      <div key={label as string} className="flex items-start justify-between gap-3 rounded-none border p-3">
+                        <div><Label className="font-medium">{label as string}</Label>{caption ? <p className="mt-1 text-xs text-muted-foreground">{caption as string}</p> : null}</div>
+                        <Switch checked={checked as boolean} onCheckedChange={onChange as (value: boolean) => void} aria-label={label as string} />
+                      </div>
+                    ))}
+                  </div>
+                  <Accordion type="single" collapsible className="rounded-none border px-3">
+                    <AccordionItem value="scanner-tnc" className="border-0">
+                      <AccordionTrigger>Card scanner &amp; TnC</AccordionTrigger>
+                      <AccordionContent className="space-y-4 pt-2">
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          {[
+                            [showScanCardButton, setShowScanCardButton, "Show Scan Card Button"],
+                            [autoInvokeCardScanner, setAutoInvokeCardScanner, "Auto Invoke Card Scanner"],
+                            [showTnC, setShowTnC, "Show Terms and Conditions"],
+                          ].map(([checked, onChange, label]) => (
+                            <div key={label as string} className="flex items-center justify-between gap-3 rounded-none border p-3">
+                              <Label className="font-medium">{label as string}</Label>
+                              <Switch checked={checked as boolean} onCheckedChange={onChange as (value: boolean) => void} aria-label={label as string} />
+                            </div>
+                          ))}
+                        </div>
+                        <div className="grid gap-4 sm:grid-cols-3">
+                          <div className="space-y-2">
+                            <Label>TnC Mode</Label>
+                            <Select value={tncMode} onValueChange={(value) => setTncMode(value as "checkbox" | "click2accept")} disabled={!showTnC}>
+                              <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+                              <SelectContent><SelectItem value="checkbox">checkbox</SelectItem><SelectItem value="click2accept">click2accept</SelectItem></SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-2 sm:col-span-2">
+                            <Label htmlFor="tnc-url">TnC URL</Label>
+                            <Input id="tnc-url" value={tncUrl} onChange={(event) => setTncUrl(event.target.value)} placeholder="https://example.com/tnc" disabled={!showTnC} />
+                          </div>
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
+                  </Accordion>
+                </CardContent>
+              </Card>
 
-            <Paper
-              sx={{
-                p: 3,
-                borderRadius: 3,
-                border: "1px solid",
-                borderColor: "#E5E7EB",
-                bgcolor: "#FFFFFF",
-              }}
-            >
-              <Stack
-                direction="row"
-                alignItems="center"
-                justifyContent="space-between"
-                sx={{ mb: 2 }}
-              >
-                <Typography variant="h6" sx={{ fontWeight: 600, color: "#1F2937" }}>
-                  Theme
-                </Typography>
-                <Button size="small" variant="text" onClick={handleResetTheme}>
-                  Reset Theme
-                </Button>
-              </Stack>
-              <Grid container spacing={1.75}>
-                <Grid item xs={12} sm={6} md={4}>
-                  <Stack direction="row" spacing={1} alignItems="center">
-                    <TextField
-                      type="color"
-                      size="small"
-                      value={normalizeHexColor(colorBackground) || "#ffffff"}
-                      onChange={(event) => setColorBackground(event.target.value)}
-                      inputProps={{ "aria-label": "Background color picker" }}
-                      sx={{ width: 52 }}
-                    />
-                    <TextField
-                      fullWidth
-                      size="small"
-                      label="Background"
-                      value={colorBackground}
-                      onChange={(event) => setColorBackground(event.target.value)}
-                      placeholder="#ffffff"
-                    />
-                  </Stack>
-                </Grid>
-                <Grid item xs={12} sm={6} md={4}>
-                  <Stack direction="row" spacing={1} alignItems="center">
-                    <TextField
-                      type="color"
-                      size="small"
-                      value={normalizeHexColor(colorPrimary) || "#3b82f6"}
-                      onChange={(event) => setColorPrimary(event.target.value)}
-                      inputProps={{ "aria-label": "Primary color picker" }}
-                      sx={{ width: 52 }}
-                    />
-                    <TextField
-                      fullWidth
-                      size="small"
-                      label="Primary"
-                      value={colorPrimary}
-                      onChange={(event) => setColorPrimary(event.target.value)}
-                      placeholder="#4f46e5"
-                    />
-                  </Stack>
-                </Grid>
-                <Grid item xs={12} sm={6} md={4}>
-                  <Stack direction="row" spacing={1} alignItems="center">
-                    <TextField
-                      type="color"
-                      size="small"
-                      value={normalizeHexColor(colorSecondary) || "#0ea5e9"}
-                      onChange={(event) => setColorSecondary(event.target.value)}
-                      inputProps={{ "aria-label": "Secondary color picker" }}
-                      sx={{ width: 52 }}
-                    />
-                    <TextField
-                      fullWidth
-                      size="small"
-                      label="Secondary"
-                      value={colorSecondary}
-                      onChange={(event) => setColorSecondary(event.target.value)}
-                      placeholder="#0ea5e9"
-                    />
-                  </Stack>
-                </Grid>
-                <Grid item xs={12} sm={6} md={4}>
-                  <Stack direction="row" spacing={1} alignItems="center">
-                    <TextField
-                      type="color"
-                      size="small"
-                      value={normalizeHexColor(colorAction) || "#111827"}
-                      onChange={(event) => setColorAction(event.target.value)}
-                      inputProps={{ "aria-label": "Action color picker" }}
-                      sx={{ width: 52 }}
-                    />
-                    <TextField
-                      fullWidth
-                      size="small"
-                      label="Action"
-                      value={colorAction}
-                      onChange={(event) => setColorAction(event.target.value)}
-                      placeholder="#111827"
-                    />
-                  </Stack>
-                </Grid>
-                <Grid item xs={12} sm={6} md={4}>
-                  <Stack direction="row" spacing={1} alignItems="center">
-                    <TextField
-                      type="color"
-                      size="small"
-                      value={normalizeHexColor(colorError) || "#dc2626"}
-                      onChange={(event) => setColorError(event.target.value)}
-                      inputProps={{ "aria-label": "Error color picker" }}
-                      sx={{ width: 52 }}
-                    />
-                    <TextField
-                      fullWidth
-                      size="small"
-                      label="Error"
-                      value={colorError}
-                      onChange={(event) => setColorError(event.target.value)}
-                      placeholder="#DC2626"
-                    />
-                  </Stack>
-                </Grid>
-                <Grid item xs={12} sm={6} md={4}>
-                  <Stack direction="row" spacing={1} alignItems="center">
-                    <TextField
-                      type="color"
-                      size="small"
-                      value={normalizeHexColor(colorDisabled) || "#9ca3af"}
-                      onChange={(event) => setColorDisabled(event.target.value)}
-                      inputProps={{ "aria-label": "Disabled color picker" }}
-                      sx={{ width: 52 }}
-                    />
-                    <TextField
-                      fullWidth
-                      size="small"
-                      label="Disabled"
-                      value={colorDisabled}
-                      onChange={(event) => setColorDisabled(event.target.value)}
-                      placeholder="#9CA3AF"
-                    />
-                  </Stack>
-                </Grid>
-                <Grid item xs={12} sm={6} md={4}>
-                  <Stack direction="row" spacing={1} alignItems="center">
-                    <TextField
-                      type="color"
-                      size="small"
-                      value={normalizeHexColor(colorFormBackground) || "#ffffff"}
-                      onChange={(event) => setColorFormBackground(event.target.value)}
-                      inputProps={{ "aria-label": "Form background color picker" }}
-                      sx={{ width: 52 }}
-                    />
-                    <TextField
-                      fullWidth
-                      size="small"
-                      label="Form Background"
-                      value={colorFormBackground}
-                      onChange={(event) => setColorFormBackground(event.target.value)}
-                    />
-                  </Stack>
-                </Grid>
-                <Grid item xs={12} sm={6} md={4}>
-                  <Stack direction="row" spacing={1} alignItems="center">
-                    <TextField
-                      type="color"
-                      size="small"
-                      value={normalizeHexColor(colorFormBorder) || "#d1d5db"}
-                      onChange={(event) => setColorFormBorder(event.target.value)}
-                      inputProps={{ "aria-label": "Form border color picker" }}
-                      sx={{ width: 52 }}
-                    />
-                    <TextField
-                      fullWidth
-                      size="small"
-                      label="Form Border"
-                      value={colorFormBorder}
-                      onChange={(event) => setColorFormBorder(event.target.value)}
-                    />
-                  </Stack>
-                </Grid>
-                <Grid item xs={12} sm={6} md={4}>
-                  <Stack direction="row" spacing={1} alignItems="center">
-                    <TextField
-                      type="color"
-                      size="small"
-                      value={normalizeHexColor(colorBoxStroke) || "#d1d5db"}
-                      onChange={(event) => setColorBoxStroke(event.target.value)}
-                      inputProps={{ "aria-label": "Box stroke color picker" }}
-                      sx={{ width: 52 }}
-                    />
-                    <TextField
-                      fullWidth
-                      size="small"
-                      label="Box Stroke"
-                      value={colorBoxStroke}
-                      onChange={(event) => setColorBoxStroke(event.target.value)}
-                    />
-                  </Stack>
-                </Grid>
-                <Grid item xs={12} sm={6} md={4}>
-                  <Stack direction="row" spacing={1} alignItems="center">
-                    <TextField
-                      type="color"
-                      size="small"
-                      value={normalizeHexColor(colorBoxFillingOutline) || "#e5e7eb"}
-                      onChange={(event) => setColorBoxFillingOutline(event.target.value)}
-                      inputProps={{ "aria-label": "Box filling outline color picker" }}
-                      sx={{ width: 52 }}
-                    />
-                    <TextField
-                      fullWidth
-                      size="small"
-                      label="Box Filling Outline"
-                      value={colorBoxFillingOutline}
-                      onChange={(event) => setColorBoxFillingOutline(event.target.value)}
-                    />
-                  </Stack>
-                </Grid>
-                <Grid item xs={12} sm={6} md={4}>
-                  <Stack direction="row" spacing={1} alignItems="center">
-                    <TextField
-                      type="color"
-                      size="small"
-                      value={normalizeHexColor(colorPlaceholder) || "#9ca3af"}
-                      onChange={(event) => setColorPlaceholder(event.target.value)}
-                      inputProps={{ "aria-label": "Placeholder color picker" }}
-                      sx={{ width: 52 }}
-                    />
-                    <TextField
-                      fullWidth
-                      size="small"
-                      label="Placeholder"
-                      value={colorPlaceholder}
-                      onChange={(event) => setColorPlaceholder(event.target.value)}
-                    />
-                  </Stack>
-                </Grid>
-                <Grid item xs={12} sm={6} md={4}>
-                  <Stack direction="row" spacing={1} alignItems="center">
-                    <TextField
-                      type="color"
-                      size="small"
-                      value={normalizeHexColor(colorInverse) || "#0f172a"}
-                      onChange={(event) => setColorInverse(event.target.value)}
-                      inputProps={{ "aria-label": "Inverse color picker" }}
-                      sx={{ width: 52 }}
-                    />
-                    <TextField
-                      fullWidth
-                      size="small"
-                      label="Inverse"
-                      value={colorInverse}
-                      onChange={(event) => setColorInverse(event.target.value)}
-                    />
-                  </Stack>
-                </Grid>
-                <Grid item xs={12} sm={6} md={4}>
-                  <TextField
-                    fullWidth
-                    size="small"
-                    select
-                    label="Logo Position"
-                    value={logoPosition}
-                    onChange={(event) =>
-                      setLogoPosition(event.target.value as "left" | "middle" | "right")
-                    }
-                  >
-                    <MenuItem value="left">left (default)</MenuItem>
-                    <MenuItem value="middle">middle</MenuItem>
-                    <MenuItem value="right">right</MenuItem>
-                  </TextField>
-                </Grid>
-                <Grid item xs={12} md={8}>
-                  <TextField
-                    fullWidth
-                    size="small"
-                    label="borderRadius (comma-separated 4 values)"
-                    value={borderRadiusInput}
-                    onChange={(event) => setBorderRadiusInput(event.target.value)}
-                    placeholder="8,8,8,8"
-                    error={Boolean(borderRadiusInput.trim()) && !parsedBorderRadius.values}
-                    helperText={parsedBorderRadius.message}
-                  />
-                </Grid>
-              </Grid>
-            </Paper>
+              <Card>
+                <CardHeader className="border-b">
+                  <CardTitle className="text-base">Theme</CardTitle>
+                  <CardAction>
+                    <Button variant="outline" size="sm" onClick={handleResetTheme}>
+                      Reset
+                    </Button>
+                  </CardAction>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <p className="text-sm font-medium text-muted-foreground">Core colors</p>
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {[
+                      ["Background", colorBackground, setColorBackground, "#ffffff"],
+                      ["Primary", colorPrimary, setColorPrimary, "#4f46e5"],
+                      ["Secondary", colorSecondary, setColorSecondary, "#0ea5e9"],
+                      ["Action", colorAction, setColorAction, "#111827"],
+                      ["Error", colorError, setColorError, "#dc2626"],
+                    ].map(([label, value, onChange, placeholder]) => (
+                      <div key={label as string} className="space-y-2">
+                        <Label>{label as string}</Label>
+                        <div className="grid grid-cols-[44px_1fr] gap-2">
+                          <input className="h-8 w-11 cursor-pointer rounded border border-input bg-background p-1" type="color" value={normalizeHexColor(value as string) || (placeholder as string)} onChange={(event) => (onChange as (value: string) => void)(event.target.value)} aria-label={`${label as string} color picker`} />
+                          <Input value={value as string} onChange={(event) => (onChange as (value: string) => void)(event.target.value)} placeholder={placeholder as string} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <Accordion type="single" collapsible className="rounded-none border px-3">
+                    <AccordionItem value="surfaces" className="border-0">
+                      <AccordionTrigger>Form &amp; surfaces + Layout</AccordionTrigger>
+                      <AccordionContent className="space-y-4 pt-2">
+                        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                          {[
+                            ["Disabled", colorDisabled, setColorDisabled, "#9ca3af"],
+                            ["Form Background", colorFormBackground, setColorFormBackground, "#ffffff"],
+                            ["Form Border", colorFormBorder, setColorFormBorder, "#d1d5db"],
+                            ["Box Stroke", colorBoxStroke, setColorBoxStroke, "#d1d5db"],
+                            ["Box Filling Outline", colorBoxFillingOutline, setColorBoxFillingOutline, "#e5e7eb"],
+                            ["Placeholder", colorPlaceholder, setColorPlaceholder, "#9ca3af"],
+                            ["Inverse", colorInverse, setColorInverse, "#0f172a"],
+                          ].map(([label, value, onChange, placeholder]) => (
+                            <div key={label as string} className="space-y-2">
+                              <Label>{label as string}</Label>
+                              <div className="grid grid-cols-[44px_1fr] gap-2">
+                                <input className="h-8 w-11 cursor-pointer rounded border border-input bg-background p-1" type="color" value={normalizeHexColor(value as string) || (placeholder as string)} onChange={(event) => (onChange as (value: string) => void)(event.target.value)} aria-label={`${label as string} color picker`} />
+                                <Input value={value as string} onChange={(event) => (onChange as (value: string) => void)(event.target.value)} placeholder={placeholder as string} />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                        <Separator />
+                        <div className="grid gap-4 sm:grid-cols-2">
+                          <div className="space-y-2"><Label>Logo Position</Label><Select value={logoPosition} onValueChange={(value) => setLogoPosition(value as "left" | "middle" | "right")}><SelectTrigger className="w-full"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="left">left (default)</SelectItem><SelectItem value="middle">middle</SelectItem><SelectItem value="right">right</SelectItem></SelectContent></Select></div>
+                          <div className="space-y-2"><Label htmlFor="border-radius">borderRadius (four comma-separated values)</Label><Input id="border-radius" value={borderRadiusInput} onChange={(event) => setBorderRadiusInput(event.target.value)} placeholder="8,8,8,8" aria-invalid={Boolean(borderRadiusInput.trim()) && !parsedBorderRadius.values} /><p className={parsedBorderRadius.values || !borderRadiusInput.trim() ? "text-xs text-muted-foreground" : "text-xs text-destructive"}>{parsedBorderRadius.message}</p></div>
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
+                  </Accordion>
+                </CardContent>
+              </Card>
 
-            <Paper
-              sx={{
-                p: 3,
-                borderRadius: 3,
-                border: "1px solid",
-                borderColor: "#E5E7EB",
-                bgcolor: "#FFFFFF",
-              }}
-            >
-              <Stack
-                direction="row"
-                alignItems="center"
-                justifyContent="space-between"
-                sx={{ mb: 2 }}
-              >
-                <Typography variant="h6" sx={{ fontWeight: 600, color: "#1F2937" }}>
-                  Advanced Typography
-                </Typography>
-                <Button size="small" variant="text" onClick={handleResetTypography}>
-                  Reset Typography
-                </Button>
-              </Stack>
-              <Stack spacing={2}>
-                {TYPOGRAPHY_GROUPS.map((group) => (
-                  <Paper key={group} variant="outlined" sx={{ p: 2, pb: 2.5 }}>
-                    <Typography variant="subtitle2" sx={{ mb: 1 }}>
-                      {group}
-                    </Typography>
-                    <Grid container spacing={1.5}>
-                      {FONT_FIELDS.map((field) => (
-                        <Grid item xs={12} sm={6} md={3} key={`${group}-${field}`}>
-                          {field === "fontFamily" ? (
-                            <TextField
-                              fullWidth
-                              select
-                              size="small"
-                              label="fontFamily"
-                              value={typography[group][field] ?? ""}
-                              onChange={(event) =>
-                                setTypography((prev) => ({
-                                  ...prev,
-                                  [group]: {
-                                    ...prev[group],
-                                    [field]: event.target.value,
-                                  },
-                                }))
+              <Card>
+                <CardHeader className="border-b">
+                  <CardTitle className="text-base">Advanced Typography</CardTitle>
+                  <CardAction>
+                    <Button variant="outline" size="sm" onClick={handleResetTypography}>
+                      Reset
+                    </Button>
+                  </CardAction>
+                </CardHeader>
+                <CardContent>
+                  <Accordion type="multiple" className="rounded-none border px-3">
+                    {TYPOGRAPHY_GROUPS.map((group) => (
+                      <AccordionItem key={group} value={group}>
+                        <AccordionTrigger className="capitalize">{group}</AccordionTrigger>
+                        <AccordionContent className="pt-2">
+                          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                            {FONT_FIELDS.map((field) => {
+                              const setValue = (value: string) => setTypography((previous) => ({ ...previous, [group]: { ...previous[group], [field]: value } }));
+                              if (field === "fontFamily") return <div key={field} className="space-y-2"><Label>{field}</Label><Select value={typography[group][field] ?? ""} onValueChange={(value) => setValue(value === "none" ? "" : value)}><SelectTrigger className="w-full"><SelectValue placeholder="inherit/default" /></SelectTrigger><SelectContent><SelectItem value="none">(inherit/default)</SelectItem>{POPULAR_FONT_OPTIONS.map((font) => <SelectItem key={font.label} value={font.value}>{font.label}</SelectItem>)}</SelectContent></Select><p className="text-xs text-muted-foreground">Popular Google Fonts</p></div>;
+                              if (field === "fontSize" || field === "fontWeight") {
+                                const values = field === "fontSize" ? FONT_SIZE_OPTIONS : FONT_WEIGHT_OPTIONS;
+                                return <div key={field} className="space-y-2"><Label>{field}</Label><Select value={typography[group][field] ?? ""} onValueChange={(value) => setValue(value === "none" ? "" : value)}><SelectTrigger className="w-full"><SelectValue placeholder="inherit/default" /></SelectTrigger><SelectContent><SelectItem value="none">(inherit/default)</SelectItem>{values.map((value) => <SelectItem key={value} value={value}>{value}</SelectItem>)}</SelectContent></Select></div>;
                               }
-                              helperText="Popular Google Fonts"
-                            >
-                              <MenuItem value="">(inherit/default)</MenuItem>
-                              {POPULAR_FONT_OPTIONS.map((font) => (
-                                <MenuItem key={font.label} value={font.value}>
-                                  {font.label}
-                                </MenuItem>
-                              ))}
-                            </TextField>
-                          ) : field === "fontSize" ? (
-                            <TextField
-                              fullWidth
-                              select
-                              size="small"
-                              label="fontSize"
-                              value={typography[group][field] ?? ""}
-                              onChange={(event) =>
-                                setTypography((prev) => ({
-                                  ...prev,
-                                  [group]: {
-                                    ...prev[group],
-                                    [field]: event.target.value,
-                                  },
-                                }))
-                              }
-                            >
-                              <MenuItem value="">(inherit/default)</MenuItem>
-                              {FONT_SIZE_OPTIONS.map((size) => (
-                                <MenuItem key={size} value={size}>
-                                  {size}
-                                </MenuItem>
-                              ))}
-                            </TextField>
-                          ) : field === "fontWeight" ? (
-                            <TextField
-                              fullWidth
-                              select
-                              size="small"
-                              label="fontWeight"
-                              value={typography[group][field] ?? ""}
-                              onChange={(event) =>
-                                setTypography((prev) => ({
-                                  ...prev,
-                                  [group]: {
-                                    ...prev[group],
-                                    [field]: event.target.value,
-                                  },
-                                }))
-                              }
-                            >
-                              <MenuItem value="">(inherit/default)</MenuItem>
-                              {FONT_WEIGHT_OPTIONS.map((weight) => (
-                                <MenuItem key={weight} value={weight}>
-                                  {weight}
-                                </MenuItem>
-                              ))}
-                            </TextField>
-                          ) : (
-                            <TextField
-                              fullWidth
-                              size="small"
-                              label={field}
-                              value={typography[group][field] ?? ""}
-                              onChange={(event) =>
-                                setTypography((prev) => ({
-                                  ...prev,
-                                  [group]: {
-                                    ...prev[group],
-                                    [field]: event.target.value,
-                                  },
-                                }))
-                              }
-                            />
-                          )}
-                        </Grid>
-                      ))}
-                    </Grid>
-                  </Paper>
-                ))}
-              </Stack>
-            </Paper>
+                              return <div key={field} className="space-y-2"><Label htmlFor={`${group}-${field}`}>{field}</Label><Input id={`${group}-${field}`} value={typography[group][field] ?? ""} onChange={(event) => setValue(event.target.value)} /></div>;
+                            })}
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
+                    ))}
+                  </Accordion>
+                </CardContent>
+              </Card>
+            </Box>
 
-          </Stack>
-        </Box>
-
-        <Box
-          id="builder-preview"
-          sx={{
-            minHeight: { md: 0 },
-            height: { md: "100%" },
-            scrollMarginTop: 16,
-          }}
-        >
-          <Box sx={{ height: { md: "100%" }, ...sectionEnter(80) }}>
-            <Paper
-              sx={{
-                p: { xs: 2, sm: 3 },
-                borderRadius: 3,
-                border: "1px solid",
-                borderColor: "#E5E7EB",
-                bgcolor: "#FFFFFF",
-                boxShadow: "0 8px 24px rgba(15, 23, 42, 0.06)",
-                height: { md: "100%" },
-                overflowY: { md: "auto" },
-                WebkitOverflowScrolling: "touch",
-                minHeight: 0,
-              }}
-            >
-              <Stack spacing={2}>
-                <Stack
-                  direction={{ xs: "column", sm: "row" }}
-                  spacing={1.25}
-                  alignItems={{ xs: "stretch", sm: "center" }}
-                  justifyContent="space-between"
-                >
-                  <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                    Drop-in Preview
-                  </Typography>
-                  <FormControlLabel
-                    sx={{ m: 0, alignSelf: { xs: "flex-start", sm: "center" } }}
-                    control={
-                      <Switch
-                        checked={livePreview}
-                        onChange={(event) => setLivePreview(event.target.checked)}
-                        sx={{
-                          "& .MuiSwitch-switchBase.Mui-checked": {
-                            color: "#3B82F6",
-                          },
-                          "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
-                            bgcolor: "#3B82F6",
-                          },
-                        }}
-                      />
-                    }
-                    label="Auto refresh"
-                  />
-                </Stack>
-
-                <Button
-                  fullWidth
-                  variant="contained"
-                  size="large"
-                  onClick={openAsStorefront}
-                  startIcon={<StorefrontOutlinedIcon />}
-                  endIcon={<ArrowForwardIcon />}
-                  sx={{
-                    textTransform: "none",
-                    fontWeight: 700,
-                    fontSize: "0.98rem",
-                    letterSpacing: "-0.01em",
-                    py: 1.35,
-                    borderRadius: 2.5,
-                    bgcolor: "#111827",
-                    boxShadow: "0 10px 28px rgba(17, 24, 39, 0.22)",
-                    "&:hover": {
-                      bgcolor: "#1f2937",
-                      boxShadow: "0 14px 32px rgba(17, 24, 39, 0.28)",
-                    },
-                  }}
-                >
-                  Open as storefront
-                </Button>
-                <Typography
-                  variant="caption"
-                  sx={{ color: "#6B7280", mt: -0.5, display: "block" }}
-                >
-                  Preview this theme in a full ecommerce checkout demo.
-                </Typography>
-
-                <Button
-                  variant="contained"
-                  onClick={() => {
-                    setPreviewFallbackBadge(null);
-                    setPreviewEvents([]);
-                    setSdkInitGeneration((value) => value + 1);
-                  }}
-                  disabled={!canRenderPreview}
-                >
-                  Initialize / Re-init
-                </Button>
-
-                {!canRenderPreview ? (
-                  <Alert
-                    severity="warning"
-                    variant="outlined"
-                    sx={{
-                      borderColor: "#F59E0B",
-                      bgcolor: "#FFFBEB",
-                      "& .MuiAlert-message": { color: "#92400E" },
-                    }}
-                  >
-                    Preview is disabled because sessionID is missing or placeholder.
-                  </Alert>
-                ) : null}
-
-                <DemoTransactionWarning environment={environment} sx={{ mb: 1.5 }} />
-
-                <Box sx={{ border: "1px solid #D1D5DB", borderRadius: 2, p: 1 }}>
-                  <EvonetDropinHost
-                    config={dropinConfigForPreview}
-                    initGeneration={sdkInitGeneration}
-                    onEvent={(event) => {
-                      const payload = event.payload as
-                        | { source?: string; phase?: string }
-                        | undefined;
-                      if (
-                        event.type === "sdk_message" &&
-                        payload?.source === "dropin_host"
-                      ) {
-                        if (payload.phase === "construct_ok_without_font_weight") {
-                          setPreviewFallbackBadge(
-                            "SDK fallback: fontWeight was ignored for compatibility."
-                          );
-                        } else if (
-                          payload.phase === "construct_ok_without_border_radius"
-                        ) {
-                          setPreviewFallbackBadge(
-                            "SDK fallback: borderRadius was ignored for compatibility."
-                          );
-                        }
+            <Box id="builder-preview" className="min-h-0 min-w-0 scroll-mt-4 md:h-full" sx={sectionEnter(80)}>
+              <Card className="min-w-0 gap-0 overflow-x-auto rounded-none border border-border py-0 md:flex md:h-full md:flex-col">
+                <CardHeader className="space-y-4 border-b bg-muted/40 px-4 py-4">
+                  <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+                    <CardTitle className="text-base">Drop-in Preview</CardTitle>
+                    <div className="flex items-center gap-2"><Label htmlFor="live-preview">Auto refresh</Label><Switch id="live-preview" checked={livePreview} onCheckedChange={setLivePreview} /></div>
+                  </div>
+                  <Button size="lg" className="w-full" onClick={openAsStorefront}>
+                    <Store data-icon="inline-start" />Open as storefront<ArrowRight data-icon="inline-end" />
+                  </Button>
+                  <p className="text-xs text-muted-foreground">Preview this theme in a full ecommerce checkout demo.</p>
+                </CardHeader>
+                <CardContent className="min-w-0 space-y-4 p-4 md:min-h-0 md:flex-1 md:overflow-y-auto">
+                  <Button onClick={() => { setPreviewFallbackBadge(null); setPreviewEvents([]); setSdkInitGeneration((value) => value + 1); }} disabled={!canRenderPreview}>Initialize / Re-init</Button>
+                  {!canRenderPreview ? <Alert severity="warning" variant="outlined">Preview is disabled because sessionID is missing or placeholder.</Alert> : null}
+                  <DemoTransactionWarning environment={environment} sx={{ mb: 0, wordBreak: "break-word" }} />
+                  <div className="mx-auto w-full max-w-lg overflow-x-auto rounded-none border border-[#D1D5DB] bg-background p-2 sm:p-3">
+                    <EvonetDropinHost config={dropinConfigForPreview} initGeneration={sdkInitGeneration} onEvent={(event) => {
+                      const payload = event.payload as { source?: string; phase?: string } | undefined;
+                      if (event.type === "sdk_message" && payload?.source === "dropin_host") {
+                        if (payload.phase === "construct_ok_without_font_weight") setPreviewFallbackBadge("SDK fallback: fontWeight was ignored for compatibility.");
+                        else if (payload.phase === "construct_ok_without_border_radius") setPreviewFallbackBadge("SDK fallback: borderRadius was ignored for compatibility.");
                       }
-                      if (
-                        event.type === "payment_success" ||
-                        event.type === "payment_fail" ||
-                        event.type === "payment_cancelled"
-                      ) {
-                        const fromSdk = parseEvonetSdkPaymentEvent(
-                          event.type,
-                          event.payload
-                        );
-                        if (fromSdk) {
-                          setPaymentReturnPrompt(fromSdk);
-                          setReturnDialogDismissed(false);
-                        }
+                      if (event.type === "payment_success" || event.type === "payment_fail" || event.type === "payment_cancelled") {
+                        const fromSdk = parseEvonetSdkPaymentEvent(event.type, event.payload);
+                        if (fromSdk) { setPaymentReturnPrompt(fromSdk); setReturnDialogDismissed(false); }
                       }
-                      setPreviewEvents((prev) => [event, ...prev].slice(0, 20));
-                    }}
-                    onSdkInitApplied={(info) => setLastSdkInitInfo(info)}
-                  />
-                </Box>
+                      setPreviewEvents((previous) => [event, ...previous].slice(0, 20));
+                    }} onSdkInitApplied={(info) => setLastSdkInitInfo(info)} compact />
+                  </div>
+                  {previewFallbackBadge ? <Alert severity="info" variant="outlined">{previewFallbackBadge}</Alert> : null}
+                  <Separator />
+                  <section className="min-w-0 flex flex-col gap-3">
+                    <h2 className="text-sm font-semibold" style={DEV_CONSOLE_SECTION_TITLE_SX}>UI Config JSON (UI Options + Appearance only)</h2>
+                    <div className="flex flex-wrap items-center justify-between gap-2"><span className="text-sm font-medium">UI options + appearance JSON</span><div className="flex items-center gap-2"><Button variant="outline" size="sm" onClick={() => handleCopy(builderConfigJson, setCopyBuilderHint)}>Copy</Button>{copyBuilderHint ? <Badge variant={copyBuilderHint === "Copy failed" ? "destructive" : "secondary"}>{copyBuilderHint}</Badge> : null}</div></div>
+                    <Box component="pre" className="code-panel-scroll" sx={{ ...CODE_PANEL_PRE_SX, maxWidth: "100%", maxHeight: 220 }}>{builderConfigJson}</Box>
+                    <Accordion type="single" collapsible className="mt-2 rounded-none border px-3">
+                      <AccordionItem value="runtime" className="border-0"><AccordionTrigger>SDK runtime payload JSON</AccordionTrigger><AccordionContent className="space-y-3 pt-2"><div className="flex items-center gap-2"><Button variant="outline" size="sm" onClick={() => void handleCopy(sdkPayloadJson, setCopySdkHint)}>Copy</Button>{copySdkHint ? <Badge variant={copySdkHint === "Copy failed" ? "destructive" : "secondary"}>{copySdkHint}</Badge> : null}</div><Box component="pre" className="code-panel-scroll" sx={{ ...CODE_PANEL_PRE_SX, maxWidth: "100%", maxHeight: 220 }}>{sdkPayloadJson}</Box></AccordionContent></AccordionItem>
+                    </Accordion>
+                  </section>
+                </CardContent>
+              </Card>
+            </Box>
+          </div>
 
-                {previewFallbackBadge ? (
-                  <Alert severity="info" variant="outlined">
-                    {previewFallbackBadge}
-                  </Alert>
-                ) : null}
-
-                <Box sx={{ pt: 1 }}>
-                  <Typography variant="subtitle1" sx={DEV_CONSOLE_SECTION_TITLE_SX}>
-                    UI Config JSON (UI Options + Appearance only)
-                  </Typography>
-                  <Stack spacing={1.5}>
-                    <Stack spacing={1.25}>
-                      <Stack
-                        direction="row"
-                        spacing={1}
-                        alignItems="center"
-                        justifyContent="space-between"
-                      >
-                        <Typography variant="subtitle2">
-                          UI options + appearance JSON
-                        </Typography>
-                        <Button
-                          size="small"
-                          variant="outlined"
-                          onClick={() => handleCopy(builderConfigJson, setCopyBuilderHint)}
-                        >
-                          Copy
-                        </Button>
-                        {copyBuilderHint ? (
-                          <Chip
-                            size="small"
-                            label={copyBuilderHint}
-                            color={copyBuilderHint === "Copy failed" ? "error" : "success"}
-                          />
-                        ) : null}
-                      </Stack>
-                      <Box
-                        component="pre"
-                        sx={{
-                          ...CODE_PANEL_PRE_SX,
-                          maxHeight: 220,
-                        }}
-                      >
-                        {builderConfigJson}
-                      </Box>
-                    </Stack>
-                    <Stack spacing={1.25}>
-                      <Accordion
-                        disableGutters
-                        sx={{
-                          border: "1px solid #E5E7EB",
-                          borderRadius: 2,
-                          "&:before": { display: "none" },
-                          boxShadow: "none",
-                        }}
-                      >
-                        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                          <Stack
-                            direction="row"
-                            spacing={1}
-                            alignItems="center"
-                            justifyContent="space-between"
-                            sx={{ width: "100%" }}
-                          >
-                            <Typography variant="subtitle2">
-                              SDK runtime payload JSON
-                            </Typography>
-                            <Button
-                              size="small"
-                              variant="outlined"
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                void handleCopy(sdkPayloadJson, setCopySdkHint);
-                              }}
-                            >
-                              Copy
-                            </Button>
-                          </Stack>
-                        </AccordionSummary>
-                        <AccordionDetails sx={{ pt: 0 }}>
-                          {copySdkHint ? (
-                            <Chip
-                              size="small"
-                              label={copySdkHint}
-                              color={copySdkHint === "Copy failed" ? "error" : "success"}
-                              sx={{ mb: 1 }}
-                            />
-                          ) : null}
-                          <Box
-                            component="pre"
-                            sx={{
-                              ...CODE_PANEL_PRE_SX,
-                              maxHeight: 220,
-                            }}
-                          >
-                            {sdkPayloadJson}
-                          </Box>
-                        </AccordionDetails>
-                      </Accordion>
-                    </Stack>
-                  </Stack>
-                </Box>
-              </Stack>
-            </Paper>
-          </Box>
-        </Box>
-      </Box>
-
-      <EvonetPaymentReturnDialog
-        open={showReturnDialog}
-        params={paymentReturnPrompt}
-        onDismiss={() => setReturnDialogDismissed(true)}
-        onStartNewPayment={() => {
-          setReturnDialogDismissed(true);
-          setPaymentReturnPrompt(null);
-          clearPaymentReturnQuery();
-          void handleCreateSession();
-        }}
-      />
-        </Container>
+          <EvonetPaymentReturnDialog
+            open={showReturnDialog}
+            params={paymentReturnPrompt}
+            onDismiss={() => setReturnDialogDismissed(true)}
+            onStartNewPayment={() => {
+              setReturnDialogDismissed(true);
+              setPaymentReturnPrompt(null);
+              clearPaymentReturnQuery();
+              void handleCreateSession();
+            }}
+          />
+        </main>
       </Box>
 
       <StorefrontMorphOverlay open={storefrontOpen}>
         <Suspense fallback={null}>
-          <StorefrontExperience
-            config={storefrontConfig}
-            onBackToBuilder={closeStorefront}
-          />
+          <StorefrontExperience config={storefrontConfig} onBackToBuilder={closeStorefront} />
         </Suspense>
       </StorefrontMorphOverlay>
 

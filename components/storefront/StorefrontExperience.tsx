@@ -508,6 +508,7 @@ export function StorefrontExperience({
           onAddToCart={handleAddToCart}
           onBuyNow={handleBuyNow}
           justAdded={justAdded}
+          themeVars={cssVars}
         />
       </Container>
 

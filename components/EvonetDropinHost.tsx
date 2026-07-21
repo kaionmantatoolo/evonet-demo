@@ -742,7 +742,7 @@ export function EvonetDropinHost({
   }, [initGeneration, scriptLoaded]);
 
   return (
-    <Box sx={{ width: "100%" }}>
+    <Box sx={{ width: "100%", maxWidth: "100%", minWidth: 0, overflowX: "auto" }}>
       {!scriptLoaded && (
         <Alert severity="warning" variant="outlined" sx={{ mb: compact ? 1 : 2 }}>
           Loading Evonet Drop-in SDK in the browser…
@@ -753,14 +753,19 @@ export function EvonetDropinHost({
         sx={{
           minHeight: compact ? 0 : 320,
           width: "100%",
+          maxWidth: "100%",
+          minWidth: 0,
+          boxSizing: "border-box",
           bgcolor: "background.paper",
-          px: compact ? { xs: 1, sm: 1.5 } : { xs: 1.25, sm: 3 },
-          py: compact ? { xs: 1, sm: 1.25 } : { xs: 1.25, sm: 3 },
+          px: compact ? { xs: 0.5, sm: 1 } : { xs: 0.75, sm: 2 },
+          py: compact ? { xs: 0.75, sm: 1 } : { xs: 1, sm: 2 },
         }}
       />
       <style jsx global>{`
         #${containerId} {
-          overflow: visible !important;
+          max-width: 100% !important;
+          overflow-x: auto !important;
+          overflow-y: visible !important;
         }
         #${containerId} iframe {
           display: block;
@@ -769,6 +774,10 @@ export function EvonetDropinHost({
           border: 0 !important;
           /* Let Evonet set height; never clip payment UI on iOS. */
           min-height: 0;
+        }
+        #${containerId} > * {
+          max-width: 100% !important;
+          box-sizing: border-box !important;
         }
       `}</style>
     </Box>

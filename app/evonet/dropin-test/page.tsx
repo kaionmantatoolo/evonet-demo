@@ -4,42 +4,30 @@ import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "rea
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   Accordion,
-  AccordionDetails,
-  AccordionSummary,
-  Alert,
-  Box,
-  Button,
-  Chip,
-  Container,
-  FormControl,
-  FormControlLabel,
-  Grid,
-  InputLabel,
-  MenuItem,
-  Paper,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
   Select,
-  Snackbar,
-  Stack,
-  Switch,
-  TextField,
-  Typography,
-} from "@mui/material";
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import {
   EvonetDropinHost,
   type SdkInitAppliedInfo,
 } from "../../../components/EvonetDropinHost";
-import { pageEnter, sectionEnter } from "../../../lib/pageMotion";
 import { VIEWPORT_HEIGHT } from "../../../lib/responsiveLayout";
 import { DemoTransactionWarning } from "../../../components/DemoTransactionWarning";
 import { EvonetPaymentReturnDialog } from "../../../components/EvonetPaymentReturnDialog";
-import {
-  CODE_PANEL_EMPTY_SX,
-  CODE_PANEL_FONT,
-  CODE_PANEL_PRE_SX,
-  CODE_PANEL_SCROLL_SX,
-  DEV_CONSOLE_PAPER_SX,
-  DEV_CONSOLE_SECTION_TITLE_SX,
-} from "../../../lib/codePanelStyles";
 import {
   getEvonetEnvironment,
   isEvonetProductionEnvironment,
@@ -163,8 +151,6 @@ function createEmptyTypographyState(): TypographyState {
   };
 }
 
-const DEV_CODE_PANEL_SX = CODE_PANEL_SCROLL_SX;
-
 function EventLogList({
   events,
   filterSdk,
@@ -181,54 +167,24 @@ function EventLogList({
   );
 
   if (filtered.length === 0) {
-    return (
-      <Typography variant="caption" sx={CODE_PANEL_EMPTY_SX}>
-        {emptyLabel}
-      </Typography>
-    );
+    return <p className="font-mono text-xs text-slate-400">{emptyLabel}</p>;
   }
 
   return (
-    <Stack spacing={1} component="ul" sx={{ m: 0, p: 0 }}>
+    <ul className="space-y-2">
       {filtered.map((event, index) => (
-        <Box
-          key={index}
-          component="li"
-          sx={{
-            listStyle: "none",
-            bgcolor: "rgba(255, 255, 255, 0.04)",
-            border: "1px solid rgba(229, 231, 235, 0.2)",
-            borderRadius: 1,
-            px: 1.25,
-            py: 1,
-          }}
-        >
-          <Typography
-            variant="caption"
-            sx={{ fontFamily: CODE_PANEL_FONT, color: eventColor, fontWeight: 600, fontSize: 12 }}
-          >
+        <li key={index} className="rounded-none border border-white/20 bg-white/[0.04] px-3 py-2">
+          <p className="font-mono text-xs font-semibold" style={{ color: eventColor }}>
             {event.type}
-          </Typography>
+          </p>
           {event.payload != null && (
-            <Box
-              component="pre"
-              sx={{
-                mt: 0.75,
-                mb: 0,
-                whiteSpace: "pre-wrap",
-                wordBreak: "break-word",
-                fontSize: 12,
-                lineHeight: 1.5,
-                color: "#CBD5E1",
-                fontFamily: CODE_PANEL_FONT,
-              }}
-            >
+            <pre className="mt-2 whitespace-pre-wrap break-words font-mono text-xs leading-5 text-slate-300">
               {JSON.stringify(event.payload, null, 2)}
-            </Box>
+            </pre>
           )}
-        </Box>
+        </li>
       ))}
-    </Stack>
+    </ul>
   );
 }
 
@@ -255,9 +211,7 @@ function EvonetDropinTestPage() {
 
   const [amount, setAmount] = useState<string>("10.00");
   const [currency, setCurrency] = useState<string>(DEFAULT_CURRENCY);
-  const [orderId, setOrderId] = useState<string>(
-    `EVT-${Date.now().toString().slice(-6)}`
-  );
+  const [orderId, setOrderId] = useState("");
   const [description, setDescription] = useState<string>(
     isEvonetProductionEnvironment(DEFAULT_ENVIRONMENT)
       ? "Production validation transaction"
@@ -302,7 +256,7 @@ function EvonetDropinTestPage() {
   const [columnsLayout, setColumnsLayout] = useState(false);
 
   const [colorAction, setColorAction] = useState("");
-  const [colorBackground, setColorBackground] = useState("#ffffff");
+  const [colorBackground, setColorBackground] = useState("");
   const [colorBoxStroke, setColorBoxStroke] = useState("");
   const [colorDisabled, setColorDisabled] = useState("");
   const [colorError, setColorError] = useState("");
@@ -353,6 +307,12 @@ function EvonetDropinTestPage() {
   const envChipTapCountRef = useRef(0);
   const envChipTapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  useEffect(() => {
+    if (!targetSwitchHint) return;
+    const id = window.setTimeout(() => setTargetSwitchHint(null), 2500);
+    return () => window.clearTimeout(id);
+  }, [targetSwitchHint]);
+
   const [events, setEvents] = useState<EvonetDropinEvent[]>([]);
   const [userAgent, setUserAgent] = useState<string>("Detecting user agent…");
   const [binPromoMessage, setBinPromoMessage] = useState<string | null>(null);
@@ -398,15 +358,14 @@ function EvonetDropinTestPage() {
   );
 
   const sdkAppearance: EvonetSdkAppearance = useMemo(() => {
-    const a: EvonetSdkAppearance = {
-      colorBackground: colorBackground.trim() || "#ffffff",
-    };
+    const a: EvonetSdkAppearance = {};
     const put = (key: keyof EvonetSdkAppearance, value: string) => {
       const t = value.trim();
       if (t) {
         (a as Record<string, unknown>)[key as string] = t;
       }
     };
+    put("colorBackground", colorBackground);
     put("colorAction", colorAction);
     put("colorBoxStroke", colorBoxStroke);
     put("colorDisabled", colorDisabled);
@@ -977,717 +936,504 @@ function EvonetDropinTestPage() {
   }, []);
 
   return (
-    <Box sx={{ minHeight: VIEWPORT_HEIGHT, bgcolor: "#F4F6F8", ...pageEnter() }}>
-      <Container
-        maxWidth={false}
-        sx={{ py: { xs: 1.5, md: 2 }, px: { xs: 1.5, md: 3 }, maxWidth: 1600 }}
-      >
-        {/* Status bar — what devs check first */}
-        <Paper
-          elevation={0}
-          variant="outlined"
-          sx={{
-            px: { xs: 1.5, sm: 2 },
-            py: 1.25,
-            mb: 2,
-            borderRadius: 2,
-            borderColor: "#E2E8F0",
-            bgcolor: "#FFFFFF",
-            ...sectionEnter(20),
-          }}
-        >
-          <Stack
-            direction={{ xs: "column", lg: "row" }}
-            spacing={1.5}
-            alignItems={{ lg: "center" }}
-            justifyContent="space-between"
-          >
-            <Stack
-              direction="row"
-              alignItems="center"
-              spacing={1}
-              flexWrap="wrap"
-              useFlexGap
-              sx={{ maxWidth: "100%" }}
-            >
-              <Typography variant="subtitle1" fontWeight={700} color="text.primary">
-                Drop-in Dev Console
-              </Typography>
+    <main
+      className="min-h-[var(--console-height)] overflow-x-hidden bg-[#F4F6F8]"
+      style={{ "--console-height": VIEWPORT_HEIGHT } as React.CSSProperties}
+    >
+      <div className="mx-auto max-w-[1600px] space-y-4 px-2 py-3 sm:px-4 md:px-6 md:py-4">
+        <Card className="rounded-none border border-border">
+          <CardContent className="flex flex-col justify-between gap-3 px-3 py-3 sm:px-4 lg:flex-row lg:items-center">
+            <div className="flex min-w-0 flex-wrap items-center gap-2">
+              <h1 className="text-base font-bold">Drop-in Dev Console</h1>
               {isEvonetProductionEnvironment(environment) ? (
-                <Chip size="small" color="error" label="PROD" />
+                <Badge variant="destructive">PROD</Badge>
               ) : null}
-              <Chip
-                size="small"
-                variant="outlined"
-                label={environment}
+              <Badge
+                variant="outline"
+                className="cursor-pointer font-mono"
                 onClick={handleEnvironmentChipTap}
-                sx={{ fontFamily: "monospace", cursor: "pointer" }}
-              />
-              <Chip
-                size="small"
-                variant="outlined"
-                label={`init #${sdkInitGeneration}`}
-                sx={{ fontFamily: "monospace" }}
-              />
-              <Chip
-                size="small"
-                variant="outlined"
-                label={`mode: ${mode}`}
-                sx={{ fontFamily: "monospace" }}
-              />
-              <Chip
-                size="small"
-                variant="outlined"
-                label={`locale: ${locale}`}
-                sx={{ fontFamily: "monospace" }}
-              />
-              {lastResult.type && (
-                <Chip
-                  size="small"
-                  color={
-                    lastResult.type === "payment_success"
-                      ? "success"
-                      : lastResult.type === "payment_fail"
-                        ? "error"
-                        : "warning"
-                  }
-                  label={lastResult.type.replace("payment_", "")}
-                />
-              )}
-            </Stack>
-            <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap alignItems="center">
-              <Typography variant="caption" sx={{ color: "warning.dark", fontFamily: "monospace" }}>
-                session: {sessionId.slice(0, 12) || "—"}…
-              </Typography>
-              <Typography variant="caption" color="text.secondary" sx={{ fontFamily: "monospace" }}>
-                order: {orderId}
-              </Typography>
-            </Stack>
-          </Stack>
-        </Paper>
-
-        <Grid container spacing={2}>
-          <Grid item xs={12} lg={4} sx={{ order: { xs: 2, lg: 1 } }}>
-            <Stack spacing={2} sx={sectionEnter(60)}>
-              <Paper
-                variant="outlined"
-                sx={{
-                  p: { xs: 1.5, lg: 2 },
-                  borderRadius: 2,
-                  borderColor: "#E2E8F0",
-                  bgcolor: "#FFFFFF",
-                  maxHeight: { lg: `calc(${VIEWPORT_HEIGHT} - 120px)` },
-                  overflowY: { lg: "auto" },
-                  WebkitOverflowScrolling: "touch",
-                  minHeight: 0,
-                }}
               >
-                <Stack spacing={3}>
-                  <Box>
-                    <Typography
-                      variant="subtitle2"
-                      sx={{ mb: 0.5, fontWeight: 600, color: "#1F2937" }}
-                    >
-                      Configuration
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 2 }}>
-                      Session auto-creates on load. Re-create after amount / currency / env changes.{" "}
-                      <Box
-                        component="a"
-                        href="https://developer.evonetonline.com/docs/sdk"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        sx={{ color: "primary.main" }}
+                {environment}
+              </Badge>
+              <Badge variant="outline" className="font-mono">init #{sdkInitGeneration}</Badge>
+              <Badge variant="outline" className="font-mono">mode: {mode}</Badge>
+              <Badge variant="outline" className="font-mono">locale: {locale}</Badge>
+              {lastResult.type ? (
+                <Badge
+                  variant={lastResult.type === "payment_fail" ? "destructive" : "secondary"}
+                  className={
+                    lastResult.type === "payment_success"
+                      ? "border-emerald-200 bg-emerald-100 text-emerald-800"
+                      : lastResult.type === "payment_cancelled"
+                        ? "border-amber-200 bg-amber-100 text-amber-800"
+                        : ""
+                  }
+                >
+                  {lastResult.type.replace("payment_", "")}
+                </Badge>
+              ) : null}
+            </div>
+            <div className="flex min-w-0 flex-col gap-1 font-mono text-xs text-muted-foreground sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-3 sm:gap-y-1">
+              <span className="truncate text-amber-700">session: {sessionId.slice(0, 12) || "—"}…</span>
+              <span className="truncate">order: {orderId || "—"}</span>
+            </div>
+          </CardContent>
+        </Card>
+
+        <div className="grid min-w-0 items-start gap-4 lg:grid-cols-3">
+          <section className="order-2 min-h-0 min-w-0 lg:order-1 lg:max-h-[calc(var(--console-height)-7rem)] lg:overflow-y-auto">
+            <Card className="rounded-none border border-border">
+              <CardHeader className="border-b px-3 sm:px-4">
+                <CardTitle className="text-base">Configuration</CardTitle>
+                <p className="text-xs text-muted-foreground">
+                  Session auto-creates on load. Re-create after amount, currency, or environment changes.{" "}
+                  <a
+                    href="https://developer.evonetonline.com/docs/sdk"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-medium text-primary underline-offset-4 hover:underline"
+                  >
+                    SDK docs
+                  </a>
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-5 px-3 sm:px-4">
+                <div className="space-y-4 rounded-none border border-border p-3">
+                  <div className="flex items-start justify-between gap-3 rounded-none border p-3">
+                    <div className="min-w-0 flex-1">
+                      <Label htmlFor="save-card">Allow save card for next purchase</Label>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Sends userInfo.reference and paymentMethod.recurringProcessingModel.
+                      </p>
+                    </div>
+                    <Switch
+                      id="save-card"
+                      className="shrink-0"
+                      checked={saveCardForNextPurchase}
+                      onCheckedChange={setSaveCardForNextPurchase}
+                      aria-label="Allow save card for next purchase interaction"
+                    />
+                  </div>
+                  <div className="flex items-start justify-between gap-3 rounded-none border p-3">
+                    <div className="min-w-0 flex-1">
+                      <Label htmlFor="recurring-model-enabled">
+                        Include paymentMethod.recurringProcessingModel
+                      </Label>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Disable to send only userInfo.reference.
+                      </p>
+                    </div>
+                    <Switch
+                      id="recurring-model-enabled"
+                      className="shrink-0"
+                      checked={includeRecurringProcessingModel}
+                      onCheckedChange={setIncludeRecurringProcessingModel}
+                      disabled={!saveCardForNextPurchase}
+                    />
+                  </div>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="user-reference">User reference (userInfo.reference)</Label>
+                      <Input
+                        id="user-reference"
+                        value={userInfoReference}
+                        onChange={(event) => setUserInfoReference(event.target.value)}
+                        placeholder="your_customer_id_123"
+                        disabled={!saveCardForNextPurchase}
+                        required={saveCardForNextPurchase}
+                      />
+                      <p className="text-xs text-muted-foreground">Stable shopper ID used to bind the token.</p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Recurring model</Label>
+                      <Select
+                        value={recurringProcessingModel}
+                        onValueChange={(value) =>
+                          setRecurringProcessingModel(value as EvonetRecurringProcessingModel)
+                        }
+                        disabled={!saveCardForNextPurchase || !includeRecurringProcessingModel}
                       >
-                        SDK docs
-                      </Box>
-                    </Typography>
-                    <Grid container spacing={2}>
-                      <Grid item xs={12}>
-                        <Paper variant="outlined" sx={{ p: 1.5, mb: 1.5 }}>
-                          <Stack spacing={1.25}>
-                            <Stack
-                              direction={{ xs: "column", sm: "row" }}
-                              alignItems={{ sm: "center" }}
-                              justifyContent="space-between"
-                              gap={1}
-                            >
-                              <Box>
-                                <Typography variant="body2" fontWeight={600}>
-                                  Allow save card for next purchase (Interaction)
-                                </Typography>
-                                <Typography variant="caption" color="text.secondary">
-                                  Sends userInfo.reference and paymentMethod.recurringProcessingModel
-                                  when creating session. Requires merchant capability.
-                                </Typography>
-                              </Box>
-                              <Switch
-                                checked={saveCardForNextPurchase}
-                                onChange={(e) =>
-                                  setSaveCardForNextPurchase(e.target.checked)
-                                }
-                                inputProps={{
-                                  "aria-label": "Allow save card for next purchase interaction",
-                                }}
-                              />
-                            </Stack>
-                            <FormControlLabel
-                              sx={{ m: 0 }}
-                              control={
-                                <Switch
-                                  checked={includeRecurringProcessingModel}
-                                  onChange={(e) =>
-                                    setIncludeRecurringProcessingModel(
-                                      e.target.checked
-                                    )
-                                  }
-                                  disabled={!saveCardForNextPurchase}
-                                  inputProps={{
-                                    "aria-label":
-                                      "Include paymentMethod recurringProcessingModel",
-                                  }}
-                                />
-                              }
-                              label={
-                                <Box>
-                                  <Typography variant="body2" fontWeight={600}>
-                                    Include paymentMethod.recurringProcessingModel
-                                  </Typography>
-                                  <Typography variant="caption" color="text.secondary">
-                                    Turn this off to send only userInfo.reference and omit the
-                                    paymentMethod object.
-                                  </Typography>
-                                </Box>
-                              }
-                            />
-                            <Grid container spacing={1.5}>
-                              <Grid item xs={12} sm={6}>
-                                <TextField
-                                  size="small"
-                                  fullWidth
-                                  label="User reference (userInfo.reference)"
-                                  value={userInfoReference}
-                                  onChange={(e) => setUserInfoReference(e.target.value)}
-                                  placeholder="e.g. your_customer_id_123"
-                                  disabled={!saveCardForNextPurchase}
-                                  required={saveCardForNextPurchase}
-                                  helperText={
-                                    saveCardForNextPurchase
-                                      ? "Stable shopper ID in your system; used to bind token."
-                                      : "Enable the option above to send this field."
-                                  }
-                                />
-                              </Grid>
-                              <Grid item xs={12} sm={6}>
-                                <FormControl
-                                  size="small"
-                                  fullWidth
-                                  disabled={
-                                    !saveCardForNextPurchase ||
-                                    !includeRecurringProcessingModel
-                                  }
-                                >
-                                  <InputLabel id="recurring-model-test-label">
-                                    Recurring model
-                                  </InputLabel>
-                                  <Select
-                                    labelId="recurring-model-test-label"
-                                    label="Recurring model"
-                                    value={recurringProcessingModel}
-                                    onChange={(e) =>
-                                      setRecurringProcessingModel(
-                                        e.target.value as EvonetRecurringProcessingModel
-                                      )
-                                    }
-                                  >
-                                    {RECURRING_MODEL_OPTIONS.map((opt) => (
-                                      <MenuItem key={opt.value} value={opt.value}>
-                                        {opt.label}
-                                      </MenuItem>
-                                    ))}
-                                  </Select>
-                                </FormControl>
-                              </Grid>
-                            </Grid>
-                          </Stack>
-                        </Paper>
-                        <TextField
-                          label="sessionID"
-                          value={sessionId}
-                          onChange={(e) => setSessionId(e.target.value)}
-                          placeholder="Generated by interaction API / backend"
-                          size="small"
-                          fullWidth
-                        />
-                        <Stack
-                          direction={{ xs: "column", sm: "row" }}
-                          spacing={1}
-                          sx={{ mt: 1.5 }}
-                          alignItems={{ sm: "center" }}
-                          flexWrap="wrap"
-                        >
-                          <Button
-                            type="button"
-                            onClick={() => void handleCreateSession()}
-                            disabled={isCreatingSession}
-                            variant="contained"
-                            size="small"
-                            sx={{ textTransform: "none" }}
-                          >
-                            {isCreatingSession
-                              ? "Creating session…"
-                              : "Create session"}
-                          </Button>
-                          <Button
-                            type="button"
-                            onClick={handleInitialize}
-                            variant="contained"
-                            color="secondary"
-                            size="small"
-                            sx={{ textTransform: "none" }}
-                          >
-                            Initialize / Re-init Drop-in
-                          </Button>
-                        </Stack>
-                        <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 1 }}>
-                          Session uses server credentials. Initialize runs Drop-in in this browser.
-                        </Typography>
-                        <Paper variant="outlined" sx={{ mt: 2, p: 1.5, bgcolor: "grey.50" }}>
-                          <Typography variant="caption" fontWeight={700} color="text.secondary" sx={{ display: "block", mb: 1 }}>
-                            Live SDK sync
-                          </Typography>
-                          <Stack spacing={1.25}>
-                            <Stack direction="row" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={1}>
-                              <Box>
-                                <Typography variant="body2" fontWeight={600}>
-                                  Auto-apply changes
-                                </Typography>
-                                <Typography variant="caption" color="text.secondary">
-                                  Re-initialize Drop-in when locale, UI, or appearance options change.
-                                </Typography>
-                              </Box>
-                              <Switch
-                                checked={liveApplySdk}
-                                onChange={() => setLiveApplySdk((v) => !v)}
-                                inputProps={{ "aria-label": "Auto-apply SDK parameter changes" }}
-                              />
-                            </Stack>
-                            <Button
-                              type="button"
-                              variant="outlined"
-                              size="small"
-                              sx={{ alignSelf: "flex-start", textTransform: "none" }}
-                              onClick={handleApplySdkParamsNow}
-                              disabled={sdkInitGeneration < 1}
-                            >
-                              Apply parameters now
-                            </Button>
-                          </Stack>
-                        </Paper>
-                        {sessionError && (
-                          <Alert severity="error" sx={{ mt: 1.5 }}>
-                            {sessionError}
-                          </Alert>
-                        )}
-                      </Grid>
+                        <SelectTrigger className="w-full" aria-label="Recurring model">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {RECURRING_MODEL_OPTIONS.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
 
-                      <Grid item xs={12} sm={6}>
-                        <TextField
-                          label="Environment"
-                          value={environment}
-                          onChange={(e) => setEnvironment(e.target.value)}
-                          size="small"
-                          fullWidth
-                          helperText="e.g. HKG_prod, BKK_prod, UAT"
-                        />
-                      </Grid>
+                <div className="space-y-2">
+                  <Label htmlFor="session-id">sessionID</Label>
+                  <Input
+                    id="session-id"
+                    value={sessionId}
+                    onChange={(event) => setSessionId(event.target.value)}
+                    placeholder="Generated by interaction API / backend"
+                    className="font-mono"
+                  />
+                </div>
+                <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={() => void handleCreateSession()}
+                    disabled={isCreatingSession}
+                  >
+                    {isCreatingSession ? "Creating session…" : "Create session"}
+                  </Button>
+                  <Button type="button" size="sm" variant="outline" onClick={handleInitialize}>
+                    Initialize / Re-init Drop-in
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Session uses server credentials. Initialize runs Drop-in in this browser.
+                </p>
 
-                      <Grid item xs={12} sm={6}>
-                        <FormControl size="small" fullWidth>
-                          <InputLabel id="mode-label">mode</InputLabel>
-                          <Select
-                            labelId="mode-label"
-                            label="mode"
-                            value={mode}
-                            onChange={(e) =>
-                              setMode(
-                                e.target.value as EvonetDropinConfig["mode"]
-                              )
-                            }
-                          >
-                            <MenuItem value="embedded">embedded</MenuItem>
-                            <MenuItem value="fullPage">fullPage</MenuItem>
-                            <MenuItem value="bottomUp">bottomUp</MenuItem>
-                          </Select>
-                        </FormControl>
-                      </Grid>
+                <div className="space-y-3 rounded-none border border-border bg-muted/40 p-3">
+                  <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Live SDK sync</p>
+                  <div className="flex items-start justify-between gap-3 rounded-none border bg-background p-3">
+                    <div className="min-w-0 flex-1">
+                      <Label htmlFor="live-sdk-sync">Auto-apply changes</Label>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Re-initialize when locale, UI, or appearance options change.
+                      </p>
+                    </div>
+                    <Switch
+                      id="live-sdk-sync"
+                      className="shrink-0"
+                      checked={liveApplySdk}
+                      onCheckedChange={setLiveApplySdk}
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleApplySdkParamsNow}
+                    disabled={sdkInitGeneration < 1}
+                  >
+                    Apply parameters now
+                  </Button>
+                </div>
 
-                      <Grid item xs={12}>
-                        <FormControl size="small" fullWidth>
-                          <InputLabel id="locale-label">locale (SDK)</InputLabel>
-                          <Select
-                            labelId="locale-label"
-                            label="locale (SDK)"
-                            value={locale}
-                            onChange={(e) => setLocale(e.target.value)}
-                          >
-                            <MenuItem value="en-US">English (en-US)</MenuItem>
-                            <MenuItem value="zh-CN">Chinese Simplified (zh-CN)</MenuItem>
-                            <MenuItem value="zh-TW">Traditional Chinese (zh-TW)</MenuItem>
-                            <MenuItem value="ja-JP">Japanese (ja-JP)</MenuItem>
-                            <MenuItem value="ko-KR">Korean (ko-KR)</MenuItem>
-                            <MenuItem value="th-TH">Thai (th-TH)</MenuItem>
-                          </Select>
-                        </FormControl>
-                      </Grid>
-                    </Grid>
-                  </Box>
+                {sessionError ? (
+                  <div role="alert" className="rounded-none border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
+                    {sessionError}
+                  </div>
+                ) : null}
 
-                  <Accordion defaultExpanded={false} disableGutters sx={{ border: "1px solid", borderColor: "divider", borderRadius: 1, "&:before": { display: "none" } }}>
-                    <AccordionSummary sx={{ px: 2, minHeight: 48 }}>
-                      <Typography variant="subtitle2" fontWeight={600}>
-                        Payment UI
-                      </Typography>
-                    </AccordionSummary>
-                    <AccordionDetails sx={{ pt: 0, px: 2, pb: 2 }}>
-                      <Stack spacing={2}>
-                        <Stack direction="row" alignItems="center" justifyContent="space-between">
-                          <Box>
-                            <Typography variant="body2" fontWeight={600}>showSaveImage</Typography>
-                            <Typography variant="caption" color="text.secondary">Allow saving QR to device</Typography>
-                          </Box>
-                          <Switch checked={showSaveImage} onChange={() => setShowSaveImage((v) => !v)} inputProps={{ "aria-label": "showSaveImage" }} />
-                        </Stack>
-                        <Stack direction="row" alignItems="center" justifyContent="space-between">
-                          <Box>
-                            <Typography variant="body2" fontWeight={600}>Columns (two-column layout)</Typography>
-                            <Typography variant="caption" color="text.secondary">uiOption.Columns</Typography>
-                          </Box>
-                          <Switch checked={columnsLayout} onChange={() => setColumnsLayout((v) => !v)} inputProps={{ "aria-label": "Columns" }} />
-                        </Stack>
-                        <Typography variant="caption" fontWeight={700} color="text.secondary">Card (uiOption.card)</Typography>
-                        <Stack direction="row" alignItems="center" justifyContent="space-between">
-                          <Typography variant="body2">showCardHolderName</Typography>
-                          <Switch checked={showCardHolderName} onChange={() => setShowCardHolderName((v) => !v)} inputProps={{ "aria-label": "showCardHolderName" }} />
-                        </Stack>
-                        <Stack direction="row" alignItems="center" justifyContent="space-between">
-                          <Typography variant="body2">CVVForSavedCard</Typography>
-                          <Switch checked={cvvForSavedCard} onChange={() => setCvvForSavedCard((v) => !v)} inputProps={{ "aria-label": "CVVForSavedCard" }} />
-                        </Stack>
-                        <Stack direction="row" alignItems="center" justifyContent="space-between">
-                          <Typography variant="body2">showScanCardButton</Typography>
-                          <Switch checked={showScanCardButton} onChange={() => setShowScanCardButton((v) => !v)} inputProps={{ "aria-label": "showScanCardButton" }} />
-                        </Stack>
-                        <Stack direction="row" alignItems="center" justifyContent="space-between">
-                          <Typography variant="body2">autoInvokeCardScanner</Typography>
-                          <Switch checked={autoInvokeCardScanner} onChange={() => setAutoInvokeCardScanner((v) => !v)} inputProps={{ "aria-label": "autoInvokeCardScanner" }} />
-                        </Stack>
-                        <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: -0.5 }}>
-                          Scan options often need <strong>HTTPS</strong> and a supported mobile/browser context.
-                          Some Evonet Drop-in builds throw on init when scanning is enabled but the environment
-                          is unsupported—check the event log for <code>errorMessage</code> / <code>scanHint</code>.
-                        </Typography>
-                        <Typography variant="caption" fontWeight={700} color="text.secondary">Terms &amp; Conditions (uiOption.TnC)</Typography>
-                        <Stack direction="row" alignItems="center" justifyContent="space-between">
-                          <Typography variant="body2">showTnC</Typography>
-                          <Switch checked={showTnC} onChange={() => setShowTnC((v) => !v)} inputProps={{ "aria-label": "showTnC" }} />
-                        </Stack>
-                        <FormControl size="small" fullWidth disabled={!showTnC}>
-                          <InputLabel id="tnc-mode-label">TnC mode</InputLabel>
-                          <Select
-                            labelId="tnc-mode-label"
-                            label="TnC mode"
-                            value={tncMode}
-                            onChange={(e) =>
-                              setTncMode(e.target.value as "checkbox" | "click2accept")
-                            }
-                          >
-                            <MenuItem value="click2accept">click2accept</MenuItem>
-                            <MenuItem value="checkbox">checkbox</MenuItem>
-                          </Select>
-                        </FormControl>
-                        <TextField
-                          label="TnC url (required if showTnC)"
-                          value={tncUrl}
-                          onChange={(e) => setTncUrl(e.target.value)}
-                          size="small"
-                          fullWidth
-                          disabled={!showTnC}
-                          helperText="Mandatory in docs when showTnC is true"
-                        />
-                      </Stack>
-                    </AccordionDetails>
-                  </Accordion>
-
-                  <Accordion defaultExpanded={false} disableGutters sx={{ border: "1px solid", borderColor: "divider", borderRadius: 1, "&:before": { display: "none" } }}>
-                    <AccordionSummary sx={{ px: 2, minHeight: 48 }}>
-                      <Typography variant="subtitle2" fontWeight={600}>
-                        Appearance
-                      </Typography>
-                    </AccordionSummary>
-                    <AccordionDetails sx={{ pt: 0, px: 2, pb: 2 }}>
-                      <Grid container spacing={2}>
-                        <Grid item xs={12} sm={6}>
-                          <TextField label="colorBackground" value={colorBackground} onChange={(e) => setColorBackground(e.target.value)} size="small" fullWidth placeholder="#ffffff" />
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                          <TextField label="colorPrimary" value={colorPrimary} onChange={(e) => setColorPrimary(e.target.value)} size="small" fullWidth placeholder="#000000" />
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                          <TextField label="colorSecondary" value={colorSecondary} onChange={(e) => setColorSecondary(e.target.value)} size="small" fullWidth />
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                          <TextField label="colorAction" value={colorAction} onChange={(e) => setColorAction(e.target.value)} size="small" fullWidth />
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                          <TextField label="colorError" value={colorError} onChange={(e) => setColorError(e.target.value)} size="small" fullWidth />
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                          <TextField label="colorDisabled" value={colorDisabled} onChange={(e) => setColorDisabled(e.target.value)} size="small" fullWidth />
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                          <TextField label="colorFormBackground" value={colorFormBackground} onChange={(e) => setColorFormBackground(e.target.value)} size="small" fullWidth />
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                          <TextField label="colorFormBorder" value={colorFormBorder} onChange={(e) => setColorFormBorder(e.target.value)} size="small" fullWidth />
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                          <TextField label="colorBoxStroke" value={colorBoxStroke} onChange={(e) => setColorBoxStroke(e.target.value)} size="small" fullWidth />
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                          <TextField label="colorBoxFillingOutline" value={colorBoxFillingOutline} onChange={(e) => setColorBoxFillingOutline(e.target.value)} size="small" fullWidth />
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                          <TextField label="colorPlaceholder" value={colorPlaceholder} onChange={(e) => setColorPlaceholder(e.target.value)} size="small" fullWidth />
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                          <TextField label="colorInverse" value={colorInverse} onChange={(e) => setColorInverse(e.target.value)} size="small" fullWidth />
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                          <FormControl size="small" fullWidth>
-                            <InputLabel id="logo-pos-label">logoPosition</InputLabel>
-                            <Select
-                              labelId="logo-pos-label"
-                              label="logoPosition"
-                              value={logoPosition}
-                              onChange={(e) =>
-                                setLogoPosition(e.target.value as "left" | "middle" | "right")
-                              }
-                            >
-                              <MenuItem value="left">left</MenuItem>
-                              <MenuItem value="middle">middle</MenuItem>
-                              <MenuItem value="right">right</MenuItem>
-                            </Select>
-                          </FormControl>
-                        </Grid>
-                        <Grid item xs={12}>
-                          <TextField
-                            label="borderRadius [r1,r2,r3,r4]"
-                            value={borderRadiusInput}
-                            onChange={(e) => setBorderRadiusInput(e.target.value)}
-                            size="small"
-                            fullWidth
-                            placeholder="e.g. 8,8,12,12"
-                            helperText="Four comma-separated numbers"
-                          />
-                        </Grid>
-                        <Grid item xs={12}>
-                          <Typography variant="caption" fontWeight={700} color="text.secondary" sx={{ display: "block", mb: 1 }}>
-                            Typography (appearance.*.font)
-                          </Typography>
-                        </Grid>
-                        {TYPOGRAPHY_GROUPS.map((group) => (
-                          <Grid item xs={12} key={group}>
-                            <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 1 }}>
-                              {group}
-                            </Typography>
-                            <Grid container spacing={1.5}>
-                              {FONT_FIELDS.map((field) => (
-                                <Grid item xs={12} sm={6} md={4} key={`${group}-${field}`}>
-                                  <TextField
-                                    label={`${group}.${field}`}
-                                    value={typography[group][field] ?? ""}
-                                    onChange={(e) =>
-                                      setTypography((prev) => ({
-                                        ...prev,
-                                        [group]: {
-                                          ...prev[group],
-                                          [field]: e.target.value,
-                                        },
-                                      }))
-                                    }
-                                    size="small"
-                                    fullWidth
-                                  />
-                                </Grid>
-                              ))}
-                            </Grid>
-                          </Grid>
-                        ))}
-                      </Grid>
-                      <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 1 }}>
-                        Typography maps into <code>appearance</code>. Rendering depends on SDK build and merchant configuration.
-                      </Typography>
-                    </AccordionDetails>
-                  </Accordion>
-
-                  <Accordion defaultExpanded={false} disableGutters sx={{ border: "1px solid", borderColor: "divider", borderRadius: 1, "&:before": { display: "none" } }}>
-                    <AccordionSummary sx={{ px: 2, minHeight: 48 }}>
-                      <Typography variant="subtitle2" fontWeight={600}>
-                        BIN verification
-                      </Typography>
-                    </AccordionSummary>
-                    <AccordionDetails sx={{ pt: 0, px: 2, pb: 2 }}>
-                    <Stack
-                      direction="row"
-                      spacing={2}
-                      alignItems="center"
-                      justifyContent="space-between"
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="environment">Environment</Label>
+                    <Input
+                      id="environment"
+                      value={environment}
+                      onChange={(event) => setEnvironment(event.target.value)}
+                    />
+                    <p className="text-xs text-muted-foreground">e.g. HKG_prod, BKK_prod, UAT</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Mode</Label>
+                    <Select
+                      value={mode}
+                      onValueChange={(value) => setMode(value as EvonetDropinConfig["mode"])}
                     >
-                      <Box>
-                        <Typography variant="body2" fontWeight={600}>
-                          isVerifyPaymentBrand
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          When enabled, BIN is processed and returned in SDK events. Host rules below only affect promo text.
-                        </Typography>
-                      </Box>
-                      <Switch
-                        checked={verifyPaymentBrand}
-                        onChange={() => setVerifyPaymentBrand((v) => !v)}
-                        inputProps={{ "aria-label": "Verify payment brand" }}
-                      />
-                    </Stack>
+                      <SelectTrigger className="w-full" aria-label="Drop-in mode"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="embedded">embedded</SelectItem>
+                        <SelectItem value="fullPage">fullPage</SelectItem>
+                        <SelectItem value="bottomUp">bottomUp</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2 sm:col-span-2">
+                    <Label>Locale (SDK)</Label>
+                    <Select value={locale} onValueChange={setLocale}>
+                      <SelectTrigger className="w-full" aria-label="SDK locale"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="en-US">English (en-US)</SelectItem>
+                        <SelectItem value="zh-CN">Chinese Simplified (zh-CN)</SelectItem>
+                        <SelectItem value="zh-TW">Traditional Chinese (zh-TW)</SelectItem>
+                        <SelectItem value="ja-JP">Japanese (ja-JP)</SelectItem>
+                        <SelectItem value="ko-KR">Korean (ko-KR)</SelectItem>
+                        <SelectItem value="th-TH">Thai (th-TH)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
 
-                    {verifyPaymentBrand && (
-                      <TextField
-                        label="verifyOption.maxWaitTime (seconds)"
-                        value={maxWaitTime}
-                        onChange={(e) => setMaxWaitTime(e.target.value)}
-                        size="small"
-                        fullWidth
-                        sx={{ mt: 2 }}
-                        helperText="Default per docs: 10"
-                      />
-                    )}
+                <Accordion type="multiple" className="space-y-3">
+                  <AccordionItem value="payment-ui" className="rounded-none border border-border px-3">
+                    <AccordionTrigger>Payment UI</AccordionTrigger>
+                    <AccordionContent className="space-y-4 pt-2">
+                      {[
+                        [showSaveImage, setShowSaveImage, "showSaveImage", "Allow saving QR to device"],
+                        [columnsLayout, setColumnsLayout, "Columns (two-column layout)", "uiOption.Columns"],
+                        [showCardHolderName, setShowCardHolderName, "showCardHolderName", "uiOption.card"],
+                        [cvvForSavedCard, setCvvForSavedCard, "CVVForSavedCard", "uiOption.card"],
+                        [showScanCardButton, setShowScanCardButton, "showScanCardButton", "Requires supported HTTPS context"],
+                        [autoInvokeCardScanner, setAutoInvokeCardScanner, "autoInvokeCardScanner", "Requires supported HTTPS context"],
+                        [showTnC, setShowTnC, "showTnC", "uiOption.TnC"],
+                      ].map(([checked, setter, label, caption]) => (
+                        <div key={label as string} className="flex items-start justify-between gap-3 rounded-none border p-3">
+                          <div className="min-w-0 flex-1">
+                            <Label>{label as string}</Label>
+                            <p className="mt-1 text-xs text-muted-foreground">{caption as string}</p>
+                          </div>
+                          <Switch
+                            className="shrink-0"
+                            checked={checked as boolean}
+                            onCheckedChange={setter as (value: boolean) => void}
+                            aria-label={label as string}
+                          />
+                        </div>
+                      ))}
+                      <p className="text-xs text-muted-foreground">
+                        Scan options can fail on unsupported browsers; check <code>errorMessage</code> and <code>scanHint</code> in the event log.
+                      </p>
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <div className="space-y-2">
+                          <Label>TnC mode</Label>
+                          <Select
+                            value={tncMode}
+                            onValueChange={(value) => setTncMode(value as "checkbox" | "click2accept")}
+                            disabled={!showTnC}
+                          >
+                            <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="click2accept">click2accept</SelectItem>
+                              <SelectItem value="checkbox">checkbox</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="tnc-url">TnC URL</Label>
+                          <Input
+                            id="tnc-url"
+                            value={tncUrl}
+                            onChange={(event) => setTncUrl(event.target.value)}
+                            disabled={!showTnC}
+                            placeholder="https://example.com/tnc"
+                          />
+                        </div>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
 
-                    {verifyPaymentBrand && (
-                      <Stack spacing={2} sx={{ mt: 2 }}>
-                        <Typography variant="caption" color="text.secondary">
-                          Optional promotion copy when a card BIN matches. Does not block payment.
-                        </Typography>
+                  <AccordionItem value="appearance" className="rounded-none border border-border px-3">
+                    <AccordionTrigger>Appearance</AccordionTrigger>
+                    <AccordionContent className="space-y-5 pt-2">
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        {[
+                          ["colorBackground", colorBackground, setColorBackground, "#ffffff"],
+                          ["colorPrimary", colorPrimary, setColorPrimary, "#000000"],
+                          ["colorSecondary", colorSecondary, setColorSecondary, ""],
+                          ["colorAction", colorAction, setColorAction, ""],
+                          ["colorError", colorError, setColorError, ""],
+                          ["colorDisabled", colorDisabled, setColorDisabled, ""],
+                          ["colorFormBackground", colorFormBackground, setColorFormBackground, ""],
+                          ["colorFormBorder", colorFormBorder, setColorFormBorder, ""],
+                          ["colorBoxStroke", colorBoxStroke, setColorBoxStroke, ""],
+                          ["colorBoxFillingOutline", colorBoxFillingOutline, setColorBoxFillingOutline, ""],
+                          ["colorPlaceholder", colorPlaceholder, setColorPlaceholder, ""],
+                          ["colorInverse", colorInverse, setColorInverse, ""],
+                        ].map(([label, value, setter, placeholder]) => (
+                          <div key={label as string} className="space-y-2">
+                            <Label htmlFor={label as string}>{label as string}</Label>
+                            <Input
+                              id={label as string}
+                              value={value as string}
+                              onChange={(event) => (setter as (value: string) => void)(event.target.value)}
+                              placeholder={placeholder as string}
+                              className="font-mono"
+                            />
+                          </div>
+                        ))}
+                        <div className="space-y-2">
+                          <Label>logoPosition</Label>
+                          <Select
+                            value={logoPosition}
+                            onValueChange={(value) => setLogoPosition(value as "left" | "middle" | "right")}
+                          >
+                            <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="left">left</SelectItem>
+                              <SelectItem value="middle">middle</SelectItem>
+                              <SelectItem value="right">right</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="border-radius">borderRadius [r1,r2,r3,r4]</Label>
+                          <Input
+                            id="border-radius"
+                            value={borderRadiusInput}
+                            onChange={(event) => setBorderRadiusInput(event.target.value)}
+                            placeholder="8,8,12,12"
+                          />
+                        </div>
+                      </div>
+                      <div className="space-y-3">
+                        <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                          Typography (appearance.*.font)
+                        </p>
+                        <Accordion type="multiple" className="rounded-none border px-3">
+                          {TYPOGRAPHY_GROUPS.map((group) => (
+                            <AccordionItem key={group} value={group}>
+                              <AccordionTrigger className="capitalize">{group}</AccordionTrigger>
+                              <AccordionContent className="grid gap-3 pt-2 sm:grid-cols-2">
+                                {FONT_FIELDS.map((field) => (
+                                  <div key={`${group}-${field}`} className="space-y-2">
+                                    <Label htmlFor={`${group}-${field}`}>{group}.{field}</Label>
+                                    <Input
+                                      id={`${group}-${field}`}
+                                      value={typography[group][field] ?? ""}
+                                      onChange={(event) =>
+                                        setTypography((previous) => ({
+                                          ...previous,
+                                          [group]: {
+                                            ...previous[group],
+                                            [field]: event.target.value,
+                                          },
+                                        }))
+                                      }
+                                    />
+                                  </div>
+                                ))}
+                              </AccordionContent>
+                            </AccordionItem>
+                          ))}
+                        </Accordion>
+                        <p className="text-xs text-muted-foreground">
+                          Rendering depends on the SDK build and merchant configuration.
+                        </p>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
 
-                        <Stack spacing={1.5}>
-                          {binRules.map((rule, index) => (
-                            <Paper
-                              // Keep key stable while user types; otherwise React remounts
-                              // the row (key changes with `first6No`) and the input loses focus.
-                              key={index}
-                              variant="outlined"
-                              sx={{ p: 1.5 }}
-                            >
-                              <Stack spacing={1.25}>
-                                <Stack
-                                  direction="row"
-                                  alignItems="center"
-                                  justifyContent="space-between"
-                                >
-                                  <Typography variant="caption" fontWeight={700}>
-                                    Condition {index + 1}
-                                  </Typography>
+                  <AccordionItem value="bin-verification" className="rounded-none border border-border px-3">
+                    <AccordionTrigger>BIN verification</AccordionTrigger>
+                    <AccordionContent className="space-y-4 pt-2">
+                      <div className="flex items-start justify-between gap-3 rounded-none border p-3">
+                        <div className="min-w-0 flex-1">
+                          <Label htmlFor="verify-payment-brand">isVerifyPaymentBrand</Label>
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            Processes BIN data in SDK events. Host rules only control promotion text.
+                          </p>
+                        </div>
+                        <Switch
+                          id="verify-payment-brand"
+                          className="shrink-0"
+                          checked={verifyPaymentBrand}
+                          onCheckedChange={setVerifyPaymentBrand}
+                        />
+                      </div>
+                      {verifyPaymentBrand ? (
+                        <>
+                          <div className="space-y-2">
+                            <Label htmlFor="max-wait-time">verifyOption.maxWaitTime (seconds)</Label>
+                            <Input
+                              id="max-wait-time"
+                              value={maxWaitTime}
+                              onChange={(event) => setMaxWaitTime(event.target.value)}
+                            />
+                            <p className="text-xs text-muted-foreground">Default per docs: 10</p>
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            Optional promotion copy when a card BIN matches. Does not block payment.
+                          </p>
+                          <div className="space-y-3">
+                            {binRules.map((rule, index) => (
+                              <div key={index} className="space-y-3 rounded-none border p-3">
+                                <div className="flex items-center justify-between gap-3">
+                                  <p className="text-xs font-bold">Condition {index + 1}</p>
                                   <Button
-                                    size="small"
-                                    color="error"
-                                    sx={{ textTransform: "none", minWidth: 0, px: 0.5 }}
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-destructive"
                                     onClick={() =>
-                                      setBinRules((prev) =>
-                                        prev.filter((_, idx) => idx !== index)
+                                      setBinRules((previous) =>
+                                        previous.filter((_, ruleIndex) => ruleIndex !== index)
                                       )
                                     }
                                   >
                                     Remove
                                   </Button>
-                                </Stack>
-
-                                <TextField
-                                  label="Custom card BIN"
-                                  value={rule.first6No}
-                                  onChange={(e) => {
-                                    const value = e.target.value
-                                      .replace(/\D/g, "")
-                                      .slice(0, 6);
-                                    setBinRules((prev) =>
-                                      prev.map((item, idx) =>
-                                        idx === index
-                                          ? { ...item, first6No: value }
-                                          : item
+                                </div>
+                                <div className="space-y-2">
+                                  <Label htmlFor={`bin-${index}`}>Custom card BIN</Label>
+                                  <Input
+                                    id={`bin-${index}`}
+                                    value={rule.first6No}
+                                    onChange={(event) => {
+                                      const value = event.target.value.replace(/\D/g, "").slice(0, 6);
+                                      setBinRules((previous) =>
+                                        previous.map((item, ruleIndex) =>
+                                          ruleIndex === index ? { ...item, first6No: value } : item
+                                        )
+                                      );
+                                    }}
+                                    maxLength={6}
+                                    className="font-mono"
+                                  />
+                                </div>
+                                <div className="space-y-2">
+                                  <Label htmlFor={`promo-${index}`}>Promotion message</Label>
+                                  <Input
+                                    id={`promo-${index}`}
+                                    value={rule.message ?? ""}
+                                    onChange={(event) =>
+                                      setBinRules((previous) =>
+                                        previous.map((item, ruleIndex) =>
+                                          ruleIndex === index
+                                            ? { ...item, message: event.target.value }
+                                            : item
+                                        )
                                       )
-                                    );
-                                  }}
-                                  size="small"
-                                  inputProps={{
-                                    maxLength: 6,
-                                    style: { fontFamily: "monospace" },
-                                  }}
-                                />
-
-                                <TextField
-                                  label="Promotion message"
-                                  value={rule.message ?? ""}
-                                  onChange={(e) =>
-                                    setBinRules((prev) =>
-                                      prev.map((item, idx) =>
-                                        idx === index
-                                          ? { ...item, message: e.target.value }
-                                          : item
-                                      )
-                                    )
-                                  }
-                                  size="small"
-                                  helperText="Shown above Drop-in when this BIN matches"
-                                />
-                              </Stack>
-                            </Paper>
-                          ))}
-                        </Stack>
-
-                        <Paper variant="outlined" sx={{ p: 1.5 }}>
-                          <Stack spacing={1.25}>
-                            <Typography variant="caption" fontWeight={700}>
-                              Add condition
-                            </Typography>
-                            <TextField
-                              label="Custom card BIN"
-                              value={newRuleFirst6}
-                              onChange={(e) =>
-                                setNewRuleFirst6(
-                                  e.target.value.replace(/\D/g, "").slice(0, 6)
-                                )
-                              }
-                              size="small"
-                              inputProps={{
-                                maxLength: 6,
-                                style: { fontFamily: "monospace" },
-                              }}
-                            />
-                            <TextField
-                              label="Promotion message"
-                              value={newRuleMessage}
-                              onChange={(e) => setNewRuleMessage(e.target.value)}
-                              size="small"
-                            />
+                                    }
+                                  />
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                          <div className="space-y-3 rounded-none border p-3">
+                            <p className="text-xs font-bold">Add condition</p>
+                            <div className="space-y-2">
+                              <Label htmlFor="new-bin">Custom card BIN</Label>
+                              <Input
+                                id="new-bin"
+                                value={newRuleFirst6}
+                                onChange={(event) =>
+                                  setNewRuleFirst6(event.target.value.replace(/\D/g, "").slice(0, 6))
+                                }
+                                maxLength={6}
+                                className="font-mono"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="new-promo">Promotion message</Label>
+                              <Input
+                                id="new-promo"
+                                value={newRuleMessage}
+                                onChange={(event) => setNewRuleMessage(event.target.value)}
+                              />
+                            </div>
                             <Button
-                              variant="outlined"
-                              size="small"
-                              sx={{ alignSelf: "flex-start", textTransform: "none" }}
+                              type="button"
+                              variant="outline"
+                              size="sm"
                               disabled={newRuleFirst6.length !== 6}
                               onClick={() => {
-                                setBinRules((prev) => [
-                                  ...prev,
-                                  {
-                                    first6No: newRuleFirst6,
-                                    message: newRuleMessage,
-                                  },
+                                setBinRules((previous) => [
+                                  ...previous,
+                                  { first6No: newRuleFirst6, message: newRuleMessage },
                                 ]);
                                 setNewRuleFirst6("");
                                 setNewRuleMessage("");
@@ -1695,347 +1441,195 @@ function EvonetDropinTestPage() {
                             >
                               Add condition
                             </Button>
-                          </Stack>
-                        </Paper>
-                      </Stack>
-                    )}
-                    </AccordionDetails>
-                  </Accordion>
+                          </div>
+                        </>
+                      ) : null}
+                    </AccordionContent>
+                  </AccordionItem>
 
-                  <Accordion defaultExpanded={false} disableGutters sx={{ border: "1px solid", borderColor: "divider", borderRadius: 1, "&:before": { display: "none" } }}>
-                    <AccordionSummary sx={{ px: 2, minHeight: 48 }}>
-                      <Typography variant="subtitle2" fontWeight={600}>
-                        Order &amp; customer
-                      </Typography>
-                    </AccordionSummary>
-                    <AccordionDetails sx={{ pt: 0, px: 2, pb: 2 }}>
-                      <Stack spacing={3}>
-                        <Box>
-                          <Typography variant="caption" fontWeight={700} color="text.secondary" sx={{ display: "block", mb: 1 }}>
-                            Order details
-                          </Typography>
-                          <Grid container spacing={2}>
-                            <Grid item xs={12} sm={6}>
-                              <TextField
-                                label="Amount"
-                                type="number"
-                                inputProps={{ min: 0, step: "0.01" }}
-                                value={amount}
-                                onChange={(e) => setAmount(e.target.value)}
-                                size="small"
-                                fullWidth
-                              />
-                            </Grid>
-                            <Grid item xs={12} sm={6}>
-                              <TextField
-                                label="Currency"
-                                value={currency}
-                                onChange={(e) =>
-                                  setCurrency(e.target.value.toUpperCase())
-                                }
-                                size="small"
-                                fullWidth
-                              />
-                            </Grid>
-                            <Grid item xs={12}>
-                              <TextField
-                                label="Order ID"
-                                value={orderId}
-                                onChange={(e) => setOrderId(e.target.value)}
-                                size="small"
-                                fullWidth
-                              />
-                            </Grid>
-                            <Grid item xs={12}>
-                              <TextField
-                                label="Description"
-                                value={description}
-                                onChange={(e) => setDescription(e.target.value)}
-                                size="small"
-                                fullWidth
-                              />
-                            </Grid>
-                          </Grid>
-                        </Box>
-                        <Box>
-                          <Typography variant="caption" fontWeight={700} color="text.secondary" sx={{ display: "block", mb: 1 }}>
-                            Customer
-                          </Typography>
-                          <Grid container spacing={2}>
-                            <Grid item xs={12}>
-                              <TextField
-                                label="Name"
-                                value={customerName}
-                                onChange={(e) => setCustomerName(e.target.value)}
-                                size="small"
-                                fullWidth
-                              />
-                            </Grid>
-                            <Grid item xs={12} sm={6}>
-                              <TextField
-                                label="Email"
-                                type="email"
-                                value={customerEmail}
-                                onChange={(e) => setCustomerEmail(e.target.value)}
-                                size="small"
-                                fullWidth
-                              />
-                            </Grid>
-                            <Grid item xs={12} sm={6}>
-                              <TextField
-                                label="Phone"
-                                type="tel"
-                                value={customerPhone}
-                                onChange={(e) => setCustomerPhone(e.target.value)}
-                                size="small"
-                                fullWidth
-                              />
-                            </Grid>
-                          </Grid>
-                        </Box>
-                        <Box>
-                          <Typography variant="caption" fontWeight={700} color="text.secondary" sx={{ display: "block", mb: 1 }}>
-                            Billing &amp; shipping
-                          </Typography>
-                          <Grid container spacing={2}>
-                            <Grid item xs={12} sm={4}>
-                              <TextField
-                                label="Billing Country"
-                                value={billingCountry}
-                                onChange={(e) =>
-                                  setBillingCountry(e.target.value.toUpperCase())
-                                }
-                                size="small"
-                                fullWidth
-                              />
-                            </Grid>
-                            <Grid item xs={12} sm={4}>
-                              <TextField
-                                label="Billing City"
-                                value={billingCity}
-                                onChange={(e) => setBillingCity(e.target.value)}
-                                size="small"
-                                fullWidth
-                              />
-                            </Grid>
-                            <Grid item xs={12} sm={4}>
-                              <TextField
-                                label="Billing Postal Code"
-                                value={billingPostalCode}
-                                onChange={(e) => setBillingPostalCode(e.target.value)}
-                                size="small"
-                                fullWidth
-                              />
-                            </Grid>
-                            <Grid item xs={12} sm={4}>
-                              <TextField
-                                label="Shipping Country"
-                                value={shippingCountry}
-                                onChange={(e) =>
-                                  setShippingCountry(e.target.value.toUpperCase())
-                                }
-                                size="small"
-                                fullWidth
-                              />
-                            </Grid>
-                            <Grid item xs={12} sm={4}>
-                              <TextField
-                                label="Shipping City"
-                                value={shippingCity}
-                                onChange={(e) => setShippingCity(e.target.value)}
-                                size="small"
-                                fullWidth
-                              />
-                            </Grid>
-                            <Grid item xs={12} sm={4}>
-                              <TextField
-                                label="Shipping Postal Code"
-                                value={shippingPostalCode}
-                                onChange={(e) =>
-                                  setShippingPostalCode(e.target.value)
-                                }
-                                size="small"
-                                fullWidth
-                              />
-                            </Grid>
-                          </Grid>
-                        </Box>
-                      </Stack>
-                    </AccordionDetails>
-                  </Accordion>
-                </Stack>
-              </Paper>
+                  <AccordionItem value="order-customer" className="rounded-none border border-border px-3">
+                    <AccordionTrigger>Order &amp; customer</AccordionTrigger>
+                    <AccordionContent className="space-y-6 pt-2">
+                      <div className="space-y-3">
+                        <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Order details</p>
+                        <div className="grid gap-4 sm:grid-cols-2">
+                          <div className="space-y-2">
+                            <Label htmlFor="amount">Amount</Label>
+                            <Input id="amount" type="number" min={0} step="0.01" value={amount} onChange={(event) => setAmount(event.target.value)} />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="currency">Currency</Label>
+                            <Input id="currency" value={currency} onChange={(event) => setCurrency(event.target.value.toUpperCase())} />
+                          </div>
+                          <div className="space-y-2 sm:col-span-2">
+                            <Label htmlFor="order-id">Order ID</Label>
+                            <Input id="order-id" value={orderId} onChange={(event) => setOrderId(event.target.value)} className="font-mono" />
+                          </div>
+                          <div className="space-y-2 sm:col-span-2">
+                            <Label htmlFor="description">Description</Label>
+                            <Input id="description" value={description} onChange={(event) => setDescription(event.target.value)} />
+                          </div>
+                        </div>
+                      </div>
+                      <div className="space-y-3">
+                        <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Customer</p>
+                        <div className="grid gap-4 sm:grid-cols-2">
+                          <div className="space-y-2 sm:col-span-2">
+                            <Label htmlFor="customer-name">Name</Label>
+                            <Input id="customer-name" value={customerName} onChange={(event) => setCustomerName(event.target.value)} />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="customer-email">Email</Label>
+                            <Input id="customer-email" type="email" value={customerEmail} onChange={(event) => setCustomerEmail(event.target.value)} />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="customer-phone">Phone</Label>
+                            <Input id="customer-phone" type="tel" value={customerPhone} onChange={(event) => setCustomerPhone(event.target.value)} />
+                          </div>
+                        </div>
+                      </div>
+                      <div className="space-y-3">
+                        <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Billing &amp; shipping</p>
+                        <div className="grid gap-4 sm:grid-cols-3">
+                          {[
+                            ["Billing Country", billingCountry, (value: string) => setBillingCountry(value.toUpperCase())],
+                            ["Billing City", billingCity, setBillingCity],
+                            ["Billing Postal Code", billingPostalCode, setBillingPostalCode],
+                            ["Shipping Country", shippingCountry, (value: string) => setShippingCountry(value.toUpperCase())],
+                            ["Shipping City", shippingCity, setShippingCity],
+                            ["Shipping Postal Code", shippingPostalCode, setShippingPostalCode],
+                          ].map(([label, value, setter]) => {
+                            const id = (label as string).toLowerCase().replaceAll(" ", "-");
+                            return (
+                              <div key={id} className="space-y-2">
+                                <Label htmlFor={id}>{label as string}</Label>
+                                <Input
+                                  id={id}
+                                  value={value as string}
+                                  onChange={(event) => (setter as (value: string) => void)(event.target.value)}
+                                />
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
+              </CardContent>
+            </Card>
+          </section>
 
-            </Stack>
-          </Grid>
-
-          <Grid item xs={12} lg={8} sx={{ order: { xs: 1, lg: 2 } }}>
-            <Stack spacing={2} sx={sectionEnter(40)}>
-              <Paper
-                id="dropin-test-preview"
-                variant="outlined"
-                sx={{
-                  overflow: "auto",
-                  borderRadius: 2,
-                  borderColor: "#E2E8F0",
-                  bgcolor: "#FFFFFF",
-                  minHeight: 0,
-                  WebkitOverflowScrolling: "touch",
-                }}
-              >
-                <Box
-                  sx={{
-                    borderBottom: "1px solid",
-                    borderColor: "divider",
-                    px: 2,
-                    py: 1.25,
-                    bgcolor: "grey.50",
-                  }}
-                >
-                  <Typography variant="subtitle2" fontWeight={600}>
-                    Drop-in preview
-                  </Typography>
-                </Box>
-                <Box sx={{ px: 2, pt: 2 }}>
-                  <DemoTransactionWarning environment={environment} />
-                </Box>
-                {binPromoMessage && (
-                  <Box sx={{ px: { xs: 2, lg: 3 }, pt: 2 }}>
-                    <Alert severity="info" variant="outlined">
-                      {binPromoMessage}
-                    </Alert>
-                  </Box>
-                )}
-                <Box>
+          <section className="order-1 min-w-0 space-y-4 lg:order-2 lg:col-span-2">
+            <Card id="dropin-test-preview" className="min-w-0 gap-0 overflow-x-auto rounded-none border border-border py-0">
+              <CardHeader className="border-b bg-muted/40 px-4 py-3">
+                <CardTitle className="text-base">Drop-in preview</CardTitle>
+              </CardHeader>
+              <CardContent className="min-w-0 space-y-3 p-4">
+                <DemoTransactionWarning
+                  environment={environment}
+                  sx={{ wordBreak: "break-word", "& .MuiAlert-message": { overflowWrap: "anywhere" } }}
+                />
+                {binPromoMessage ? (
+                  <div role="status" className="rounded-none border border-blue-200 bg-blue-50 p-3 text-sm text-blue-950">
+                    {binPromoMessage}
+                  </div>
+                ) : null}
+                <div className="mx-auto w-full max-w-lg overflow-x-auto rounded-none border border-[#D1D5DB] bg-background p-2 sm:p-3">
                   <EvonetDropinHost
                     config={config}
                     initGeneration={sdkInitGeneration}
                     onEvent={handleEvent}
                     onSdkInitApplied={setLastSdkInitInfo}
+                    compact
                   />
-                </Box>
-              </Paper>
+                </div>
+              </CardContent>
+            </Card>
 
-              {/* Developer console — always visible, never collapsed */}
-              <Paper elevation={0} sx={DEV_CONSOLE_PAPER_SX}>
-                <Stack
-                  direction="row"
-                  alignItems="center"
-                  justifyContent="space-between"
-                  flexWrap="wrap"
-                  gap={1}
-                  sx={{ mb: 2 }}
-                >
-                  <Typography variant="subtitle1" sx={DEV_CONSOLE_SECTION_TITLE_SX}>
-                    Developer console
-                  </Typography>
-                  <Stack direction="row" spacing={1} alignItems="center">
-                    <Button
-                      type="button"
-                      size="small"
-                      variant="outlined"
-                      disabled={!lastSdkInitInfo}
-                      onClick={async () => {
-                        if (!lastSdkInitInfo) return;
-                        try {
-                          await navigator.clipboard.writeText(
-                            JSON.stringify(lastSdkInitInfo.debugPayload, null, 2)
-                          );
-                          setCopySdkPayloadHint("Copied");
-                          window.setTimeout(() => setCopySdkPayloadHint(null), 2000);
-                        } catch {
-                          setCopySdkPayloadHint("Copy failed");
-                          window.setTimeout(() => setCopySdkPayloadHint(null), 2000);
-                        }
-                      }}
-                    >
-                      Copy SDK JSON
-                    </Button>
-                    <Button
-                      type="button"
-                      size="small"
-                      variant="outlined"
-                      onClick={() => setEvents([])}
-                    >
-                      Clear logs
-                    </Button>
-                    {copySdkPayloadHint ? (
-                      <Chip
-                        size="small"
-                        label={copySdkPayloadHint}
-                        color={copySdkPayloadHint === "Copy failed" ? "error" : "success"}
-                      />
-                    ) : null}
-                  </Stack>
-                </Stack>
-
-                <Grid container spacing={2}>
-                  <Grid item xs={12} lg={4}>
-                    <Typography variant="subtitle2" sx={{ mb: 1.25 }}>
-                      SDK runtime payload JSON
-                    </Typography>
-                    {lastSdkInitInfo ? (
-                      <Box component="pre" sx={DEV_CODE_PANEL_SX}>
-                        {JSON.stringify(lastSdkInitInfo.debugPayload, null, 2)}
-                      </Box>
-                    ) : (
-                      <Box sx={DEV_CODE_PANEL_SX}>
-                        <Typography variant="caption" sx={CODE_PANEL_EMPTY_SX}>
-                          Waiting for init…
-                        </Typography>
-                      </Box>
-                    )}
-                  </Grid>
-
-                  <Grid item xs={12} lg={4}>
-                    <Typography variant="subtitle2" sx={{ mb: 1.25 }}>
-                      Payment events
-                    </Typography>
-                    <Box sx={DEV_CODE_PANEL_SX}>
+            <Card className="min-w-0 rounded-none border border-border">
+              <CardHeader className="gap-3 border-b px-3 sm:px-4">
+                <CardTitle className="text-base">Developer console</CardTitle>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    disabled={!lastSdkInitInfo}
+                    onClick={async () => {
+                      if (!lastSdkInitInfo) return;
+                      try {
+                        await navigator.clipboard.writeText(
+                          JSON.stringify(lastSdkInitInfo.debugPayload, null, 2)
+                        );
+                        setCopySdkPayloadHint("Copied");
+                        window.setTimeout(() => setCopySdkPayloadHint(null), 2000);
+                      } catch {
+                        setCopySdkPayloadHint("Copy failed");
+                        window.setTimeout(() => setCopySdkPayloadHint(null), 2000);
+                      }
+                    }}
+                  >
+                    Copy SDK JSON
+                  </Button>
+                  <Button type="button" size="sm" variant="outline" onClick={() => setEvents([])}>
+                    Clear logs
+                  </Button>
+                  {copySdkPayloadHint ? (
+                    <Badge variant={copySdkPayloadHint === "Copy failed" ? "destructive" : "secondary"}>
+                      {copySdkPayloadHint}
+                    </Badge>
+                  ) : null}
+                </div>
+              </CardHeader>
+              <CardContent className="min-w-0 space-y-4 px-3 sm:px-4">
+                <div className="grid min-w-0 gap-4 lg:grid-cols-3">
+                  <section className="min-w-0 space-y-2">
+                    <h2 className="text-sm font-semibold">SDK runtime payload JSON</h2>
+                    <div className="code-panel-scroll max-h-[320px] min-h-36 overflow-auto rounded-none bg-[#0B1220] p-3 font-mono text-xs leading-5 text-slate-200 sm:max-h-[420px] sm:min-h-44">
+                      {lastSdkInitInfo ? (
+                        <pre className="m-0 whitespace-pre-wrap break-words">
+                          {JSON.stringify(lastSdkInitInfo.debugPayload, null, 2)}
+                        </pre>
+                      ) : (
+                        <p className="text-slate-400">Waiting for init…</p>
+                      )}
+                    </div>
+                  </section>
+                  <section className="min-w-0 space-y-2">
+                    <h2 className="text-sm font-semibold">Payment events</h2>
+                    <div className="code-panel-scroll max-h-[320px] min-h-36 overflow-auto rounded-none bg-[#0B1220] p-3 sm:max-h-[420px] sm:min-h-44">
                       <EventLogList
                         events={events}
                         filterSdk={false}
                         emptyLabel="// payment_success | payment_fail | payment_method_selected …"
                         eventColor="#86EFAC"
                       />
-                    </Box>
-                  </Grid>
-
-                  <Grid item xs={12} lg={4}>
-                    <Typography variant="subtitle2" sx={{ mb: 1.25 }}>
-                      SDK / host messages
-                    </Typography>
-                    <Box sx={DEV_CODE_PANEL_SX}>
+                    </div>
+                  </section>
+                  <section className="min-w-0 space-y-2">
+                    <h2 className="text-sm font-semibold">SDK / host messages</h2>
+                    <div className="code-panel-scroll max-h-[320px] min-h-36 overflow-auto rounded-none bg-[#0B1220] p-3 sm:max-h-[420px] sm:min-h-44">
                       <EventLogList
                         events={events}
                         filterSdk
                         emptyLabel="// dropin_host phases · postMessage · bin_verification …"
                         eventColor="#7DD3FC"
                       />
-                    </Box>
-                  </Grid>
-                </Grid>
-
-                <Box sx={{ mt: 2 }}>
-                  <Typography variant="subtitle2" sx={{ mb: 1.25 }}>
-                    navigator.userAgent
-                  </Typography>
-                  <Box
-                    component="pre"
-                    sx={{
-                      ...CODE_PANEL_PRE_SX,
-                      minHeight: "auto",
-                      maxHeight: "none",
-                    }}
-                  >
+                    </div>
+                  </section>
+                </div>
+                <section className="min-w-0 space-y-2">
+                  <h2 className="text-sm font-semibold">navigator.userAgent</h2>
+                  <pre className="code-panel-scroll m-0 overflow-auto whitespace-pre-wrap break-words rounded-none bg-[#0B1220] p-3 font-mono text-xs leading-5 text-slate-200">
                     {userAgent}
-                  </Box>
-                </Box>
-              </Paper>
-            </Stack>
-          </Grid>
-        </Grid>
-      </Container>
+                  </pre>
+                </section>
+              </CardContent>
+            </Card>
+          </section>
+        </div>
+      </div>
 
       <EvonetPaymentReturnDialog
         open={showReturnDialog}
@@ -2049,14 +1643,15 @@ function EvonetDropinTestPage() {
         }}
       />
 
-      <Snackbar
-        open={Boolean(targetSwitchHint)}
-        autoHideDuration={2500}
-        onClose={() => setTargetSwitchHint(null)}
-        message={targetSwitchHint}
-        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
-      />
-    </Box>
+      {targetSwitchHint ? (
+        <div
+          role="status"
+          className="fixed top-5 left-1/2 z-50 -translate-x-1/2 border border-zinc-700 bg-zinc-900 px-4 py-2 text-sm text-white shadow-lg"
+        >
+          {targetSwitchHint}
+        </div>
+      ) : null}
+    </main>
   );
 }
 

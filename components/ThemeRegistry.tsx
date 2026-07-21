@@ -14,6 +14,18 @@ const theme = createTheme({
   shape: {
     borderRadius: 12,
   },
+  components: {
+    MuiCssBaseline: {
+      styleOverrides: {
+        // MUI sets `button { color: inherit }` outside @layer, which beats
+        // Tailwind utility layers and makes shadcn primary buttons unreadable
+        // (dark text on dark bg). Revert to the previous cascade layer.
+        "button, [data-slot='button']": {
+          color: "revert-layer",
+        },
+      },
+    },
+  },
 });
 
 export default function ThemeRegistry({ children }: { children: ReactNode }) {
