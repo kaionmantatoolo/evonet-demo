@@ -82,6 +82,8 @@ import type {
 const DEFAULT_ENVIRONMENT = getEvonetEnvironment();
 const DEFAULT_SESSION_ID =
   process.env.NEXT_PUBLIC_EVONET_SESSION_ID ?? "REPLACE_WITH_REAL_SESSION_ID";
+/** Evonet blue CTA class — see `.storefront-cta` in globals.css */
+const OPEN_STOREFRONT_BUTTON_CLASS = "storefront-cta";
 const ENV_CHIP_TAP_WINDOW_MS = 2000;
 const ENV_CHIP_TAPS_REQUIRED = 5;
 
@@ -806,7 +808,7 @@ function DropinBuilderPage() {
                     preview the result instantly, and copy JSON in one click.
                   </p>
                   <div className="mt-1 flex w-full flex-col gap-3 md:hidden">
-                    <Button className="w-full" size="lg" onClick={openAsStorefront}>
+                    <Button className={`w-full ${OPEN_STOREFRONT_BUTTON_CLASS}`} size="lg" onClick={openAsStorefront}>
                       <Store data-icon="inline-start" />
                       Open as storefront
                     </Button>
@@ -1041,7 +1043,7 @@ function DropinBuilderPage() {
                     <CardTitle className="text-base">Drop-in Preview</CardTitle>
                     <div className="flex items-center gap-2"><Label htmlFor="live-preview">Auto refresh</Label><Switch id="live-preview" checked={livePreview} onCheckedChange={setLivePreview} /></div>
                   </div>
-                  <Button size="lg" className="w-full" onClick={openAsStorefront}>
+                  <Button size="lg" className={`w-full ${OPEN_STOREFRONT_BUTTON_CLASS}`} onClick={openAsStorefront}>
                     <Store data-icon="inline-start" />Open as storefront<ArrowRight data-icon="inline-end" />
                   </Button>
                   <p className="text-xs text-muted-foreground">Preview this theme in a full ecommerce checkout demo.</p>

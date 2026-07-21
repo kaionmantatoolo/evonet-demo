@@ -79,16 +79,16 @@ const reducedMotion = {
 } as const;
 
 /** Page shell fade-in (use once on the outermost content wrapper). */
-export function pageEnter(delayMs = 0, durationMs = 420): SxProps<Theme> {
+export function pageEnter(delayMs = 0, durationMs = 560): SxProps<Theme> {
   return {
     opacity: 0,
-    animation: `${fadeIn} ${durationMs}ms ease ${delayMs}ms both`,
+    animation: `${fadeIn} ${durationMs}ms ${EASE} ${delayMs}ms both`,
     ...reducedMotion,
   };
 }
 
 /** Staggered section fade-up used across Evonet surfaces. */
-export function sectionEnter(delayMs = 0, durationMs = 560): SxProps<Theme> {
+export function sectionEnter(delayMs = 0, durationMs = 680): SxProps<Theme> {
   return {
     opacity: 0,
     animation: `${fadeUp} ${durationMs}ms ${EASE} ${delayMs}ms both`,

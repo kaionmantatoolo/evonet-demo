@@ -78,7 +78,8 @@ export default function HomePage() {
               size="large"
               variant="contained"
               fullWidth
-              sx={appleCapsuleButtonSx}
+              className="storefront-cta"
+              sx={{ ...appleCapsuleButtonSx, borderRadius: 0 }}
             >
               Start interactive demo
             </Button>
@@ -183,7 +184,16 @@ export default function HomePage() {
                     component={Link}
                     href="/evonet/dropin-builder"
                     variant="contained"
-                    sx={{ ...appleCapsuleButtonSx, flexShrink: 0, px: 2.25, py: 1 }}
+                    className="storefront-cta"
+                    sx={{
+                      ...appleCapsuleButtonSx,
+                      flexShrink: 0,
+                      borderRadius: 0,
+                      minWidth: 176,
+                      width: 176,
+                      px: 2.25,
+                      py: 1,
+                    }}
                   >
                     Open Builder
                   </Button>
@@ -211,7 +221,15 @@ export default function HomePage() {
                     component={Link}
                     href="/evonet/dropin-test"
                     variant="outlined"
-                    sx={{ ...appleCapsuleOutlineSx, flexShrink: 0, px: 2.25, py: 0.95 }}
+                    sx={{
+                      ...appleCapsuleOutlineSx,
+                      flexShrink: 0,
+                      borderRadius: 0,
+                      minWidth: 176,
+                      width: 176,
+                      px: 2.25,
+                      py: 0.95,
+                    }}
                   >
                     Open workspace
                   </Button>
