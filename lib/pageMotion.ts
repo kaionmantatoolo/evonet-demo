@@ -7,7 +7,7 @@ export const fadeUp = keyframes`
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: none;
   }
 `;
 
@@ -23,7 +23,7 @@ export const scaleIn = keyframes`
   }
   to {
     opacity: 1;
-    transform: scale(1);
+    transform: none;
   }
 `;
 
@@ -34,7 +34,7 @@ export const slideUpSheet = keyframes`
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: none;
   }
 `;
 
@@ -54,7 +54,7 @@ export const ringPulse = keyframes`
 `;
 
 export const softShake = keyframes`
-  0%, 100% { transform: translateX(0); }
+  0%, 100% { transform: none; }
   20% { transform: translateX(-5px); }
   40% { transform: translateX(5px); }
   60% { transform: translateX(-3px); }
@@ -62,10 +62,10 @@ export const softShake = keyframes`
 `;
 
 export const bagBounce = keyframes`
-  0% { transform: scale(1); }
+  0% { transform: none; }
   35% { transform: scale(1.22); }
   65% { transform: scale(0.94); }
-  100% { transform: scale(1); }
+  100% { transform: none; }
 `;
 
 const EASE = "cubic-bezier(0.22, 1, 0.36, 1)";

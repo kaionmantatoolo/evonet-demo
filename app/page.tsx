@@ -1,238 +1,231 @@
 "use client";
 
 import Link from "next/link";
-import {
-  Box,
-  Button,
-  Chip,
-  Container,
-  Divider,
-  Grid,
-  Paper,
-  Stack,
-  Typography,
-} from "@mui/material";
+import { Box, Button, Container, Stack, Typography } from "@mui/material";
 import { isEvonetProductionEnvironment } from "../lib/evonetEnvironment";
 import { pageEnter, sectionEnter } from "../lib/pageMotion";
-import { VIEWPORT_HEIGHT } from "../lib/responsiveLayout";
+import {
+  apple,
+  appleBodySecondarySx,
+  appleCapsuleButtonSx,
+  appleCapsuleOutlineSx,
+  appleDisplayTitleSx,
+  appleGlassPanelSx,
+  appleGroupedSectionSx,
+  applePageShellSx,
+  appleSectionHeaderSx,
+} from "../lib/appleDesign";
 
 export default function HomePage() {
   const isProd = isEvonetProductionEnvironment();
 
   return (
-    <Box
-      component="main"
-      sx={{
-        minHeight: VIEWPORT_HEIGHT,
-        bgcolor: "background.default",
-        ...pageEnter(),
-      }}
-    >
-      <Container maxWidth="lg" sx={{ py: { xs: 3, sm: 5, md: 10 } }}>
-        <Stack spacing={{ xs: 3, md: 4 }}>
-          <Paper
-            elevation={0}
+    <Box component="main" sx={{ ...applePageShellSx, ...pageEnter() }}>
+      {/* Soft atmosphere — not a purple gradient */}
+      <Box
+        aria-hidden
+        sx={{
+          position: "fixed",
+          inset: 0,
+          pointerEvents: "none",
+          background: `
+            radial-gradient(ellipse 90% 55% at 50% -15%, rgba(0, 122, 255, 0.14), transparent 58%),
+            radial-gradient(ellipse 50% 40% at 100% 20%, rgba(52, 199, 89, 0.06), transparent 50%)
+          `,
+        }}
+      />
+
+      <Container maxWidth="md" sx={{ position: "relative", py: { xs: 5, sm: 8, md: 12 } }}>
+        <Stack spacing={{ xs: 4, md: 5 }} alignItems="center" textAlign="center">
+          <Stack spacing={1.5} alignItems="center" sx={{ ...sectionEnter(40), maxWidth: 640 }}>
+            <Typography
+              sx={{
+                fontSize: "0.8125rem",
+                fontWeight: 600,
+                letterSpacing: "0.04em",
+                textTransform: "uppercase",
+                color: apple.systemBlue,
+              }}
+            >
+              Evonet
+            </Typography>
+            <Typography
+              component="h1"
+              sx={{
+                ...appleDisplayTitleSx,
+                fontSize: { xs: "2.35rem", sm: "3.25rem", md: "3.75rem" },
+              }}
+            >
+              Checkout,
+              <Box component="br" sx={{ display: { xs: "none", sm: "block" } }} />
+              designed to feel effortless.
+            </Typography>
+            <Typography sx={{ ...appleBodySecondarySx, maxWidth: 520 }}>
+              A client showcase for Drop-in. Shape the look, preview the journey, and
+              share a clear checkout experience before go-live.
+            </Typography>
+          </Stack>
+
+          <Stack
+            direction={{ xs: "column", sm: "row" }}
+            spacing={1.25}
+            sx={{ ...sectionEnter(100), width: "100%", maxWidth: 420 }}
+            justifyContent="center"
+          >
+            <Button
+              component={Link}
+              href="/evonet/dropin-builder"
+              size="large"
+              variant="contained"
+              fullWidth
+              sx={appleCapsuleButtonSx}
+            >
+              Start interactive demo
+            </Button>
+            <Button
+              component={Link}
+              href="/evonet/dropin-test"
+              size="large"
+              variant="outlined"
+              fullWidth
+              sx={appleCapsuleOutlineSx}
+            >
+              Validation workspace
+            </Button>
+          </Stack>
+
+          <Box
             sx={{
-              p: { xs: 2.5, sm: 3.5, md: 5 },
-              borderRadius: { xs: 3, md: 4 },
-              border: "1px solid",
-              borderColor: "divider",
-              background:
-                "linear-gradient(135deg, rgba(37,99,235,0.10), rgba(255,255,255,1) 50%)",
-              ...sectionEnter(40),
+              ...appleGlassPanelSx,
+              ...sectionEnter(160),
+              width: "100%",
+              p: { xs: 2, sm: 2.5 },
+              textAlign: "left",
             }}
           >
-            <Stack spacing={{ xs: 2, md: 2.5 }}>
-              <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                <Chip size="small" color="primary" label="Client Experience Site" />
-                <Chip size="small" variant="outlined" label="Evonet Checkout Demo" />
-              </Stack>
-
-              <Typography
-                variant="h3"
-                sx={{
-                  fontWeight: 700,
-                  lineHeight: 1.15,
-                  fontSize: { xs: "1.75rem", sm: "2.25rem", md: "3rem" },
-                  letterSpacing: "-0.02em",
-                }}
-              >
-                Experience a Smoother Checkout
-                <Box component="br" sx={{ display: { xs: "none", sm: "block" } }} />
-                {" "}
-                with Evonet
-              </Typography>
-
-              <Typography
-                variant="body1"
-                color="text.secondary"
-                sx={{
-                  maxWidth: 760,
-                  fontSize: { xs: "0.95rem", md: "1rem" },
-                  lineHeight: 1.65,
-                }}
-              >
-                This demo is designed for customer showcase. In just a few steps, you
-                can preview the checkout look and feel, explore payment journey options,
-                and see how the experience can fit your business before launch.
-              </Typography>
-
-              <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5}>
-                <Button
-                  component={Link}
-                  href="/evonet/dropin-builder"
-                  size="large"
-                  variant="contained"
-                  fullWidth
+            <Stack
+              direction={{ xs: "column", sm: "row" }}
+              spacing={{ xs: 2.5, sm: 0 }}
+              divider={
+                <Box
                   sx={{
-                    textTransform: "none",
-                    fontWeight: 650,
-                    py: 1.35,
-                    borderRadius: 2.5,
-                    maxWidth: { sm: 280 },
+                    display: { xs: "none", sm: "block" },
+                    width: "1px",
+                    alignSelf: "stretch",
+                    bgcolor: apple.separator,
+                    mx: 2,
                   }}
-                >
-                  Start Interactive Demo
-                </Button>
-                <Button
-                  component={Link}
-                  href="/evonet/dropin-test"
-                  size="large"
-                  variant="outlined"
-                  fullWidth
-                  sx={{
-                    textTransform: "none",
-                    fontWeight: 600,
-                    py: 1.35,
-                    borderRadius: 2.5,
-                    maxWidth: { sm: 300 },
-                  }}
-                >
-                  Explore Validation Workspace
-                </Button>
-              </Stack>
+                />
+              }
+            >
+              {[
+                {
+                  step: "01",
+                  title: "Set the experience",
+                  body: "Pick style and interaction options, then preview instantly.",
+                },
+                {
+                  step: "02",
+                  title: "Walk the journey",
+                  body: "See payment selection through completion in a real browser.",
+                },
+                {
+                  step: "03",
+                  title: "Align to launch",
+                  body: "Give product and engineering one shared checkout reference.",
+                },
+              ].map((item) => (
+                <Box key={item.step} sx={{ flex: 1, px: { sm: 0.5 } }}>
+                  <Typography
+                    sx={{
+                      fontSize: "0.75rem",
+                      fontWeight: 650,
+                      color: apple.systemBlue,
+                      mb: 0.5,
+                      fontVariantNumeric: "tabular-nums",
+                    }}
+                  >
+                    {item.step}
+                  </Typography>
+                  <Typography sx={{ fontWeight: 650, mb: 0.5, letterSpacing: "-0.02em" }}>
+                    {item.title}
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: apple.secondaryLabel, lineHeight: 1.5 }}>
+                    {item.body}
+                  </Typography>
+                </Box>
+              ))}
             </Stack>
-          </Paper>
+          </Box>
 
-          <Grid container spacing={{ xs: 1.5, md: 2 }}>
-            {[
-              {
-                title: "1) Quick Experience Setup",
-                body: "Choose your preferred checkout style and interaction options with a guided flow, then instantly preview the customer journey.",
-                delay: 80,
-              },
-              {
-                title: "2) Real Journey Preview",
-                body: "Experience the checkout in a real browser context to better understand how customers will move from payment selection to completion.",
-                delay: 140,
-              },
-              {
-                title: "3) Better Go-Live Confidence",
-                body: "Align business, product, and implementation teams around one clear checkout experience before moving into production.",
-                delay: 200,
-              },
-            ].map((card) => (
-              <Grid item xs={12} md={4} key={card.title}>
-                <Paper
-                  sx={{
-                    p: { xs: 2, md: 2.5 },
-                    borderRadius: 3,
-                    height: "100%",
-                    ...sectionEnter(card.delay),
-                  }}
+          <Box sx={{ width: "100%", ...sectionEnter(220) }}>
+            <Typography sx={{ ...appleSectionHeaderSx, textAlign: "left", px: 0.5 }}>
+              Choose a path
+            </Typography>
+            <Stack spacing={1.25}>
+              <Box sx={{ ...appleGroupedSectionSx, p: { xs: 2, sm: 2.5 }, textAlign: "left" }}>
+                <Stack
+                  direction={{ xs: "column", sm: "row" }}
+                  spacing={2}
+                  alignItems={{ sm: "center" }}
+                  justifyContent="space-between"
                 >
-                  <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
-                    {card.title}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    {card.body}
-                  </Typography>
-                </Paper>
-              </Grid>
-            ))}
-          </Grid>
+                  <Box sx={{ flex: 1 }}>
+                    <Typography sx={{ fontWeight: 650, letterSpacing: "-0.02em", mb: 0.5 }}>
+                      Guided experience
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: apple.secondaryLabel }}>
+                      Best for customer meetings. Shape Drop-in and open a polished
+                      storefront preview.
+                    </Typography>
+                  </Box>
+                  <Button
+                    component={Link}
+                    href="/evonet/dropin-builder"
+                    variant="contained"
+                    sx={{ ...appleCapsuleButtonSx, flexShrink: 0, px: 2.25, py: 1 }}
+                  >
+                    Open Builder
+                  </Button>
+                </Stack>
+              </Box>
 
-          <Paper
-            sx={{
-              p: { xs: 2, sm: 3 },
-              borderRadius: 3,
-              ...sectionEnter(240),
-            }}
+              <Box sx={{ ...appleGroupedSectionSx, p: { xs: 2, sm: 2.5 }, textAlign: "left" }}>
+                <Stack
+                  direction={{ xs: "column", sm: "row" }}
+                  spacing={2}
+                  alignItems={{ sm: "center" }}
+                  justifyContent="space-between"
+                >
+                  <Box sx={{ flex: 1 }}>
+                    <Typography sx={{ fontWeight: 650, letterSpacing: "-0.02em", mb: 0.5 }}>
+                      {isProd ? "Production validation" : "Validation workspace"}
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: apple.secondaryLabel }}>
+                      {isProd
+                        ? "Full configuration for internal QA against live credentials."
+                        : "Inspect SDK options, events, and payment outcomes in detail."}
+                    </Typography>
+                  </Box>
+                  <Button
+                    component={Link}
+                    href="/evonet/dropin-test"
+                    variant="outlined"
+                    sx={{ ...appleCapsuleOutlineSx, flexShrink: 0, px: 2.25, py: 0.95 }}
+                  >
+                    Open workspace
+                  </Button>
+                </Stack>
+              </Box>
+            </Stack>
+          </Box>
+
+          <Typography
+            variant="caption"
+            sx={{ color: apple.tertiaryLabel, ...sectionEnter(280) }}
           >
-            <Stack spacing={2}>
-              <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                Choose Your Demo Path
-              </Typography>
-              <Divider />
-              <Grid container spacing={2}>
-                <Grid item xs={12} md={6}>
-                  <Paper
-                    variant="outlined"
-                    sx={{ p: { xs: 2, md: 2.5 }, borderRadius: 2.5, height: "100%" }}
-                  >
-                    <Stack spacing={1.25}>
-                      <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                        Guided Experience
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        Best for customer meetings and business walkthroughs. Quickly
-                        shape the checkout experience and share a clear visual outcome.
-                      </Typography>
-                      <Box>
-                        <Button
-                          component={Link}
-                          href="/evonet/dropin-builder"
-                          variant="contained"
-                          fullWidth
-                          sx={{
-                            textTransform: "none",
-                            fontWeight: 650,
-                            borderRadius: 2,
-                            maxWidth: { sm: 240 },
-                          }}
-                        >
-                          Open Guided Experience
-                        </Button>
-                      </Box>
-                    </Stack>
-                  </Paper>
-                </Grid>
-                <Grid item xs={12} md={6}>
-                  <Paper
-                    variant="outlined"
-                    sx={{ p: { xs: 2, md: 2.5 }, borderRadius: 2.5, height: "100%" }}
-                  >
-                    <Stack spacing={1.25}>
-                      <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                        {isProd ? "Production Validation" : "Validation Workspace"}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        {isProd
-                          ? "Full configuration surface for internal QA against live credentials. Inspect SDK options, events, and payment outcomes."
-                          : "Full configuration surface for internal QA. Inspect SDK options, events, and payment outcomes."}
-                      </Typography>
-                      <Box>
-                        <Button
-                          component={Link}
-                          href="/evonet/dropin-test"
-                          variant="outlined"
-                          fullWidth
-                          sx={{
-                            textTransform: "none",
-                            fontWeight: 600,
-                            borderRadius: 2,
-                            maxWidth: { sm: 260 },
-                          }}
-                        >
-                          Open Validation Workspace
-                        </Button>
-                      </Box>
-                    </Stack>
-                  </Paper>
-                </Grid>
-              </Grid>
-            </Stack>
-          </Paper>
+            Demo environment · Evonet Drop-in
+          </Typography>
         </Stack>
       </Container>
     </Box>
