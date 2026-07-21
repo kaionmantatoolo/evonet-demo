@@ -225,3 +225,47 @@ a.storefront-cta svg,
 [data-slot="button"].storefront-cta svg {
   color: #ffffff !important;
 }
+
+/*
+ * Evonet Drop-in SDK applies appearance typography via unscoped element
+ * selectors (label, button, input, …) on document. Restore app typography
+ * for builder / dev-console chrome only — not inside #evonet-dropin-*.
+ */
+[data-builder-chrome] :not([id^="evonet-dropin"] *) label,
+[data-builder-chrome] :not([id^="evonet-dropin"] *) [data-slot="label"] {
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.875rem;
+  font-weight: 500;
+  letter-spacing: normal;
+  line-height: 1;
+}
+
+[data-builder-chrome] :not([id^="evonet-dropin"] *) [data-slot="button"],
+[data-builder-chrome] :not([id^="evonet-dropin"] *) button:not(.storefront-cta) {
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+[data-builder-chrome] :not([id^="evonet-dropin"] *) h1,
+[data-builder-chrome] :not([id^="evonet-dropin"] *) h2,
+[data-builder-chrome] :not([id^="evonet-dropin"] *) h3,
+[data-builder-chrome] :not([id^="evonet-dropin"] *) h4 {
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+[data-builder-chrome] :not([id^="evonet-dropin"] *) input:not([type="color"]),
+[data-builder-chrome] :not([id^="evonet-dropin"] *) textarea {
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+[data-builder-chrome] :not([id^="evonet-dropin"] *) p {
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+[data-builder-chrome]
+  :not([id^="evonet-dropin"] *)
+  input:not([type="color"])::placeholder,
+[data-builder-chrome]
+  :not([id^="evonet-dropin"] *)
+  textarea::placeholder {
+  font-family: inherit;
+}

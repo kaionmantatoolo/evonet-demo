@@ -45,6 +45,11 @@ import {
   stripEvonetReturnQuery,
   type EvonetReturnParams,
 } from "../../../lib/evonetReturnParams";
+import {
+  buildTnCUiOption,
+  isValidTnCUrl,
+  normalizeTnCUrl,
+} from "../../../lib/evonetUiOption";
 import type {
   BinRule,
   EvonetDropinConfig,
@@ -326,8 +331,9 @@ function EvonetDropinTestPage() {
     };
   }>({ type: null });
 
-  const sdkUiOption: EvonetSdkUiOption = useMemo(
-    () => ({
+  const sdkUiOption: EvonetSdkUiOption = useMemo(() => {
+    const tnc = buildTnCUiOption(showTnC, tncMode, tncUrl);
+    return {
       showSaveImage,
       Columns: columnsLayout,
       card: {
@@ -338,13 +344,9 @@ function EvonetDropinTestPage() {
         ...(showScanCardButton ? { showScanCardButton: true } : {}),
         ...(autoInvokeCardScanner ? { autoInvokeCardScanner: true } : {}),
       },
-      TnC: {
-        showTnC,
-        mode: tncMode,
-        url: showTnC ? tncUrl : "",
-      },
-    }),
-    [
+      ...(tnc ? { TnC: tnc } : {}),
+    };
+  }, [
       autoInvokeCardScanner,
       columnsLayout,
       cvvForSavedCard,
@@ -937,6 +939,7 @@ function EvonetDropinTestPage() {
 
   return (
     <main
+      data-builder-chrome
       className="min-h-[var(--console-height)] overflow-x-hidden bg-[#F4F6F8]"
       style={{ "--console-height": VIEWPORT_HEIGHT } as React.CSSProperties}
     >
@@ -1216,11 +1219,25 @@ function EvonetDropinTestPage() {
                           <Label htmlFor="tnc-url">TnC URL</Label>
                           <Input
                             id="tnc-url"
+                            type="url"
+                            inputMode="url"
                             value={tncUrl}
                             onChange={(event) => setTncUrl(event.target.value)}
+                            onBlur={(event) =>
+                              setTncUrl(normalizeTnCUrl(event.target.value))
+                            }
                             disabled={!showTnC}
                             placeholder="https://example.com/tnc"
                           />
+                          <p className="text-xs text-muted-foreground">
+                            Required when TnC is enabled. Use a full page URL;
+                            https:// is added automatically if omitted.
+                          </p>
+                          {showTnC && tncUrl.trim() && !isValidTnCUrl(tncUrl) ? (
+                            <p className="text-xs text-destructive">
+                              Enter a valid http(s) URL.
+                            </p>
+                          ) : null}
                         </div>
                       </div>
                     </AccordionContent>

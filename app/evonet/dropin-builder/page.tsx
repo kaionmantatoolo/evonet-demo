@@ -62,6 +62,11 @@ import {
   writeStorefrontSnapshot,
 } from "../../../lib/storefrontSnapshot";
 import {
+  buildTnCUiOption,
+  isValidTnCUrl,
+  normalizeTnCUrl,
+} from "../../../lib/evonetUiOption";
+import {
   StorefrontExperience,
   type StorefrontConfig,
 } from "../../../components/storefront/StorefrontExperience";
@@ -73,6 +78,7 @@ import {
 import type {
   EvonetDropinConfig,
   EvonetDropinEvent,
+  EvonetDropinMode,
   EvonetRecurringProcessingModel,
   EvonetSdkAppearance,
   EvonetSdkFontObject,
@@ -148,6 +154,12 @@ const RECURRING_MODEL_OPTIONS: {
 }[] = [
   { value: "Subscription", label: "Subscription" },
   { value: "Unscheduled", label: "Unscheduled (auto-debit)" },
+];
+
+const DROPIN_MODE_OPTIONS: { value: EvonetDropinMode; label: string }[] = [
+  { value: "embedded", label: "Embedded" },
+  { value: "fullPage", label: "Full page" },
+  { value: "bottomUp", label: "Bottom sheet" },
 ];
 
 type TypographyGroup = (typeof TYPOGRAPHY_GROUPS)[number];
@@ -340,8 +352,9 @@ function DropinBuilderPage() {
     };
   }, []);
 
-  const sdkUiOption: EvonetSdkUiOption = useMemo(
-    () => ({
+  const sdkUiOption: EvonetSdkUiOption = useMemo(() => {
+    const tnc = buildTnCUiOption(showTnC, tncMode, tncUrl);
+    return {
       showSaveImage,
       Columns: columnsLayout,
       card: {
@@ -350,13 +363,9 @@ function DropinBuilderPage() {
         ...(showScanCardButton ? { showScanCardButton: true } : {}),
         ...(autoInvokeCardScanner ? { autoInvokeCardScanner: true } : {}),
       },
-      TnC: {
-        showTnC,
-        mode: tncMode,
-        url: showTnC ? tncUrl : "",
-      },
-    }),
-    [
+      ...(tnc ? { TnC: tnc } : {}),
+    };
+  }, [
       autoInvokeCardScanner,
       columnsLayout,
       cvvForSavedCard,
@@ -578,6 +587,17 @@ function DropinBuilderPage() {
   const canRenderPreview =
     Boolean(sessionID.trim()) && sessionID.trim() !== "REPLACE_WITH_REAL_SESSION_ID";
 
+  const previewShellClass = useMemo(() => {
+    switch (mode) {
+      case "fullPage":
+        return "mx-auto w-full max-w-none overflow-auto rounded-none border border-[#D1D5DB] bg-muted/30 p-2 sm:p-4 min-h-[min(80vh,720px)]";
+      case "bottomUp":
+        return "mx-auto flex w-full max-w-none flex-col justify-end overflow-auto rounded-none border border-[#D1D5DB] bg-black/5 p-2 sm:p-4 min-h-[min(70vh,640px)]";
+      default:
+        return "mx-auto w-full max-w-lg overflow-x-auto rounded-none border border-[#D1D5DB] bg-background p-2 sm:p-3";
+    }
+  }, [mode]);
+
   const handleCopy = async (
     text: string,
     setHint: (hint: string | null) => void
@@ -777,6 +797,7 @@ function DropinBuilderPage() {
     <Box sx={{ minHeight: { md: VIEWPORT_HEIGHT }, overflowX: "hidden", ...pageEnter() }}>
       <Box sx={builderStageMorphSx(builderWarped)}>
         <main
+          data-builder-chrome
           className="mx-auto h-auto max-w-7xl overflow-x-hidden px-3 py-5 sm:px-6 md:h-[var(--builder-height)] md:overflow-hidden md:py-4 lg:px-8"
           style={{ "--builder-height": VIEWPORT_HEIGHT } as React.CSSProperties}
           suppressHydrationWarning
@@ -825,7 +846,7 @@ function DropinBuilderPage() {
               <Card>
                 <CardHeader><CardTitle className="text-base">Order Info</CardTitle></CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="grid gap-4 sm:grid-cols-3">
+                  <div className="grid gap-4 sm:grid-cols-2">
                     <div className="space-y-2">
                       <Label htmlFor="order-amount">Amount</Label>
                       <Input id="order-amount" value={orderAmount} onChange={(event) => setOrderAmount(event.target.value)} placeholder="128.00" aria-label="Order amount" />
@@ -841,6 +862,33 @@ function DropinBuilderPage() {
                         <SelectContent>{["en-US", "zh-TW", "zh-CN", "ja-JP"].map((value) => <SelectItem key={value} value={value}>{value}</SelectItem>)}</SelectContent>
                       </Select>
                       <p className="text-xs text-muted-foreground">Used for session and Drop-in locale.</p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Mode</Label>
+                      <Select
+                        value={mode}
+                        onValueChange={(value) =>
+                          setMode(value as EvonetDropinMode)
+                        }
+                      >
+                        <SelectTrigger className="w-full" aria-label="Drop-in mode">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {DROPIN_MODE_OPTIONS.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground">
+                        {mode === "embedded"
+                          ? "Inline widget inside your page."
+                          : mode === "fullPage"
+                            ? "Full-screen checkout overlay."
+                            : "Bottom sheet that slides up from the screen edge."}
+                      </p>
                     </div>
                   </div>
                   <div className="space-y-2">
@@ -931,7 +979,27 @@ function DropinBuilderPage() {
                           </div>
                           <div className="space-y-2 sm:col-span-2">
                             <Label htmlFor="tnc-url">TnC URL</Label>
-                            <Input id="tnc-url" value={tncUrl} onChange={(event) => setTncUrl(event.target.value)} placeholder="https://example.com/tnc" disabled={!showTnC} />
+                            <Input
+                              id="tnc-url"
+                              type="url"
+                              inputMode="url"
+                              value={tncUrl}
+                              onChange={(event) => setTncUrl(event.target.value)}
+                              onBlur={(event) =>
+                                setTncUrl(normalizeTnCUrl(event.target.value))
+                              }
+                              placeholder="https://example.com/tnc"
+                              disabled={!showTnC}
+                            />
+                            <p className="text-xs text-muted-foreground">
+                              Required when TnC is enabled. Use a full page URL;
+                              https:// is added automatically if omitted.
+                            </p>
+                            {showTnC && tncUrl.trim() && !isValidTnCUrl(tncUrl) ? (
+                              <p className="text-xs text-destructive">
+                                Enter a valid http(s) URL.
+                              </p>
+                            ) : null}
                           </div>
                         </div>
                       </AccordionContent>
@@ -1040,7 +1108,12 @@ function DropinBuilderPage() {
               <Card className="min-w-0 gap-0 overflow-x-auto rounded-none border border-border py-0 md:flex md:h-full md:flex-col">
                 <CardHeader className="space-y-4 border-b bg-muted/40 px-4 py-4">
                   <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
-                    <CardTitle className="text-base">Drop-in Preview</CardTitle>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <CardTitle className="text-base">Drop-in Preview</CardTitle>
+                      <Badge variant="outline" className="font-mono text-xs">
+                        {DROPIN_MODE_OPTIONS.find((option) => option.value === mode)?.label ?? mode}
+                      </Badge>
+                    </div>
                     <div className="flex items-center gap-2"><Label htmlFor="live-preview">Auto refresh</Label><Switch id="live-preview" checked={livePreview} onCheckedChange={setLivePreview} /></div>
                   </div>
                   <Button size="lg" className={`w-full ${OPEN_STOREFRONT_BUTTON_CLASS}`} onClick={openAsStorefront}>
@@ -1052,19 +1125,25 @@ function DropinBuilderPage() {
                   <Button onClick={() => { setPreviewFallbackBadge(null); setPreviewEvents([]); setSdkInitGeneration((value) => value + 1); }} disabled={!canRenderPreview}>Initialize / Re-init</Button>
                   {!canRenderPreview ? <Alert severity="warning" variant="outlined">Preview is disabled because sessionID is missing or placeholder.</Alert> : null}
                   <DemoTransactionWarning environment={environment} sx={{ mb: 0, wordBreak: "break-word" }} />
-                  <div className="mx-auto w-full max-w-lg overflow-x-auto rounded-none border border-[#D1D5DB] bg-background p-2 sm:p-3">
-                    <EvonetDropinHost config={dropinConfigForPreview} initGeneration={sdkInitGeneration} onEvent={(event) => {
-                      const payload = event.payload as { source?: string; phase?: string } | undefined;
-                      if (event.type === "sdk_message" && payload?.source === "dropin_host") {
-                        if (payload.phase === "construct_ok_without_font_weight") setPreviewFallbackBadge("SDK fallback: fontWeight was ignored for compatibility.");
-                        else if (payload.phase === "construct_ok_without_border_radius") setPreviewFallbackBadge("SDK fallback: borderRadius was ignored for compatibility.");
-                      }
-                      if (event.type === "payment_success" || event.type === "payment_fail" || event.type === "payment_cancelled") {
-                        const fromSdk = parseEvonetSdkPaymentEvent(event.type, event.payload);
-                        if (fromSdk) { setPaymentReturnPrompt(fromSdk); setReturnDialogDismissed(false); }
-                      }
-                      setPreviewEvents((previous) => [event, ...previous].slice(0, 20));
-                    }} onSdkInitApplied={(info) => setLastSdkInitInfo(info)} compact />
+                  <div className={previewShellClass}>
+                    <EvonetDropinHost
+                      config={dropinConfigForPreview}
+                      initGeneration={sdkInitGeneration}
+                      onEvent={(event) => {
+                        const payload = event.payload as { source?: string; phase?: string } | undefined;
+                        if (event.type === "sdk_message" && payload?.source === "dropin_host") {
+                          if (payload.phase === "construct_ok_without_font_weight") setPreviewFallbackBadge("SDK fallback: fontWeight was ignored for compatibility.");
+                          else if (payload.phase === "construct_ok_without_border_radius") setPreviewFallbackBadge("SDK fallback: borderRadius was ignored for compatibility.");
+                        }
+                        if (event.type === "payment_success" || event.type === "payment_fail" || event.type === "payment_cancelled") {
+                          const fromSdk = parseEvonetSdkPaymentEvent(event.type, event.payload);
+                          if (fromSdk) { setPaymentReturnPrompt(fromSdk); setReturnDialogDismissed(false); }
+                        }
+                        setPreviewEvents((previous) => [event, ...previous].slice(0, 20));
+                      }}
+                      onSdkInitApplied={(info) => setLastSdkInitInfo(info)}
+                      compact={mode === "embedded"}
+                    />
                   </div>
                   {previewFallbackBadge ? <Alert severity="info" variant="outlined">{previewFallbackBadge}</Alert> : null}
                   <Separator />

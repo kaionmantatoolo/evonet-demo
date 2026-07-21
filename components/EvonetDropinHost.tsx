@@ -5,9 +5,23 @@ import { useEffect, useId, useRef, useState } from "react";
 import type {
   EvonetDropinConfig,
   EvonetDropinEvent,
+  EvonetDropinMode,
   EvonetDropinSdkOptions,
   EvonetWindow,
 } from "../types/evonet";
+
+function resolveContainerMinHeight(
+  mode: EvonetDropinMode,
+  compact: boolean
+): number {
+  if (mode === "fullPage") {
+    return 560;
+  }
+  if (mode === "bottomUp") {
+    return 480;
+  }
+  return compact ? 0 : 320;
+}
 
 const DEFAULT_SCRIPT_SRC =
   process.env.NEXT_PUBLIC_EVONET_DROPIN_SCRIPT_URL ??
@@ -751,7 +765,7 @@ export function EvonetDropinHost({
       <Box
         id={containerId}
         sx={{
-          minHeight: compact ? 0 : 320,
+          minHeight: resolveContainerMinHeight(config.mode, compact),
           width: "100%",
           maxWidth: "100%",
           minWidth: 0,
