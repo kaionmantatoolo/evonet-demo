@@ -37,10 +37,12 @@ export async function POST(req: NextRequest) {
     environment,
     locale,
     target: bodyTarget,
+    allowAuthentication,
     saveCardForNextPurchase,
     userInfoReference,
     includeRecurringProcessingModel,
     recurringProcessingModel,
+    enabledPaymentMethod,
   } = body;
 
   const {
@@ -124,12 +126,35 @@ export async function POST(req: NextRequest) {
   const merchantTransTime = new Date().toISOString().replace(/\.\d{3}Z$/, "+00:00");
   const idempotencyKey = `evonet_${orderId}_${Date.now()}`;
 
+  let normalizedEnabledPaymentMethod: string[] | undefined;
+  if (enabledPaymentMethod != null) {
+    if (!Array.isArray(enabledPaymentMethod)) {
+      return NextResponse.json(
+        {
+          error:
+            "enabledPaymentMethod must be an array of strings (e.g. [\"ApplePay\",\"GooglePay\",\"Octopus\",\"*\"]).",
+        },
+        { status: 400 }
+      );
+    }
+    const methods = enabledPaymentMethod
+      .filter((item): item is string => typeof item === "string")
+      .map((item) => item.trim())
+      .filter((item) => item.length > 0);
+    if (methods.length > 0) {
+      normalizedEnabledPaymentMethod = methods;
+    }
+  }
+
   const payload: Record<string, unknown> = {
     // Interaction API requires merchantOrderID; use orderId as the merchant order reference.
     merchantOrderID: orderId,
     merchantOrderInfo: {
       merchantOrderID: orderId,
       merchantOrderTime: merchantTransTime,
+      ...(normalizedEnabledPaymentMethod
+        ? { enabledPaymentMethod: normalizedEnabledPaymentMethod }
+        : {}),
     },
     merchantTransInfo: {
       merchantTransID: orderId,
@@ -142,10 +167,13 @@ export async function POST(req: NextRequest) {
     returnURL: EVONET_RETURN_URL,
     webhook: EVONET_WEBHOOK_URL,
     captureAfterHours: "0",
-    allowAuthentication: true,
     locale,
     description: description ?? undefined,
   };
+
+  if (allowAuthentication === true) {
+    payload.allowAuthentication = true;
+  }
 
   if (enableSaveCard) {
     payload.userInfo = { reference: referenceTrimmed };

@@ -28,8 +28,12 @@ export interface EvonetSdkUiOption {
     mode?: "checkbox" | "click2accept";
     url?: string;
   };
-  /** Two-column layout (per SDK examples). */
-  Columns?: boolean;
+  /**
+   * Two-column web layout (method list + payment summary).
+   * cil-dropin-components reads lowercase `columns` under uiOption
+   * (docs examples sometimes show `Columns` — that key is ignored by the SDK).
+   */
+  columns?: boolean;
 }
 
 export interface EvonetSdkFontObject {
@@ -40,7 +44,7 @@ export interface EvonetSdkFontObject {
   lineHeight?: string;
 }
 
-/** Layout / styling; hex strings per Evonet docs. */
+  /** Layout / styling; hex strings per Evonet docs. */
 export interface EvonetSdkAppearance {
   colorAction?: string;
   colorBackground?: string;
@@ -57,7 +61,6 @@ export interface EvonetSdkAppearance {
   logoPosition?: "left" | "middle" | "right";
   /** Corner radii [r1, r2, r3, r4]. */
   borderRadius?: number[];
-  Columns?: boolean;
   button?: EvonetSdkFontObject;
   heading?: EvonetSdkFontObject;
   subHeading?: EvonetSdkFontObject;
@@ -97,6 +100,11 @@ export interface EvonetDropinConfig {
   };
   uiOption?: EvonetSdkUiOption;
   appearance?: EvonetSdkAppearance;
+  /**
+   * Convenience flag: host maps this to `uiOption.columns: true` for the SDK.
+   * Prefer setting `uiOption.columns` directly when building SDK options.
+   */
+  Columns?: boolean;
   /** BIN conditions: checked in order against first6No. First match wins. */
   binRules?: BinRule[];
   [key: string]: unknown;
@@ -120,6 +128,11 @@ export interface EvonetInteractionRequest {
    */
   target?: "UAT" | "PROD" | string;
   /**
+   * When true, interaction payload includes `allowAuthentication: true`.
+   * When omitted/false, the field is not sent.
+   */
+  allowAuthentication?: boolean;
+  /**
    * When true, interaction payload includes `userInfo.reference` and
    * `paymentMethod.recurringProcessingModel` so Drop-in can offer save-card / token flows.
    */
@@ -130,6 +143,11 @@ export interface EvonetInteractionRequest {
   includeRecurringProcessingModel?: boolean;
   /** Defaults to `Subscription` when save-card is enabled and this is omitted. */
   recurringProcessingModel?: EvonetRecurringProcessingModel;
+  /**
+   * Order/filter Drop-in payment methods via `merchantOrderInfo.enabledPaymentMethod`.
+   * `*` = remaining methods in default order.
+   */
+  enabledPaymentMethod?: string[];
 }
 
 export interface EvonetInteractionResponse {

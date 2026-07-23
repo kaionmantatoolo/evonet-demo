@@ -34,6 +34,7 @@ import {
   EvonetDropinHost,
   type SdkInitAppliedInfo,
 } from "../../../components/EvonetDropinHost";
+import { DropinModePreviewShell } from "../../../components/DropinModePreviewShell";
 import { DemoTransactionWarning } from "../../../components/DemoTransactionWarning";
 import { EvonetPaymentReturnDialog } from "../../../components/EvonetPaymentReturnDialog";
 import {
@@ -156,6 +157,20 @@ const RECURRING_MODEL_OPTIONS: {
   { value: "Unscheduled", label: "Unscheduled (auto-debit)" },
 ];
 
+const DEFAULT_ENABLED_PAYMENT_METHOD =
+  "ApplePay,GooglePay,Octopus,*";
+
+/** Parse comma-separated enabledPaymentMethod input into a string array. */
+function parseEnabledPaymentMethodInput(
+  input: string
+): string[] | undefined {
+  const methods = input
+    .split(",")
+    .map((item) => item.trim())
+    .filter((item) => item.length > 0);
+  return methods.length > 0 ? methods : undefined;
+}
+
 const DROPIN_MODE_OPTIONS: { value: EvonetDropinMode; label: string }[] = [
   { value: "embedded", label: "Embedded" },
   { value: "fullPage", label: "Full page" },
@@ -196,6 +211,7 @@ function buildSdkFingerprint(parts: {
   locale: string;
   verifyPaymentBrand: boolean;
   maxWaitTime: string;
+  columnsLayout: boolean;
   uiOption: EvonetSdkUiOption;
   appearance: EvonetSdkAppearance;
 }): string {
@@ -208,7 +224,10 @@ function buildSdkFingerprint(parts: {
     verifyOption: parts.verifyPaymentBrand
       ? { maxWaitTime: parts.maxWaitTime.trim() || "10" }
       : undefined,
-    uiOption: parts.uiOption,
+    uiOption: {
+      ...parts.uiOption,
+      ...(parts.columnsLayout ? { columns: true } : {}),
+    },
     appearance: parts.appearance,
   });
 }
@@ -270,14 +289,19 @@ function DropinBuilderPage() {
   const [orderDescription, setOrderDescription] = useState(
     "Drop-in Builder Session"
   );
+  const [allowAuthentication, setAllowAuthentication] = useState(false);
   const [saveCardForNextPurchase, setSaveCardForNextPurchase] = useState(false);
   const [userInfoReference, setUserInfoReference] = useState("");
   const [includeRecurringProcessingModel, setIncludeRecurringProcessingModel] =
     useState(true);
   const [recurringProcessingModel, setRecurringProcessingModel] =
     useState<EvonetRecurringProcessingModel>("Subscription");
+  const [enabledPaymentMethodInput, setEnabledPaymentMethodInput] = useState(
+    DEFAULT_ENABLED_PAYMENT_METHOD
+  );
   const [environment, setEnvironment] = useState(DEFAULT_ENVIRONMENT);
   const [mode, setMode] = useState<EvonetDropinConfig["mode"]>("embedded");
+  const [modePreviewOpen, setModePreviewOpen] = useState(false);
   const [locale, setLocale] = useState("en-US");
   const [verifyPaymentBrand, setVerifyPaymentBrand] = useState(true);
   const [maxWaitTime, setMaxWaitTime] = useState("10");
@@ -356,7 +380,7 @@ function DropinBuilderPage() {
     const tnc = buildTnCUiOption(showTnC, tncMode, tncUrl);
     return {
       showSaveImage,
-      Columns: columnsLayout,
+      ...(columnsLayout ? { columns: true } : {}),
       card: {
         showCardHolderName,
         CVVForSavedCard: cvvForSavedCard,
@@ -498,7 +522,7 @@ function DropinBuilderPage() {
       uiOption: sdkUiOption,
       appearance: sdkAppearance,
       _note:
-        "Callbacks (payment_method_select, payment_method_selected, payment_completed, payment_failed, payment_not_preformed, payment_cancelled) should be attached in your integration code.",
+        "Callbacks (payment_method_select, payment_method_selected, payment_completed, payment_failed, payment_not_preformed, payment_cancelled) should be attached in your integration code. Two-column layout requires uiOption.columns: true (lowercase).",
     };
   }, [
     environment,
@@ -546,10 +570,12 @@ function DropinBuilderPage() {
         locale,
         verifyPaymentBrand,
         maxWaitTime,
+        columnsLayout,
         uiOption: sdkUiOption,
         appearance: sdkAppearance,
       }),
     [
+      columnsLayout,
       environment,
       locale,
       maxWaitTime,
@@ -587,16 +613,19 @@ function DropinBuilderPage() {
   const canRenderPreview =
     Boolean(sessionID.trim()) && sessionID.trim() !== "REPLACE_WITH_REAL_SESSION_ID";
 
-  const previewShellClass = useMemo(() => {
-    switch (mode) {
-      case "fullPage":
-        return "mx-auto w-full max-w-none overflow-auto rounded-none border border-[#D1D5DB] bg-muted/30 p-2 sm:p-4 min-h-[min(80vh,720px)]";
-      case "bottomUp":
-        return "mx-auto flex w-full max-w-none flex-col justify-end overflow-auto rounded-none border border-[#D1D5DB] bg-black/5 p-2 sm:p-4 min-h-[min(70vh,640px)]";
-      default:
-        return "mx-auto w-full max-w-lg overflow-x-auto rounded-none border border-[#D1D5DB] bg-background p-2 sm:p-3";
+  const isSdkOverlayMode = mode === "fullPage" || mode === "bottomUp";
+
+  useEffect(() => {
+    if (!isSdkOverlayMode) {
+      setModePreviewOpen(false);
     }
-  }, [mode]);
+  }, [isSdkOverlayMode]);
+
+  useEffect(() => {
+    if (isSdkOverlayMode && sdkInitGeneration > 0 && canRenderPreview) {
+      setModePreviewOpen(true);
+    }
+  }, [isSdkOverlayMode, sdkInitGeneration, canRenderPreview]);
 
   const handleCopy = async (
     text: string,
@@ -675,6 +704,9 @@ function DropinBuilderPage() {
       }
       const envForSession = options?.environmentOverride ?? environment;
       const targetForSession = targetFromSdkEnvironment(envForSession);
+      const enabledPaymentMethod = parseEnabledPaymentMethodInput(
+        enabledPaymentMethodInput
+      );
       const response = await fetch("/api/evonet/session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -686,6 +718,8 @@ function DropinBuilderPage() {
           environment: envForSession,
           target: targetForSession,
           locale: locale.trim() || "en-US",
+          ...(enabledPaymentMethod ? { enabledPaymentMethod } : {}),
+          ...(allowAuthentication ? { allowAuthentication: true } : {}),
           ...(saveCardForNextPurchase
             ? {
                 saveCardForNextPurchase: true,
@@ -884,16 +918,35 @@ function DropinBuilderPage() {
                       </Select>
                       <p className="text-xs text-muted-foreground">
                         {mode === "embedded"
-                          ? "Inline widget inside your page."
+                          ? "Embedded in the Builder preview card and storefront checkout drawer."
                           : mode === "fullPage"
-                            ? "Full-screen checkout overlay."
-                            : "Bottom sheet that slides up from the screen edge."}
+                            ? "Real SDK fullPage — Builder preview + storefront checkout use a full-viewport stage."
+                            : "Real SDK bottomUp — Builder preview + storefront checkout use a full-viewport stage."}
                       </p>
                     </div>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="order-description">Description</Label>
                     <Input id="order-description" value={orderDescription} onChange={(event) => setOrderDescription(event.target.value)} placeholder="Drop-in Builder Session" aria-label="Order description" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="enabled-payment-method">
+                      enabledPaymentMethod
+                    </Label>
+                    <Input
+                      id="enabled-payment-method"
+                      value={enabledPaymentMethodInput}
+                      onChange={(event) =>
+                        setEnabledPaymentMethodInput(event.target.value)
+                      }
+                      placeholder="ApplePay,GooglePay,Octopus,*"
+                      className="font-mono"
+                      aria-label="Enabled payment methods order"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Order of payment methods in Drop-in. Use * for remaining
+                      methods. Refresh session after changing.
+                    </p>
                   </div>
                   <Button variant="outline" onClick={() => void handleCreateSession()} disabled={isCreatingSession}>
                     {isCreatingSession ? "Creating Session..." : "Refresh Session ID"}
@@ -903,6 +956,22 @@ function DropinBuilderPage() {
                     <span className="break-all font-mono text-xs">{sessionID || "N/A"}</span>
                   </div>
                   {sessionError ? <Alert severity="error" variant="outlined">{sessionError}</Alert> : null}
+                  <div className="flex items-start justify-between gap-4 rounded-none border p-3">
+                    <div>
+                      <Label htmlFor="allow-authentication" className="font-medium">
+                        Allow authentication
+                      </Label>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        When enabled, sends allowAuthentication=true on session create. Off by default (field omitted). Refresh the session after changing this.
+                      </p>
+                    </div>
+                    <Switch
+                      id="allow-authentication"
+                      checked={allowAuthentication}
+                      onCheckedChange={setAllowAuthentication}
+                      aria-label="Allow authentication"
+                    />
+                  </div>
                   <Accordion type="single" collapsible className="rounded-none border px-3">
                     <AccordionItem value="save-card" className="border-0">
                       <AccordionTrigger>Save card for next purchase</AccordionTrigger>
@@ -943,7 +1012,7 @@ function DropinBuilderPage() {
                   <div className="grid gap-3 sm:grid-cols-2">
                     {[
                       [showSaveImage, setShowSaveImage, "Show Save Image", "Allow saving QR code to device (not card storage)."],
-                      [columnsLayout, setColumnsLayout, "Columns Layout"],
+                      [columnsLayout, setColumnsLayout, "Columns Layout", "Sent as uiOption.columns (lowercase). Web + wide viewport; method list + Payment Summary side by side."],
                       [showCardHolderName, setShowCardHolderName, "Show Card Holder Name"],
                       [cvvForSavedCard, setCvvForSavedCard, "CVV For Saved Card"],
                     ].map(([checked, onChange, label, caption]) => (
@@ -1125,26 +1194,79 @@ function DropinBuilderPage() {
                   <Button onClick={() => { setPreviewFallbackBadge(null); setPreviewEvents([]); setSdkInitGeneration((value) => value + 1); }} disabled={!canRenderPreview}>Initialize / Re-init</Button>
                   {!canRenderPreview ? <Alert severity="warning" variant="outlined">Preview is disabled because sessionID is missing or placeholder.</Alert> : null}
                   <DemoTransactionWarning environment={environment} sx={{ mb: 0, wordBreak: "break-word" }} />
-                  <div className={previewShellClass}>
-                    <EvonetDropinHost
-                      config={dropinConfigForPreview}
-                      initGeneration={sdkInitGeneration}
-                      onEvent={(event) => {
-                        const payload = event.payload as { source?: string; phase?: string } | undefined;
-                        if (event.type === "sdk_message" && payload?.source === "dropin_host") {
-                          if (payload.phase === "construct_ok_without_font_weight") setPreviewFallbackBadge("SDK fallback: fontWeight was ignored for compatibility.");
-                          else if (payload.phase === "construct_ok_without_border_radius") setPreviewFallbackBadge("SDK fallback: borderRadius was ignored for compatibility.");
-                        }
-                        if (event.type === "payment_success" || event.type === "payment_fail" || event.type === "payment_cancelled") {
-                          const fromSdk = parseEvonetSdkPaymentEvent(event.type, event.payload);
-                          if (fromSdk) { setPaymentReturnPrompt(fromSdk); setReturnDialogDismissed(false); }
-                        }
-                        setPreviewEvents((previous) => [event, ...previous].slice(0, 20));
-                      }}
-                      onSdkInitApplied={(info) => setLastSdkInitInfo(info)}
-                      compact={mode === "embedded"}
-                    />
-                  </div>
+                  {isSdkOverlayMode ? (
+                    <div className="space-y-3 rounded-none border border-dashed border-border bg-muted/30 p-4">
+                      <p className="text-sm font-medium">SDK {mode} mode</p>
+                      <p className="text-xs text-muted-foreground">
+                        Drop-in runs with real SDK{" "}
+                        <span className="font-mono">{mode}</span> in a full-viewport
+                        stage (not an app sheet wrapping embedded).
+                      </p>
+                      <Button
+                        type="button"
+                        size="sm"
+                        disabled={!canRenderPreview}
+                        onClick={() => {
+                          if (sdkInitGeneration < 1) {
+                            setPreviewFallbackBadge(null);
+                            setPreviewEvents([]);
+                            setSdkInitGeneration((value) => value + 1);
+                            return;
+                          }
+                          setModePreviewOpen(true);
+                        }}
+                      >
+                        {sdkInitGeneration < 1 ? "Initialize & open preview" : "Open preview"}
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="mx-auto w-full max-w-lg overflow-x-auto rounded-none border border-[#D1D5DB] bg-background p-2 sm:p-3">
+                      <EvonetDropinHost
+                        config={dropinConfigForPreview}
+                        initGeneration={sdkInitGeneration}
+                        onEvent={(event) => {
+                          const payload = event.payload as { source?: string; phase?: string } | undefined;
+                          if (event.type === "sdk_message" && payload?.source === "dropin_host") {
+                            if (payload.phase === "construct_ok_without_font_weight") setPreviewFallbackBadge("SDK fallback: fontWeight was ignored for compatibility.");
+                            else if (payload.phase === "construct_ok_without_border_radius") setPreviewFallbackBadge("SDK fallback: borderRadius was ignored for compatibility.");
+                          }
+                          if (event.type === "payment_success" || event.type === "payment_fail" || event.type === "payment_cancelled") {
+                            const fromSdk = parseEvonetSdkPaymentEvent(event.type, event.payload);
+                            if (fromSdk) { setPaymentReturnPrompt(fromSdk); setReturnDialogDismissed(false); }
+                          }
+                          setPreviewEvents((previous) => [event, ...previous].slice(0, 20));
+                        }}
+                        onSdkInitApplied={(info) => setLastSdkInitInfo(info)}
+                        compact
+                      />
+                    </div>
+                  )}
+                  <DropinModePreviewShell
+                    mode={mode}
+                    open={modePreviewOpen}
+                    onClose={() => setModePreviewOpen(false)}
+                  >
+                    {isSdkOverlayMode && modePreviewOpen && canRenderPreview ? (
+                      <EvonetDropinHost
+                        config={dropinConfigForPreview}
+                        initGeneration={sdkInitGeneration}
+                        onEvent={(event) => {
+                          const payload = event.payload as { source?: string; phase?: string } | undefined;
+                          if (event.type === "sdk_message" && payload?.source === "dropin_host") {
+                            if (payload.phase === "construct_ok_without_font_weight") setPreviewFallbackBadge("SDK fallback: fontWeight was ignored for compatibility.");
+                            else if (payload.phase === "construct_ok_without_border_radius") setPreviewFallbackBadge("SDK fallback: borderRadius was ignored for compatibility.");
+                          }
+                          if (event.type === "payment_success" || event.type === "payment_fail" || event.type === "payment_cancelled") {
+                            const fromSdk = parseEvonetSdkPaymentEvent(event.type, event.payload);
+                            if (fromSdk) { setPaymentReturnPrompt(fromSdk); setReturnDialogDismissed(false); }
+                          }
+                          setPreviewEvents((previous) => [event, ...previous].slice(0, 20));
+                        }}
+                        onSdkInitApplied={(info) => setLastSdkInitInfo(info)}
+                        compact={false}
+                      />
+                    ) : null}
+                  </DropinModePreviewShell>
                   {previewFallbackBadge ? <Alert severity="info" variant="outlined">{previewFallbackBadge}</Alert> : null}
                   <Separator />
                   <section className="min-w-0 flex flex-col gap-3">

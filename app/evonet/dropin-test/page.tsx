@@ -25,6 +25,7 @@ import {
   EvonetDropinHost,
   type SdkInitAppliedInfo,
 } from "../../../components/EvonetDropinHost";
+import { DropinModePreviewShell } from "../../../components/DropinModePreviewShell";
 import { VIEWPORT_HEIGHT } from "../../../lib/responsiveLayout";
 import { DemoTransactionWarning } from "../../../components/DemoTransactionWarning";
 import { EvonetPaymentReturnDialog } from "../../../components/EvonetPaymentReturnDialog";
@@ -84,6 +85,7 @@ function buildDropinSdkFingerprint(parts: {
   locale: string;
   verifyPaymentBrand: boolean;
   maxWaitTime: string;
+  columnsLayout: boolean;
   sdkUiOption: EvonetSdkUiOption;
   sdkAppearance: EvonetSdkAppearance;
 }): string {
@@ -97,7 +99,10 @@ function buildDropinSdkFingerprint(parts: {
     locale: parts.locale,
     isVerifyPaymentBrand: parts.verifyPaymentBrand,
     verifyOption: verifyOpt,
-    uiOption: parts.sdkUiOption,
+    uiOption: {
+      ...parts.sdkUiOption,
+      ...(parts.columnsLayout ? { columns: true } : {}),
+    },
     appearance: parts.sdkAppearance,
   });
 }
@@ -128,6 +133,20 @@ const RECURRING_MODEL_OPTIONS: {
   { value: "Subscription", label: "Subscription" },
   { value: "Unscheduled", label: "Unscheduled (auto-debit)" },
 ];
+
+const DEFAULT_ENABLED_PAYMENT_METHOD =
+  "ApplePay,GooglePay,Octopus,*";
+
+/** Parse comma-separated enabledPaymentMethod input into a string array. */
+function parseEnabledPaymentMethodInput(
+  input: string
+): string[] | undefined {
+  const methods = input
+    .split(",")
+    .map((item) => item.trim())
+    .filter((item) => item.length > 0);
+  return methods.length > 0 ? methods : undefined;
+}
 
 type TypographyGroup = (typeof TYPOGRAPHY_GROUPS)[number];
 type FontField = (typeof FONT_FIELDS)[number];
@@ -222,12 +241,16 @@ function EvonetDropinTestPage() {
       ? "Production validation transaction"
       : "UAT validation transaction"
   );
+  const [allowAuthentication, setAllowAuthentication] = useState(false);
   const [saveCardForNextPurchase, setSaveCardForNextPurchase] = useState(false);
   const [userInfoReference, setUserInfoReference] = useState("");
   const [includeRecurringProcessingModel, setIncludeRecurringProcessingModel] =
     useState(true);
   const [recurringProcessingModel, setRecurringProcessingModel] =
     useState<EvonetRecurringProcessingModel>("Subscription");
+  const [enabledPaymentMethodInput, setEnabledPaymentMethodInput] = useState(
+    DEFAULT_ENABLED_PAYMENT_METHOD
+  );
 
   const [customerName, setCustomerName] = useState<string>("Test User");
   const [customerEmail, setCustomerEmail] = useState<string>("test@example.com");
@@ -243,6 +266,7 @@ function EvonetDropinTestPage() {
 
   const [environment, setEnvironment] = useState<string>(DEFAULT_ENVIRONMENT);
   const [mode, setMode] = useState<EvonetDropinConfig["mode"]>("embedded");
+  const [modePreviewOpen, setModePreviewOpen] = useState(false);
   /** SDK / interaction API locale (Evonet: en-US, zh-CN, zh-TW, …). */
   const [locale, setLocale] = useState<string>("en-US");
   const [verifyPaymentBrand, setVerifyPaymentBrand] = useState<boolean>(true);
@@ -335,7 +359,7 @@ function EvonetDropinTestPage() {
     const tnc = buildTnCUiOption(showTnC, tncMode, tncUrl);
     return {
       showSaveImage,
-      Columns: columnsLayout,
+      ...(columnsLayout ? { columns: true } : {}),
       card: {
         showCardHolderName,
         CVVForSavedCard: cvvForSavedCard,
@@ -432,10 +456,12 @@ function EvonetDropinTestPage() {
         locale,
         verifyPaymentBrand,
         maxWaitTime,
+        columnsLayout,
         sdkUiOption,
         sdkAppearance,
       }),
     [
+      columnsLayout,
       environment,
       locale,
       maxWaitTime,
@@ -501,6 +527,20 @@ function EvonetDropinTestPage() {
     ]
   );
 
+  const isSdkOverlayMode = mode === "fullPage" || mode === "bottomUp";
+
+  useEffect(() => {
+    if (!isSdkOverlayMode) {
+      setModePreviewOpen(false);
+    }
+  }, [isSdkOverlayMode]);
+
+  useEffect(() => {
+    if (isSdkOverlayMode && sdkInitGeneration > 0) {
+      setModePreviewOpen(true);
+    }
+  }, [isSdkOverlayMode, sdkInitGeneration]);
+
   const handleInitialize = () => {
     if (!sessionId || sessionId === "REPLACE_WITH_REAL_SESSION_ID") {
       alert("Please provide a valid Evonet sessionID before initializing.");
@@ -519,6 +559,7 @@ function EvonetDropinTestPage() {
       locale,
       verifyPaymentBrand,
       maxWaitTime,
+      columnsLayout,
       sdkUiOption,
       sdkAppearance,
     });
@@ -648,6 +689,9 @@ function EvonetDropinTestPage() {
 
     setIsCreatingSession(true);
     try {
+      const enabledPaymentMethod = parseEnabledPaymentMethodInput(
+        enabledPaymentMethodInput
+      );
       const response = await fetch("/api/evonet/session", {
         method: "POST",
         headers: {
@@ -661,6 +705,8 @@ function EvonetDropinTestPage() {
           environment: envForSession,
           target: targetForSession,
           locale,
+          ...(enabledPaymentMethod ? { enabledPaymentMethod } : {}),
+          ...(allowAuthentication ? { allowAuthentication: true } : {}),
           ...(saveCardForNextPurchase
             ? {
                 saveCardForNextPurchase: true,
@@ -705,6 +751,7 @@ function EvonetDropinTestPage() {
           locale,
           verifyPaymentBrand,
           maxWaitTime,
+          columnsLayout,
           sdkUiOption,
           sdkAppearance,
         });
@@ -805,6 +852,8 @@ function EvonetDropinTestPage() {
             : description,
       environment: envForLoad,
       locale,
+      enabledPaymentMethodInput,
+      allowAuthentication,
       saveCardForNextPurchase,
       userInfoReference,
       includeRecurringProcessingModel,
@@ -812,6 +861,7 @@ function EvonetDropinTestPage() {
       mode,
       verifyPaymentBrand,
       maxWaitTime,
+      columnsLayout,
       sdkUiOption,
       sdkAppearance,
     };
@@ -841,6 +891,9 @@ function EvonetDropinTestPage() {
       setOrderId(newOrderId);
 
       try {
+        const enabledPaymentMethod = parseEnabledPaymentMethodInput(
+          snap.enabledPaymentMethodInput
+        );
         const response = await fetch("/api/evonet/session", {
           method: "POST",
           headers: {
@@ -854,6 +907,8 @@ function EvonetDropinTestPage() {
             environment: snap.environment,
             target: targetFromSdkEnvironment(snap.environment),
             locale: snap.locale,
+            ...(enabledPaymentMethod ? { enabledPaymentMethod } : {}),
+            ...(snap.allowAuthentication ? { allowAuthentication: true } : {}),
             ...(snap.saveCardForNextPurchase
               ? {
                   saveCardForNextPurchase: true,
@@ -906,6 +961,7 @@ function EvonetDropinTestPage() {
           locale: snap.locale,
           verifyPaymentBrand: snap.verifyPaymentBrand,
           maxWaitTime: snap.maxWaitTime,
+          columnsLayout: snap.columnsLayout,
           sdkUiOption: snap.sdkUiOption,
           sdkAppearance: snap.sdkAppearance,
         });
@@ -983,10 +1039,10 @@ function EvonetDropinTestPage() {
           </CardContent>
         </Card>
 
-        <div className="grid min-w-0 items-start gap-4 lg:grid-cols-3">
-          <section className="order-2 min-h-0 min-w-0 lg:order-1 lg:max-h-[calc(var(--console-height)-7rem)] lg:overflow-y-auto">
-            <Card className="rounded-none border border-border">
-              <CardHeader className="border-b px-3 sm:px-4">
+        <div className="grid min-w-0 items-stretch gap-4 lg:grid-cols-3">
+          <section className="order-2 flex min-h-0 min-w-0 lg:order-1">
+            <Card className="flex h-full min-h-0 w-full flex-col rounded-none border border-border">
+              <CardHeader className="shrink-0 border-b px-3 sm:px-4">
                 <CardTitle className="text-base">Configuration</CardTitle>
                 <p className="text-xs text-muted-foreground">
                   Session auto-creates on load. Re-create after amount, currency, or environment changes.{" "}
@@ -1000,12 +1056,37 @@ function EvonetDropinTestPage() {
                   </a>
                 </p>
               </CardHeader>
-              <CardContent className="space-y-5 px-3 sm:px-4">
+              <CardContent className="min-h-0 flex-1 space-y-5 overflow-y-auto px-3 sm:px-4">
                 <div className="space-y-4 rounded-none border border-border p-3">
                   <div className="flex items-start justify-between gap-3 rounded-none border p-3">
                     <div className="min-w-0 flex-1">
-                      <Label htmlFor="save-card">Allow save card for next purchase</Label>
-                      <p className="mt-1 text-xs text-muted-foreground">
+                      <Label
+                        htmlFor="allow-authentication"
+                        className="min-w-0 items-start leading-snug break-words"
+                      >
+                        Allow authentication
+                      </Label>
+                      <p className="mt-1 break-words text-xs text-muted-foreground">
+                        When enabled, sends allowAuthentication=true. Off by default (field omitted).
+                      </p>
+                    </div>
+                    <Switch
+                      id="allow-authentication"
+                      className="shrink-0"
+                      checked={allowAuthentication}
+                      onCheckedChange={setAllowAuthentication}
+                      aria-label="Allow authentication on interaction"
+                    />
+                  </div>
+                  <div className="flex items-start justify-between gap-3 rounded-none border p-3">
+                    <div className="min-w-0 flex-1">
+                      <Label
+                        htmlFor="save-card"
+                        className="min-w-0 items-start leading-snug break-words"
+                      >
+                        Allow save card for next purchase
+                      </Label>
+                      <p className="mt-1 break-words text-xs text-muted-foreground">
                         Sends userInfo.reference and paymentMethod.recurringProcessingModel.
                       </p>
                     </div>
@@ -1019,10 +1100,13 @@ function EvonetDropinTestPage() {
                   </div>
                   <div className="flex items-start justify-between gap-3 rounded-none border p-3">
                     <div className="min-w-0 flex-1">
-                      <Label htmlFor="recurring-model-enabled">
+                      <Label
+                        htmlFor="recurring-model-enabled"
+                        className="min-w-0 items-start leading-snug break-all"
+                      >
                         Include paymentMethod.recurringProcessingModel
                       </Label>
-                      <p className="mt-1 text-xs text-muted-foreground">
+                      <p className="mt-1 break-words text-xs text-muted-foreground">
                         Disable to send only userInfo.reference.
                       </p>
                     </div>
@@ -1034,9 +1118,14 @@ function EvonetDropinTestPage() {
                       disabled={!saveCardForNextPurchase}
                     />
                   </div>
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="space-y-2">
-                      <Label htmlFor="user-reference">User reference (userInfo.reference)</Label>
+                  <div className="grid gap-4">
+                    <div className="min-w-0 space-y-2">
+                      <Label
+                        htmlFor="user-reference"
+                        className="min-w-0 items-start leading-snug break-all"
+                      >
+                        User reference (userInfo.reference)
+                      </Label>
                       <Input
                         id="user-reference"
                         value={userInfoReference}
@@ -1045,9 +1134,11 @@ function EvonetDropinTestPage() {
                         disabled={!saveCardForNextPurchase}
                         required={saveCardForNextPurchase}
                       />
-                      <p className="text-xs text-muted-foreground">Stable shopper ID used to bind the token.</p>
+                      <p className="break-words text-xs text-muted-foreground">
+                        Stable shopper ID used to bind the token.
+                      </p>
                     </div>
-                    <div className="space-y-2">
+                    <div className="min-w-0 space-y-2">
                       <Label>Recurring model</Label>
                       <Select
                         value={recurringProcessingModel}
@@ -1154,6 +1245,13 @@ function EvonetDropinTestPage() {
                         <SelectItem value="bottomUp">bottomUp</SelectItem>
                       </SelectContent>
                     </Select>
+                    <p className="text-xs text-muted-foreground">
+                      {mode === "embedded"
+                        ? "Inline widget inside the preview card."
+                        : mode === "fullPage"
+                          ? "Real SDK fullPage mode — opens in a viewport stage (not an app sheet wrapping embedded)."
+                          : "Real SDK bottomUp mode — opens in a viewport stage so the SDK sheet can render."}
+                    </p>
                   </div>
                   <div className="space-y-2 sm:col-span-2">
                     <Label>Locale (SDK)</Label>
@@ -1177,7 +1275,7 @@ function EvonetDropinTestPage() {
                     <AccordionContent className="space-y-4 pt-2">
                       {[
                         [showSaveImage, setShowSaveImage, "showSaveImage", "Allow saving QR to device"],
-                        [columnsLayout, setColumnsLayout, "Columns (two-column layout)", "uiOption.Columns"],
+                        [columnsLayout, setColumnsLayout, "Columns (two-column layout)", "Sent as uiOption.columns (lowercase — SDK ignores docs' Columns). Web + wide viewport; shows method list + Payment Summary side by side."],
                         [showCardHolderName, setShowCardHolderName, "showCardHolderName", "uiOption.card"],
                         [cvvForSavedCard, setCvvForSavedCard, "CVVForSavedCard", "uiOption.card"],
                         [showScanCardButton, setShowScanCardButton, "showScanCardButton", "Requires supported HTTPS context"],
@@ -1486,6 +1584,24 @@ function EvonetDropinTestPage() {
                             <Label htmlFor="description">Description</Label>
                             <Input id="description" value={description} onChange={(event) => setDescription(event.target.value)} />
                           </div>
+                          <div className="space-y-2 sm:col-span-2">
+                            <Label htmlFor="enabled-payment-method">
+                              enabledPaymentMethod
+                            </Label>
+                            <Input
+                              id="enabled-payment-method"
+                              value={enabledPaymentMethodInput}
+                              onChange={(event) =>
+                                setEnabledPaymentMethodInput(event.target.value)
+                              }
+                              placeholder="ApplePay,GooglePay,Octopus,*"
+                              className="font-mono"
+                            />
+                            <p className="text-xs text-muted-foreground">
+                              Order of payment methods in Drop-in. Use * for
+                              remaining methods. Create session after changing.
+                            </p>
+                          </div>
                         </div>
                       </div>
                       <div className="space-y-3">
@@ -1552,17 +1668,65 @@ function EvonetDropinTestPage() {
                     {binPromoMessage}
                   </div>
                 ) : null}
-                <div className="mx-auto w-full max-w-lg overflow-x-auto rounded-none border border-[#D1D5DB] bg-background p-2 sm:p-3">
-                  <EvonetDropinHost
-                    config={config}
-                    initGeneration={sdkInitGeneration}
-                    onEvent={handleEvent}
-                    onSdkInitApplied={setLastSdkInitInfo}
-                    compact
-                  />
-                </div>
+                {isSdkOverlayMode ? (
+                  <div className="space-y-3 rounded-none border border-dashed border-border bg-muted/30 p-4">
+                    <p className="text-sm font-medium">
+                      SDK {mode} mode
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Drop-in runs with real SDK{" "}
+                      <span className="font-mono">{mode}</span> in a full-viewport
+                      stage (so the SDK overlay is not clipped by the preview card).
+                      Create or initialize a session to open it.
+                    </p>
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={() => {
+                        if (!sessionId || sessionId === "REPLACE_WITH_REAL_SESSION_ID") {
+                          alert("Create a session first, then open the preview.");
+                          return;
+                        }
+                        if (sdkInitGeneration < 1) {
+                          handleInitialize();
+                          return;
+                        }
+                        setModePreviewOpen(true);
+                      }}
+                      disabled={isCreatingSession}
+                    >
+                      {sdkInitGeneration < 1 ? "Initialize & open preview" : "Open preview"}
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="mx-auto w-full max-w-lg overflow-x-auto rounded-none border border-[#D1D5DB] bg-background p-2 sm:p-3">
+                    <EvonetDropinHost
+                      config={config}
+                      initGeneration={sdkInitGeneration}
+                      onEvent={handleEvent}
+                      onSdkInitApplied={setLastSdkInitInfo}
+                      compact
+                    />
+                  </div>
+                )}
               </CardContent>
             </Card>
+
+            <DropinModePreviewShell
+              mode={mode}
+              open={modePreviewOpen}
+              onClose={() => setModePreviewOpen(false)}
+            >
+              {isSdkOverlayMode && modePreviewOpen ? (
+                <EvonetDropinHost
+                  config={config}
+                  initGeneration={sdkInitGeneration}
+                  onEvent={handleEvent}
+                  onSdkInitApplied={setLastSdkInitInfo}
+                  compact={false}
+                />
+              ) : null}
+            </DropinModePreviewShell>
 
             <Card className="min-w-0 rounded-none border border-border">
               <CardHeader className="gap-3 border-b px-3 sm:px-4">
