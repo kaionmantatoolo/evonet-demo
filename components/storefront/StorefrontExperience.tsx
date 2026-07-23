@@ -227,6 +227,9 @@ export function StorefrontExperience({
             description,
             environment: config.environment,
             locale: config.locale || "en-US",
+            ...(config.enabledPaymentMethod?.length
+              ? { enabledPaymentMethod: config.enabledPaymentMethod }
+              : {}),
           }),
         });
         const data = (await response.json()) as {

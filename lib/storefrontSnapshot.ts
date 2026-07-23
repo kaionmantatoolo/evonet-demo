@@ -17,6 +17,11 @@ export interface StorefrontSnapshot {
   uiOption?: EvonetSdkUiOption;
   verifyPaymentBrand?: boolean;
   maxWaitTime?: string;
+  /**
+   * From Builder Order Payment Methods → interaction
+   * `merchantOrderInfo.enabledPaymentMethod` when storefront creates a session.
+   */
+  enabledPaymentMethod?: string[];
   savedAt: string;
 }
 

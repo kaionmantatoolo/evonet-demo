@@ -660,8 +660,12 @@ function DropinBuilderPage() {
       uiOption: sdkUiOption,
       verifyPaymentBrand,
       maxWaitTime: maxWaitTime.trim() || "10",
+      enabledPaymentMethod: parseEnabledPaymentMethodInput(
+        enabledPaymentMethodInput
+      ),
     }),
     [
+      enabledPaymentMethodInput,
       environment,
       locale,
       maxWaitTime,
