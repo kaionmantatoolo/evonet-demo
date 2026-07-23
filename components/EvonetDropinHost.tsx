@@ -529,6 +529,15 @@ export function EvonetDropinHost({
         ...(cfg.appearance ?? {}),
       };
 
+      // SDK (cil-dropin-components) gates the web 2-column panel on
+      // `uiOption.columns` (lowercase). Docs' `Columns` key is ignored.
+      const wantColumns =
+        cfg.Columns === true || cfg.uiOption?.columns === true;
+      const uiOption = {
+        ...(cfg.uiOption ?? {}),
+        ...(wantColumns ? { columns: true as const } : {}),
+      };
+
       const options: EvonetDropinSdkOptions = {
         id: `#${containerIdRef.current}`,
         type: "payment",
@@ -538,9 +547,7 @@ export function EvonetDropinHost({
         environment: sdkEnvironment as EvonetDropinSdkOptions["environment"],
         isVerifyPaymentBrand: verifyBrand,
         verifyOption,
-        ...(cfg.uiOption && Object.keys(cfg.uiOption).length > 0
-          ? { uiOption: cfg.uiOption }
-          : {}),
+        ...(Object.keys(uiOption).length > 0 ? { uiOption } : {}),
         appearance,
         payment_method_select: handlePaymentMethodSelected,
         payment_method_selected: handlePaymentMethodSelected,

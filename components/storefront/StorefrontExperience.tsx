@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Fraunces, Manrope } from "next/font/google";
 import {
+  Alert,
   Badge,
   Box,
   Button,
@@ -16,6 +17,8 @@ import {
 } from "@mui/material";
 import ShoppingBagOutlinedIcon from "@mui/icons-material/ShoppingBagOutlined";
 import { DEMO_PRODUCT, type DemoProduct, productImagesForColor } from "./demoProduct";
+import { EvonetDropinHost } from "../EvonetDropinHost";
+import { DropinModePreviewShell } from "../DropinModePreviewShell";
 import { StorefrontBagDrawer } from "./StorefrontBagDrawer";
 import { StorefrontCheckoutDrawer } from "./StorefrontCheckoutDrawer";
 import {
@@ -23,6 +26,7 @@ import {
   type StorefrontCheckoutSummary,
 } from "./StorefrontOrderResult";
 import { StorefrontProductCard } from "./StorefrontProductCard";
+import { StorefrontDropinLoader } from "./StorefrontDropinLoader";
 import { bagBounce, enterUp } from "./storefrontMotion";
 import {
   cartLineCount,
@@ -158,8 +162,7 @@ export function StorefrontExperience({
       type: "payment",
       sessionID: sessionID.trim(),
       environment: config.environment,
-      // Drawer checkout must stay embedded — fullPage/bottomUp fight the sheet layout.
-      mode: "embedded",
+      mode: config.mode || "embedded",
       language: config.locale || "en-US",
       isVerifyPaymentBrand: Boolean(config.verifyPaymentBrand),
       verifyOption: config.verifyPaymentBrand
@@ -169,6 +172,15 @@ export function StorefrontExperience({
       appearance: config.appearance,
     };
   }, [config, sessionID]);
+
+  const checkoutMode = config.mode || "embedded";
+  const isSdkOverlayMode =
+    checkoutMode === "fullPage" || checkoutMode === "bottomUp";
+
+  const closeCheckout = useCallback(() => {
+    setCheckoutOpen(false);
+    setSessionError(null);
+  }, []);
 
   const clearPaymentReturnQuery = useCallback(() => {
     const next = stripEvonetReturnQuery(
@@ -612,7 +624,7 @@ export function StorefrontExperience({
             </Typography>
             <Typography variant="caption" sx={{ color: "var(--shop-muted)" }}>
               Demo storefront · Theme from Builder · {config.environment} ·{" "}
-              {config.locale}
+              {config.locale} · {checkoutMode}
             </Typography>
           </Stack>
         </Container>
@@ -630,29 +642,65 @@ export function StorefrontExperience({
         themeVars={cssVars}
       />
 
-      <StorefrontCheckoutDrawer
-        open={checkoutOpen}
-        onClose={() => setCheckoutOpen(false)}
-        product={product}
-        currency={currency}
-        lines={
-          checkoutSummary?.lines?.length
-            ? checkoutSummary.lines
-            : cartLines.length > 0
-              ? cartLines
-              : [makeLine(1)]
-        }
-        total={
-          checkoutSummary?.total ??
-          (cartQty > 0 ? cartTotal : product.price)
-        }
-        isCreatingSession={isCreatingSession}
-        sessionError={sessionError}
-        dropinConfig={dropinConfig}
-        sdkInitGeneration={sdkInitGeneration}
-        onEvent={handleDropinEvent}
-        themeVars={cssVars}
-      />
+      {!isSdkOverlayMode ? (
+        <StorefrontCheckoutDrawer
+          open={checkoutOpen}
+          onClose={closeCheckout}
+          product={product}
+          currency={currency}
+          lines={
+            checkoutSummary?.lines?.length
+              ? checkoutSummary.lines
+              : cartLines.length > 0
+                ? cartLines
+                : [makeLine(1)]
+          }
+          total={
+            checkoutSummary?.total ??
+            (cartQty > 0 ? cartTotal : product.price)
+          }
+          isCreatingSession={isCreatingSession}
+          sessionError={sessionError}
+          dropinConfig={dropinConfig}
+          sdkInitGeneration={sdkInitGeneration}
+          onEvent={handleDropinEvent}
+          themeVars={cssVars}
+        />
+      ) : (
+        <DropinModePreviewShell
+          mode={checkoutMode}
+          open={checkoutOpen}
+          onClose={closeCheckout}
+          closeHint="Close to return to the storefront"
+        >
+          <Box
+            sx={{
+              minHeight: "100%",
+              width: "100%",
+              bgcolor: "var(--shop-bg, #fff)",
+              px: { xs: 2, sm: 3 },
+              py: 2,
+            }}
+          >
+            {sessionError ? (
+              <Alert severity="error" sx={{ mb: 2 }}>
+                {sessionError}
+              </Alert>
+            ) : null}
+            {(isCreatingSession || !dropinConfig) && !sessionError ? (
+              <StorefrontDropinLoader />
+            ) : null}
+            {dropinConfig ? (
+              <EvonetDropinHost
+                key={`storefront-overlay-${sdkInitGeneration}`}
+                config={dropinConfig}
+                initGeneration={sdkInitGeneration}
+                onEvent={handleDropinEvent}
+              />
+            ) : null}
+          </Box>
+        </DropinModePreviewShell>
+      )}
 
       <Snackbar
         open={toastOpen}
