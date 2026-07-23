@@ -929,25 +929,6 @@ function DropinBuilderPage() {
                     <Label htmlFor="order-description">Description</Label>
                     <Input id="order-description" value={orderDescription} onChange={(event) => setOrderDescription(event.target.value)} placeholder="Drop-in Builder Session" aria-label="Order description" />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="enabled-payment-method">
-                      enabledPaymentMethod
-                    </Label>
-                    <Input
-                      id="enabled-payment-method"
-                      value={enabledPaymentMethodInput}
-                      onChange={(event) =>
-                        setEnabledPaymentMethodInput(event.target.value)
-                      }
-                      placeholder="ApplePay,GooglePay,Octopus,*"
-                      className="font-mono"
-                      aria-label="Enabled payment methods order"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Order of payment methods in Drop-in. Use * for remaining
-                      methods. Refresh session after changing.
-                    </p>
-                  </div>
                   <Button variant="outline" onClick={() => void handleCreateSession()} disabled={isCreatingSession}>
                     {isCreatingSession ? "Creating Session..." : "Refresh Session ID"}
                   </Button>
@@ -1009,6 +990,27 @@ function DropinBuilderPage() {
               <Card>
                 <CardHeader><CardTitle className="text-base">Payment UI</CardTitle></CardHeader>
                 <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="enabled-payment-method">
+                      Order Payment Methods
+                    </Label>
+                    <Input
+                      id="enabled-payment-method"
+                      value={enabledPaymentMethodInput}
+                      onChange={(event) =>
+                        setEnabledPaymentMethodInput(event.target.value)
+                      }
+                      placeholder="ApplePay,GooglePay,Octopus,*"
+                      className="font-mono"
+                      aria-label="Order Payment Methods"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Order of payment methods in Drop-in (
+                      <code className="text-[11px]">enabledPaymentMethod</code>
+                      ). Use * for remaining methods. Refresh session after
+                      changing.
+                    </p>
+                  </div>
                   <div className="grid gap-3 sm:grid-cols-2">
                     {[
                       [showSaveImage, setShowSaveImage, "Show Save Image", "Allow saving QR code to device (not card storage)."],
