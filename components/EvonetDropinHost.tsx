@@ -312,6 +312,85 @@ export function EvonetDropinHost({
     document.body.appendChild(script);
   }, []);
 
+  /**
+   * Drop-in only fires payment_method_selected once the PAN reaches 8 digits.
+   * Clearing the field does not emit an event, so promo/block banners would stick.
+   * Watch card-number inputs and notify the host page when BIN is no longer usable.
+   */
+  useEffect(() => {
+    const root = document.getElementById(containerId);
+    if (!root) {
+      return;
+    }
+
+    let lastDigits = "";
+    const readDigits = (event: Event): string | null => {
+      const path = typeof event.composedPath === "function" ? event.composedPath() : [];
+      const candidates: EventTarget[] = [
+        ...path,
+        event.target,
+      ].filter(Boolean) as EventTarget[];
+
+      for (const node of candidates) {
+        if (!(node instanceof HTMLInputElement)) {
+          continue;
+        }
+        const name = (node.name || node.id || "").toLowerCase();
+        const autocomplete = (node.getAttribute("autocomplete") || "").toLowerCase();
+        const placeholder = (node.getAttribute("placeholder") || "").toLowerCase();
+        const aria = (node.getAttribute("aria-label") || "").toLowerCase();
+        const maxLen = Number(node.maxLength || 0);
+        const looksLikeCard =
+          name.includes("cardnumber") ||
+          name.includes("card_number") ||
+          name.includes("card-number") ||
+          autocomplete.includes("cc-number") ||
+          placeholder.includes("card number") ||
+          aria.includes("card number") ||
+          (node.type === "tel" && maxLen >= 16 && maxLen <= 24);
+        if (!looksLikeCard) {
+          continue;
+        }
+        return node.value.replace(/\D/g, "");
+      }
+      return null;
+    };
+
+    const maybeClear = (digits: string) => {
+      if (digits === lastDigits) {
+        return;
+      }
+      const wasReady = lastDigits.length >= 6;
+      lastDigits = digits;
+      if (wasReady && digits.length < 6) {
+        handledVerificationIdsRef.current.clear();
+        onEventRef.current?.({
+          type: "sdk_message",
+          payload: {
+            source: "bin_verification_cleared",
+            reason: "card_number_incomplete",
+            digitsLength: digits.length,
+          },
+        });
+      }
+    };
+
+    const onInput = (event: Event) => {
+      const digits = readDigits(event);
+      if (digits == null) {
+        return;
+      }
+      maybeClear(digits);
+    };
+
+    root.addEventListener("input", onInput, true);
+    root.addEventListener("change", onInput, true);
+    return () => {
+      root.removeEventListener("input", onInput, true);
+      root.removeEventListener("change", onInput, true);
+    };
+  }, [containerId, initGeneration, scriptLoaded]);
+
   useEffect(() => {
     if (!scriptLoaded) {
       return;

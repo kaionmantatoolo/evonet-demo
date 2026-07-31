@@ -599,16 +599,26 @@ function EvonetDropinTestPage() {
 
     if (
       event.type === "sdk_message" &&
+      payload?.source === "bin_verification_cleared"
+    ) {
+      setBinPromoMessage(null);
+      setBinRejectMessage(null);
+    } else if (
+      event.type === "sdk_message" &&
       payload?.source === "bin_verification_decision"
     ) {
       const matchedRule = payload?.matchedRule as BinRule | null | undefined;
+      const first6 = String(payload?.first6No ?? "");
       const isValid = Boolean(payload?.isValid);
       const action =
         payload?.action === "block" || matchedRule?.action === "block"
           ? "block"
           : "allow";
 
-      if (!isValid || action === "block") {
+      if (!first6 || first6.length < 6) {
+        setBinPromoMessage(null);
+        setBinRejectMessage(null);
+      } else if (!isValid || action === "block") {
         setBinPromoMessage(null);
         setBinRejectMessage(
           String(payload?.msg ?? "").trim() ||
@@ -623,7 +633,7 @@ function EvonetDropinTestPage() {
       const maybeFirst6 =
         (payload?.first6No as string | undefined) ||
         (payload?.dpanFirst6No as string | undefined);
-      if (maybeFirst6) {
+      if (maybeFirst6 && maybeFirst6.length >= 6) {
         const matchedRule = binRules.find(
           (rule) => rule.first6No.length === 6 && rule.first6No === maybeFirst6
         );
