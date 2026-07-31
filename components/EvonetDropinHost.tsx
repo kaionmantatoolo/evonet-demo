@@ -434,7 +434,7 @@ export function EvonetDropinHost({
       const bin = first6No || dpanFirst6No;
       const rules = latest.binRules ?? [];
       const matchedRule = bin
-        ? rules.find((r) => r.first6No === bin)
+        ? rules.find((r) => r.first6No.length === 6 && r.first6No === bin)
         : undefined;
       const action = matchedRule?.action === "block" ? "block" : "allow";
       const isValid = action !== "block";

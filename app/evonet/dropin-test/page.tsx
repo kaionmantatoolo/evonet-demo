@@ -310,10 +310,6 @@ function EvonetDropinTestPage() {
       message: "This card is eligible for the promotion with SC Double Fun points",
     },
   ]);
-  const [newRuleFirst6, setNewRuleFirst6] = useState<string>("");
-  const [newRuleMessage, setNewRuleMessage] = useState<string>("");
-  const [newRuleAction, setNewRuleAction] = useState<"allow" | "block">("allow");
-  const [newRuleRejectMessage, setNewRuleRejectMessage] = useState<string>("");
 
   const [sessionId, setSessionId] = useState<string>(DEFAULT_SESSION_ID);
 
@@ -629,7 +625,7 @@ function EvonetDropinTestPage() {
         (payload?.dpanFirst6No as string | undefined);
       if (maybeFirst6) {
         const matchedRule = binRules.find(
-          (rule) => rule.first6No === maybeFirst6
+          (rule) => rule.first6No.length === 6 && rule.first6No === maybeFirst6
         );
         if (matchedRule?.action === "block") {
           setBinPromoMessage(null);
@@ -1490,15 +1486,33 @@ function EvonetDropinTestPage() {
                             <p className="text-xs text-muted-foreground">Default per docs: 10. Apple Pay must receive callbackVerification before this timeout.</p>
                           </div>
                           <p className="text-xs text-muted-foreground">
-                            Allow: optional promotion copy. Block: rejects via callbackVerification (isValid: false).
+                            Rules listed below are live (edit in place). Allow shows promo; Block rejects via callbackVerification. Unmatched BINs are allowed. BIN must be exactly 6 digits to match.
                           </p>
+                          {binRules.length === 0 ? (
+                            <div className="rounded-none border border-dashed border-border bg-muted/30 p-3 text-xs text-muted-foreground">
+                              No BIN rules yet. Every card is allowed until you add one.
+                            </div>
+                          ) : null}
                           <div className="space-y-3">
                             {binRules.map((rule, index) => {
                               const ruleAction = rule.action === "block" ? "block" : "allow";
+                              const binReady = rule.first6No.length === 6;
                               return (
                               <div key={index} className="space-y-3 rounded-none border p-3">
                                 <div className="flex items-center justify-between gap-3">
-                                  <p className="text-xs font-bold">Condition {index + 1}</p>
+                                  <div className="flex min-w-0 flex-wrap items-center gap-2">
+                                    <p className="text-xs font-bold">Rule {index + 1}</p>
+                                    <Badge
+                                      variant={binReady ? "secondary" : "outline"}
+                                      className="rounded-none font-mono text-[10px] uppercase tracking-wide"
+                                    >
+                                      {binReady
+                                        ? ruleAction === "block"
+                                          ? "Blocking"
+                                          : "Allowing"
+                                        : "Incomplete"}
+                                    </Badge>
+                                  </div>
                                   <Button
                                     type="button"
                                     variant="ghost"
@@ -1514,7 +1528,7 @@ function EvonetDropinTestPage() {
                                   </Button>
                                 </div>
                                 <div className="space-y-2">
-                                  <Label htmlFor={`bin-${index}`}>Custom card BIN</Label>
+                                  <Label htmlFor={`bin-${index}`}>Card BIN (6 digits)</Label>
                                   <Input
                                     id={`bin-${index}`}
                                     value={rule.first6No}
@@ -1527,8 +1541,14 @@ function EvonetDropinTestPage() {
                                       );
                                     }}
                                     maxLength={6}
+                                    placeholder="e.g. 491794"
                                     className="font-mono"
                                   />
+                                  {!binReady ? (
+                                    <p className="text-xs text-muted-foreground">
+                                      Enter 6 digits — this rule is ignored until then.
+                                    </p>
+                                  ) : null}
                                 </div>
                                 <div className="space-y-2">
                                   <Label htmlFor={`action-${index}`}>Action</Label>
@@ -1600,91 +1620,23 @@ function EvonetDropinTestPage() {
                               );
                             })}
                           </div>
-                          <div className="space-y-3 rounded-none border p-3">
-                            <p className="text-xs font-bold">Add condition</p>
-                            <div className="space-y-2">
-                              <Label htmlFor="new-bin">Custom card BIN</Label>
-                              <Input
-                                id="new-bin"
-                                value={newRuleFirst6}
-                                onChange={(event) =>
-                                  setNewRuleFirst6(event.target.value.replace(/\D/g, "").slice(0, 6))
-                                }
-                                maxLength={6}
-                                className="font-mono"
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor="new-action">Action</Label>
-                              <Select
-                                value={newRuleAction}
-                                onValueChange={(value) =>
-                                  setNewRuleAction(value as "allow" | "block")
-                                }
-                              >
-                                <SelectTrigger
-                                  id="new-action"
-                                  className="w-full"
-                                  aria-label="New BIN rule action"
-                                >
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="allow">Allow (promo)</SelectItem>
-                                  <SelectItem value="block">Block</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-                            {newRuleAction === "allow" ? (
-                              <div className="space-y-2">
-                                <Label htmlFor="new-promo">Promotion message</Label>
-                                <Input
-                                  id="new-promo"
-                                  value={newRuleMessage}
-                                  onChange={(event) => setNewRuleMessage(event.target.value)}
-                                />
-                              </div>
-                            ) : (
-                              <div className="space-y-2">
-                                <Label htmlFor="new-reject">Reject message</Label>
-                                <Input
-                                  id="new-reject"
-                                  value={newRuleRejectMessage}
-                                  placeholder="Card not accepted"
-                                  onChange={(event) =>
-                                    setNewRuleRejectMessage(event.target.value)
-                                  }
-                                />
-                              </div>
-                            )}
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              disabled={newRuleFirst6.length !== 6}
-                              onClick={() => {
-                                setBinRules((previous) => [
-                                  ...previous,
-                                  {
-                                    first6No: newRuleFirst6,
-                                    action: newRuleAction,
-                                    ...(newRuleAction === "allow"
-                                      ? { message: newRuleMessage }
-                                      : {
-                                          rejectMessage:
-                                            newRuleRejectMessage || undefined,
-                                        }),
-                                  },
-                                ]);
-                                setNewRuleFirst6("");
-                                setNewRuleMessage("");
-                                setNewRuleRejectMessage("");
-                                setNewRuleAction("allow");
-                              }}
-                            >
-                              Add condition
-                            </Button>
-                          </div>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="w-full"
+                            onClick={() => {
+                              setBinRules((previous) => [
+                                ...previous,
+                                {
+                                  first6No: "",
+                                  action: "block",
+                                  rejectMessage: "Card not accepted",
+                                },
+                              ]);
+                            }}
+                          >
+                            + Add BIN rule
+                          </Button>
                         </>
                       ) : null}
                     </AccordionContent>
