@@ -201,6 +201,12 @@ interface EvonetDropinHostProps {
    * Avoids a tall empty frame before payment methods paint.
    */
   compact?: boolean;
+  /**
+   * Keep the Drop-in pay CTA visible inside a short scroll parent (storefront
+   * drawer). SDK only position:fixed-s the footer for fullPage/bottomUp; embedded
+   * leaves it at content end where a constrained drawer can hide it.
+   */
+  stickyPayButton?: boolean;
 }
 
 export function EvonetDropinHost({
@@ -209,6 +215,7 @@ export function EvonetDropinHost({
   onEvent,
   onSdkInitApplied,
   compact = false,
+  stickyPayButton = false,
 }: EvonetDropinHostProps) {
   // Unique per host — Builder + storefront checkout can both mount Drop-in;
   // a shared `#evonet-dropin-root` made the SDK bind to the hidden Builder node.
@@ -423,28 +430,45 @@ export function EvonetDropinHost({
 
       const latest = configRef.current;
       const first6No = String(p?.first6No ?? "");
+      const dpanFirst6No = String(p?.dpanFirst6No ?? "");
+      const bin = first6No || dpanFirst6No;
       const rules = latest.binRules ?? [];
-      const matchedRule = rules.find((r) => r.first6No === first6No);
-
-      const isValid = true;
+      const matchedRule = bin
+        ? rules.find((r) => r.first6No === bin)
+        : undefined;
+      const action = matchedRule?.action === "block" ? "block" : "allow";
+      const isValid = action !== "block";
+      const msg = !isValid
+        ? (
+            matchedRule?.rejectMessage?.trim() ||
+            matchedRule?.message?.trim() ||
+            "Card not accepted"
+          )
+        : "";
 
       onEventRef.current?.({
         type: "sdk_message",
         payload: {
           source: "bin_verification_decision",
-          first6No,
+          first6No: bin,
+          dpanFirst6No: dpanFirst6No || undefined,
           matchedRule: matchedRule ?? null,
+          action,
           isValid,
-          msg: "",
+          msg,
           verificationID: verificationIdStr,
           paymentBrand: p?.paymentBrand ?? "",
+          paymentMethod: p?.paymentMethod ?? "",
         },
       });
 
-      const params: { isValid: boolean; id: string } = {
-        isValid: true,
+      const params: { isValid: boolean; id: string; msg?: string } = {
+        isValid,
         id: verificationIdStr,
       };
+      if (!isValid) {
+        params.msg = msg;
+      }
 
       if (typeof callbackVerification === "function") {
         try {
@@ -799,6 +823,27 @@ export function EvonetDropinHost({
         #${containerId} > * {
           max-width: 100% !important;
           box-sizing: border-box !important;
+        }
+        ${
+          stickyPayButton
+            ? `
+        /* Embedded mode: pin pay CTA to the bottom of the nearest scrollport.
+           Skip when SDK already uses .fixed-footer (fullPage / bottomUp). */
+        #${containerId} .cil-payment-method-footer:not(.fixed-footer) {
+          position: sticky !important;
+          bottom: 0 !important;
+          z-index: 5 !important;
+          margin-top: 12px !important;
+          padding-top: 12px !important;
+          padding-bottom: max(12px, env(safe-area-inset-bottom, 0px)) !important;
+          background: #fff !important;
+          box-shadow: 0 -6px 16px rgba(0, 0, 0, 0.06) !important;
+        }
+        #${containerId} .mixin-payment-info-wrap:not(.has-fixed-footer) {
+          padding-bottom: 8px !important;
+        }
+        `
+            : ""
         }
       `}</style>
     </Box>

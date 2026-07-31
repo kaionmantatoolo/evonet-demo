@@ -306,11 +306,14 @@ function EvonetDropinTestPage() {
   const [binRules, setBinRules] = useState<BinRule[]>([
     {
       first6No: "552343",
+      action: "allow",
       message: "This card is eligible for the promotion with SC Double Fun points",
     },
   ]);
   const [newRuleFirst6, setNewRuleFirst6] = useState<string>("");
   const [newRuleMessage, setNewRuleMessage] = useState<string>("");
+  const [newRuleAction, setNewRuleAction] = useState<"allow" | "block">("allow");
+  const [newRuleRejectMessage, setNewRuleRejectMessage] = useState<string>("");
 
   const [sessionId, setSessionId] = useState<string>(DEFAULT_SESSION_ID);
 
@@ -345,6 +348,7 @@ function EvonetDropinTestPage() {
   const [events, setEvents] = useState<EvonetDropinEvent[]>([]);
   const [userAgent, setUserAgent] = useState<string>("Detecting user agent…");
   const [binPromoMessage, setBinPromoMessage] = useState<string | null>(null);
+  const [binRejectMessage, setBinRejectMessage] = useState<string | null>(null);
   const [lastResult, setLastResult] = useState<{
     type: "payment_success" | "payment_fail" | "payment_cancelled" | null;
     payload?: {
@@ -603,19 +607,44 @@ function EvonetDropinTestPage() {
     ) {
       const matchedRule = payload?.matchedRule as BinRule | null | undefined;
       const isValid = Boolean(payload?.isValid);
+      const action =
+        payload?.action === "block" || matchedRule?.action === "block"
+          ? "block"
+          : "allow";
 
-      setBinPromoMessage(
-        isValid ? matchedRule?.message?.trim() || null : null
-      );
+      if (!isValid || action === "block") {
+        setBinPromoMessage(null);
+        setBinRejectMessage(
+          String(payload?.msg ?? "").trim() ||
+            matchedRule?.rejectMessage?.trim() ||
+            "Card not accepted"
+        );
+      } else {
+        setBinRejectMessage(null);
+        setBinPromoMessage(matchedRule?.message?.trim() || null);
+      }
     } else if (event.type === "payment_method_selected") {
-      const maybeFirst6 = payload?.first6No as string | undefined;
+      const maybeFirst6 =
+        (payload?.first6No as string | undefined) ||
+        (payload?.dpanFirst6No as string | undefined);
       if (maybeFirst6) {
         const matchedRule = binRules.find(
           (rule) => rule.first6No === maybeFirst6
         );
-        setBinPromoMessage(matchedRule?.message?.trim() || null);
+        if (matchedRule?.action === "block") {
+          setBinPromoMessage(null);
+          setBinRejectMessage(
+            matchedRule.rejectMessage?.trim() ||
+              matchedRule.message?.trim() ||
+              "Card not accepted"
+          );
+        } else {
+          setBinRejectMessage(null);
+          setBinPromoMessage(matchedRule?.message?.trim() || null);
+        }
       } else {
         setBinPromoMessage(null);
+        setBinRejectMessage(null);
       }
     }
 
@@ -1439,7 +1468,7 @@ function EvonetDropinTestPage() {
                         <div className="min-w-0 flex-1">
                           <Label htmlFor="verify-payment-brand">isVerifyPaymentBrand</Label>
                           <p className="mt-1 text-xs text-muted-foreground">
-                            Processes BIN data in SDK events. Host rules only control promotion text.
+                            Host matches first6No (or Apple Pay dpanFirst6No). Rules can show promo or block payment; unmatched BINs are allowed.
                           </p>
                         </div>
                         <Switch
@@ -1458,13 +1487,15 @@ function EvonetDropinTestPage() {
                               value={maxWaitTime}
                               onChange={(event) => setMaxWaitTime(event.target.value)}
                             />
-                            <p className="text-xs text-muted-foreground">Default per docs: 10</p>
+                            <p className="text-xs text-muted-foreground">Default per docs: 10. Apple Pay must receive callbackVerification before this timeout.</p>
                           </div>
                           <p className="text-xs text-muted-foreground">
-                            Optional promotion copy when a card BIN matches. Does not block payment.
+                            Allow: optional promotion copy. Block: rejects via callbackVerification (isValid: false).
                           </p>
                           <div className="space-y-3">
-                            {binRules.map((rule, index) => (
+                            {binRules.map((rule, index) => {
+                              const ruleAction = rule.action === "block" ? "block" : "allow";
+                              return (
                               <div key={index} className="space-y-3 rounded-none border p-3">
                                 <div className="flex items-center justify-between gap-3">
                                   <p className="text-xs font-bold">Condition {index + 1}</p>
@@ -1500,23 +1531,74 @@ function EvonetDropinTestPage() {
                                   />
                                 </div>
                                 <div className="space-y-2">
-                                  <Label htmlFor={`promo-${index}`}>Promotion message</Label>
-                                  <Input
-                                    id={`promo-${index}`}
-                                    value={rule.message ?? ""}
-                                    onChange={(event) =>
+                                  <Label htmlFor={`action-${index}`}>Action</Label>
+                                  <Select
+                                    value={ruleAction}
+                                    onValueChange={(value) =>
                                       setBinRules((previous) =>
                                         previous.map((item, ruleIndex) =>
                                           ruleIndex === index
-                                            ? { ...item, message: event.target.value }
+                                            ? {
+                                                ...item,
+                                                action: value as "allow" | "block",
+                                              }
                                             : item
                                         )
                                       )
                                     }
-                                  />
+                                  >
+                                    <SelectTrigger
+                                      id={`action-${index}`}
+                                      className="w-full"
+                                      aria-label={`BIN rule ${index + 1} action`}
+                                    >
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="allow">Allow (promo)</SelectItem>
+                                      <SelectItem value="block">Block</SelectItem>
+                                    </SelectContent>
+                                  </Select>
                                 </div>
+                                {ruleAction === "allow" ? (
+                                  <div className="space-y-2">
+                                    <Label htmlFor={`promo-${index}`}>Promotion message</Label>
+                                    <Input
+                                      id={`promo-${index}`}
+                                      value={rule.message ?? ""}
+                                      onChange={(event) =>
+                                        setBinRules((previous) =>
+                                          previous.map((item, ruleIndex) =>
+                                            ruleIndex === index
+                                              ? { ...item, message: event.target.value }
+                                              : item
+                                          )
+                                        )
+                                      }
+                                    />
+                                  </div>
+                                ) : (
+                                  <div className="space-y-2">
+                                    <Label htmlFor={`reject-${index}`}>Reject message</Label>
+                                    <Input
+                                      id={`reject-${index}`}
+                                      value={rule.rejectMessage ?? ""}
+                                      placeholder="Card not accepted"
+                                      onChange={(event) =>
+                                        setBinRules((previous) =>
+                                          previous.map((item, ruleIndex) =>
+                                            ruleIndex === index
+                                              ? { ...item, rejectMessage: event.target.value }
+                                              : item
+                                          )
+                                        )
+                                      }
+                                    />
+                                  </div>
+                                )}
                               </div>
-                            ))}
+                              );
+                            })}
                           </div>
                           <div className="space-y-3 rounded-none border p-3">
                             <p className="text-xs font-bold">Add condition</p>
@@ -1533,13 +1615,48 @@ function EvonetDropinTestPage() {
                               />
                             </div>
                             <div className="space-y-2">
-                              <Label htmlFor="new-promo">Promotion message</Label>
-                              <Input
-                                id="new-promo"
-                                value={newRuleMessage}
-                                onChange={(event) => setNewRuleMessage(event.target.value)}
-                              />
+                              <Label htmlFor="new-action">Action</Label>
+                              <Select
+                                value={newRuleAction}
+                                onValueChange={(value) =>
+                                  setNewRuleAction(value as "allow" | "block")
+                                }
+                              >
+                                <SelectTrigger
+                                  id="new-action"
+                                  className="w-full"
+                                  aria-label="New BIN rule action"
+                                >
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="allow">Allow (promo)</SelectItem>
+                                  <SelectItem value="block">Block</SelectItem>
+                                </SelectContent>
+                              </Select>
                             </div>
+                            {newRuleAction === "allow" ? (
+                              <div className="space-y-2">
+                                <Label htmlFor="new-promo">Promotion message</Label>
+                                <Input
+                                  id="new-promo"
+                                  value={newRuleMessage}
+                                  onChange={(event) => setNewRuleMessage(event.target.value)}
+                                />
+                              </div>
+                            ) : (
+                              <div className="space-y-2">
+                                <Label htmlFor="new-reject">Reject message</Label>
+                                <Input
+                                  id="new-reject"
+                                  value={newRuleRejectMessage}
+                                  placeholder="Card not accepted"
+                                  onChange={(event) =>
+                                    setNewRuleRejectMessage(event.target.value)
+                                  }
+                                />
+                              </div>
+                            )}
                             <Button
                               type="button"
                               variant="outline"
@@ -1548,10 +1665,21 @@ function EvonetDropinTestPage() {
                               onClick={() => {
                                 setBinRules((previous) => [
                                   ...previous,
-                                  { first6No: newRuleFirst6, message: newRuleMessage },
+                                  {
+                                    first6No: newRuleFirst6,
+                                    action: newRuleAction,
+                                    ...(newRuleAction === "allow"
+                                      ? { message: newRuleMessage }
+                                      : {
+                                          rejectMessage:
+                                            newRuleRejectMessage || undefined,
+                                        }),
+                                  },
                                 ]);
                                 setNewRuleFirst6("");
                                 setNewRuleMessage("");
+                                setNewRuleRejectMessage("");
+                                setNewRuleAction("allow");
                               }}
                             >
                               Add condition
@@ -1663,6 +1791,11 @@ function EvonetDropinTestPage() {
                   environment={environment}
                   sx={{ wordBreak: "break-word", "& .MuiAlert-message": { overflowWrap: "anywhere" } }}
                 />
+                {binRejectMessage ? (
+                  <div role="alert" className="rounded-none border border-red-200 bg-red-50 p-3 text-sm text-red-950">
+                    {binRejectMessage}
+                  </div>
+                ) : null}
                 {binPromoMessage ? (
                   <div role="status" className="rounded-none border border-blue-200 bg-blue-50 p-3 text-sm text-blue-950">
                     {binPromoMessage}

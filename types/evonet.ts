@@ -1,8 +1,12 @@
 export interface BinRule {
   /** First 6 digits of the card number to match */
   first6No: string;
-  /** Promotion message shown on host page when this BIN matches */
+  /** Promotion message shown on host page when this BIN matches and is allowed */
   message?: string;
+  /** Default "allow". "block" → callbackVerification isValid: false */
+  action?: "allow" | "block";
+  /** Passed as callbackVerification.msg when blocked */
+  rejectMessage?: string;
 }
 
 export type EvonetEnvironment =
@@ -105,7 +109,7 @@ export interface EvonetDropinConfig {
    * Prefer setting `uiOption.columns` directly when building SDK options.
    */
   Columns?: boolean;
-  /** BIN conditions: checked in order against first6No. First match wins. */
+  /** BIN conditions: checked in order against first6No (or dpanFirst6No). First match wins. action "block" rejects payment. */
   binRules?: BinRule[];
   [key: string]: unknown;
 }
