@@ -27,8 +27,25 @@ import {
   type StorefrontCartLine,
 } from "./cartTypes";
 import { shopGhostButtonSx } from "./storefrontButtons";
-import { sheetSlide } from "../../lib/pageMotion";
+import { enterFade } from "../../lib/pageMotion";
 import { SHEET_MAX_HEIGHT } from "../../lib/responsiveLayout";
+
+/** Drawer is ~460–500px; SDK columns layout needs ~950px and parks Pay in the off-screen summary column. */
+function dropinConfigForNarrowDrawer(
+  config: EvonetDropinConfig
+): EvonetDropinConfig {
+  if (!config.uiOption?.columns && !config.Columns) {
+    return config;
+  }
+  const { Columns: _columnsFlag, ...rest } = config;
+  return {
+    ...rest,
+    uiOption: {
+      ...config.uiOption,
+      columns: false,
+    },
+  };
+}
 
 interface StorefrontCheckoutDrawerProps {
   open: boolean;
@@ -74,7 +91,7 @@ export function StorefrontCheckoutDrawer({
   const dropinPanelRef = useRef<HTMLDivElement>(null);
   const [dropinUiReady, setDropinUiReady] = useState(false);
   const [sdkConstructed, setSdkConstructed] = useState(false);
-  const [summaryOpen, setSummaryOpen] = useState(true);
+  const [summaryOpen, setSummaryOpen] = useState(false);
 
   useEffect(() => {
     if (!open) {
@@ -84,9 +101,9 @@ export function StorefrontCheckoutDrawer({
     }
     setDropinUiReady(false);
     setSdkConstructed(false);
-    // On mobile, start compact so Drop-in gets vertical room immediately.
-    setSummaryOpen(!isMobile);
-  }, [open, sdkInitGeneration, isCreatingSession, isMobile]);
+    // Keep order summary collapsed so Drop-in's pay CTA stays in the first screen.
+    setSummaryOpen(false);
+  }, [open, sdkInitGeneration, isCreatingSession]);
 
   useEffect(() => {
     if (!open || isCreatingSession || !dropinConfig || dropinUiReady) {
@@ -189,7 +206,7 @@ export function StorefrontCheckoutDrawer({
           maxHeight: { sm: "100%" },
           bgcolor: panelBg,
           overflow: { xs: "visible", sm: "hidden" },
-          ...sheetSlide(),
+          ...enterFade(40, 320),
         }}
       >
         {isMobile ? (
@@ -428,11 +445,12 @@ export function StorefrontCheckoutDrawer({
               }}
             >
               <EvonetDropinHost
-                config={dropinConfig}
+                config={dropinConfigForNarrowDrawer(dropinConfig)}
                 initGeneration={sdkInitGeneration}
                 onEvent={onEvent}
                 onSdkInitApplied={() => setSdkConstructed(true)}
                 compact
+                stickyPayButton
               />
             </Box>
           ) : !isCreatingSession && !sessionError ? (
@@ -447,12 +465,12 @@ export function StorefrontCheckoutDrawer({
         <Box
           sx={{
             px: { xs: 2, sm: 2.5 },
-            pb: { xs: "max(12px, env(safe-area-inset-bottom))", sm: 2.5 },
-            pt: 0.5,
+            pb: { xs: "max(8px, env(safe-area-inset-bottom))", sm: 1.5 },
+            pt: 0.25,
             flexShrink: 0,
           }}
         >
-          <Button fullWidth onClick={onClose} sx={shopGhostButtonSx}>
+          <Button fullWidth onClick={onClose} sx={shopGhostButtonSx} size="small">
             Continue shopping
           </Button>
         </Box>
