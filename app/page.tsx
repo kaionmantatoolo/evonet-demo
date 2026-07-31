@@ -42,40 +42,22 @@ export default function HomePage() {
             <Box
               sx={{
                 display: "flex",
-                flexDirection: "column",
                 alignItems: "center",
-                gap: 1,
+                justifyContent: "center",
                 mb: { xs: 0.5, sm: 1 },
+                width: { xs: 168, sm: 220 },
+                height: { xs: 42, sm: 54 },
+                position: "relative",
               }}
             >
-              <Box
-                sx={{
-                  width: { xs: 64, sm: 80 },
-                  height: { xs: 64, sm: 80 },
-                  position: "relative",
-                }}
-              >
-                <Image
-                  src="/evonet-logo.png"
-                  alt="Evonet"
-                  fill
-                  priority
-                  sizes="80px"
-                  style={{ objectFit: "contain" }}
-                />
-              </Box>
-              <Typography
-                component="p"
-                sx={{
-                  fontSize: { xs: "1.35rem", sm: "1.5rem" },
-                  fontWeight: 700,
-                  letterSpacing: "-0.03em",
-                  color: apple.label,
-                  lineHeight: 1.1,
-                }}
-              >
-                Evonet
-              </Typography>
+              <Image
+                src="/evonet-logo.png"
+                alt="Evonet"
+                fill
+                priority
+                sizes="220px"
+                style={{ objectFit: "contain" }}
+              />
             </Box>
             <Typography
               component="h1"
