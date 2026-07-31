@@ -10,6 +10,10 @@ const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 export const metadata = {
   title: "Evonet Drop-in Demo",
   description: "Local PROD-like Evonet Drop-in test page with Material UI.",
+  icons: {
+    icon: [{ url: "/evonet-logo.png", type: "image/png" }],
+    apple: [{ url: "/evonet-logo.png", type: "image/png" }],
+  },
 };
 
 /** iPhone notch / home indicator — required for env(safe-area-inset-*). */

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { Box, Button, Container, Stack, Typography } from "@mui/material";
 import { isEvonetProductionEnvironment } from "../lib/evonetEnvironment";
@@ -38,17 +39,44 @@ export default function HomePage() {
       <Container maxWidth="md" sx={{ position: "relative", py: { xs: 5, sm: 8, md: 12 } }}>
         <Stack spacing={{ xs: 4, md: 5 }} alignItems="center" textAlign="center">
           <Stack spacing={1.5} alignItems="center" sx={{ ...sectionEnter(40), maxWidth: 640 }}>
-            <Typography
+            <Box
               sx={{
-                fontSize: "0.8125rem",
-                fontWeight: 600,
-                letterSpacing: "0.04em",
-                textTransform: "uppercase",
-                color: apple.systemBlue,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 1,
+                mb: { xs: 0.5, sm: 1 },
               }}
             >
-              Evonet
-            </Typography>
+              <Box
+                sx={{
+                  width: { xs: 64, sm: 80 },
+                  height: { xs: 64, sm: 80 },
+                  position: "relative",
+                }}
+              >
+                <Image
+                  src="/evonet-logo.png"
+                  alt="Evonet"
+                  fill
+                  priority
+                  sizes="80px"
+                  style={{ objectFit: "contain" }}
+                />
+              </Box>
+              <Typography
+                component="p"
+                sx={{
+                  fontSize: { xs: "1.35rem", sm: "1.5rem" },
+                  fontWeight: 700,
+                  letterSpacing: "-0.03em",
+                  color: apple.label,
+                  lineHeight: 1.1,
+                }}
+              >
+                Evonet
+              </Typography>
+            </Box>
             <Typography
               component="h1"
               sx={{
