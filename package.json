@@ -22,6 +22,7 @@
     "@mui/material-nextjs": "^5.18.0",
     "@next/swc-wasm-nodejs": "^15.5.18",
     "@next/swc-wasm-web": "^15.5.12",
+    "@vercel/analytics": "^2.0.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^1.25.0",
