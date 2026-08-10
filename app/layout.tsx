@@ -12,8 +12,8 @@ const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 export const metadata = {
   title: "Evonet Drop-in Demo",
   description: "Local PROD-like Evonet Drop-in test page with Material UI.",
-  // Prefer the square mark in app/icon.png — do not use the landing wordmark
-  // (/evonet-logo.png); it is wide and illegible as a tab icon.
+  // Favicon: app/icon.png + app/apple-icon.png (square E mark from wordmark).
+  // Do not point icons at /evonet-logo.png — it is a wide wordmark and looks squashed in tabs.
 };
 
 /** iPhone notch / home indicator — required for env(safe-area-inset-*). */

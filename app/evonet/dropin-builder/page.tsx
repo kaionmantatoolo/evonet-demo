@@ -225,8 +225,7 @@ function generateOrderId(): string {
 }
 
 function DropinBuilderPage() {
-  const { locale: siteLocale, messages, setLocale: setSiteLocale, ready: localeReady } =
-    useSiteLocale();
+  const { messages } = useSiteLocale();
   const t = messages.builder;
   const tc = messages.common;
 
@@ -307,25 +306,9 @@ function DropinBuilderPage() {
   const [environment, setEnvironment] = useState(DEFAULT_ENVIRONMENT);
   const [mode, setMode] = useState<EvonetDropinConfig["mode"]>("embedded");
   const [modePreviewOpen, setModePreviewOpen] = useState(false);
-  const [locale, setLocale] = useState<string>(siteLocale);
+  const [locale, setLocale] = useState<string>("en-US");
   const [verifyPaymentBrand, setVerifyPaymentBrand] = useState(true);
 
-  useEffect(() => {
-    if (!localeReady) return;
-    setLocale(siteLocale);
-  }, [localeReady, siteLocale]);
-
-  const handleSessionLocaleChange = (value: string) => {
-    setLocale(value);
-    if (
-      value === "en-US" ||
-      value === "zh-TW" ||
-      value === "zh-CN" ||
-      value === "ja-JP"
-    ) {
-      setSiteLocale(value);
-    }
-  };
   const [maxWaitTime, setMaxWaitTime] = useState("10");
 
   const [showSaveImage, setShowSaveImage] = useState(false);
@@ -1145,8 +1128,8 @@ function DropinBuilderPage() {
                       </div>
                       <div className="space-y-2">
                         <Label>{t.locale}</Label>
-                        <Select value={locale} onValueChange={handleSessionLocaleChange}>
-                          <SelectTrigger className="w-full" aria-label="Session locale">
+                        <Select value={locale} onValueChange={setLocale}>
+                          <SelectTrigger className="w-full" aria-label={t.locale}>
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>

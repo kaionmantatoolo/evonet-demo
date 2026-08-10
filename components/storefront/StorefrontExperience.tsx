@@ -96,6 +96,8 @@ export function StorefrontExperience({
   const searchParams = useSearchParams();
   const { resolvedTheme } = useTheme();
   const colorMode = resolvedTheme === "dark" ? "dark" : "light";
+  /** Storefront UI + Drop-in language from Builder Order Info (not site header locale). */
+  const storefrontLocale = config.locale?.trim() || "en-US";
 
   const [cartLines, setCartLines] = useState<StorefrontCartLine[]>([]);
   const [bagOpen, setBagOpen] = useState(false);
@@ -116,8 +118,8 @@ export function StorefrontExperience({
   const [shopViewKey, setShopViewKey] = useState(0);
 
   const copy = useMemo(
-    () => getStorefrontCopy(config.locale),
-    [config.locale]
+    () => getStorefrontCopy(storefrontLocale),
+    [storefrontLocale]
   );
 
   const paymentReturnFromUrl = useMemo(
@@ -142,8 +144,8 @@ export function StorefrontExperience({
   }, [paymentReturnFromUrl, applyPaymentResult]);
 
   useEffect(() => {
-    document.documentElement.lang = storefrontHtmlLang(config.locale);
-  }, [config.locale]);
+    document.documentElement.lang = storefrontHtmlLang(storefrontLocale);
+  }, [storefrontLocale]);
 
   const cssVars = useMemo(
     () => appearanceToStorefrontCssVars(config.appearance, colorMode),
@@ -153,8 +155,8 @@ export function StorefrontExperience({
   const currency = config.currency?.trim() || "HKD";
   const unitPrice = resolveStorefrontUnitPrice(config.amount);
   const product: DemoProduct = useMemo(
-    () => getLocalizedDemoProduct(config.locale, unitPrice),
-    [config.locale, unitPrice]
+    () => getLocalizedDemoProduct(storefrontLocale, unitPrice),
+    [storefrontLocale, unitPrice]
   );
   const cartQty = cartLineCount(cartLines);
   const cartTotal = product.price * Math.max(cartQty, 0);
@@ -191,7 +193,7 @@ export function StorefrontExperience({
       sessionID: sessionID.trim(),
       environment: config.environment,
       mode: config.mode || "embedded",
-      language: config.locale || "en-US",
+      language: storefrontLocale,
       isVerifyPaymentBrand: Boolean(config.verifyPaymentBrand),
       verifyOption: config.verifyPaymentBrand
         ? { maxWaitTime: config.maxWaitTime || "10" }
@@ -199,7 +201,7 @@ export function StorefrontExperience({
       uiOption: config.uiOption,
       appearance: config.appearance,
     };
-  }, [config, sessionID]);
+  }, [config, storefrontLocale, sessionID]);
 
   const checkoutMode = config.mode || "embedded";
   const isSdkOverlayMode =
@@ -257,7 +259,7 @@ export function StorefrontExperience({
             orderId,
             description,
             environment: config.environment,
-            locale: config.locale || "en-US",
+            locale: storefrontLocale,
             ...(config.enabledPaymentMethod?.length
               ? { enabledPaymentMethod: config.enabledPaymentMethod }
               : {}),
@@ -283,7 +285,7 @@ export function StorefrontExperience({
     [
       config.enabledPaymentMethod,
       config.environment,
-      config.locale,
+      storefrontLocale,
       copy.sessionFailed,
       copy.sessionUnexpected,
       copy.sizeLine,
@@ -682,7 +684,7 @@ export function StorefrontExperience({
             </Typography>
             <Typography variant="caption" sx={{ color: "var(--shop-muted)" }}>
               {copy.footerMeta} · {config.environment} ·{" "}
-              {config.locale} · {checkoutMode}
+              {storefrontLocale} · {checkoutMode}
             </Typography>
           </Stack>
         </Container>

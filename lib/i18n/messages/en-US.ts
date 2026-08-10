@@ -193,8 +193,9 @@ export const EN_US: SiteMessages = {
     paymentUi: "Payment UI",
     amount: "Amount",
     currency: "Currency",
-    locale: "Locale",
-    localeHint: "Used for session, Drop-in, and storefront UI language.",
+    locale: "Drop-in locale",
+    localeHint:
+      "Language for Drop-in SDK, session, and storefront preview. Site chrome language is separate (header switcher).",
     mode: "Mode",
     modeEmbedded: "Embedded in the Builder preview card and storefront checkout drawer.",
     modeFullPage:

@@ -61,8 +61,9 @@ export const JA_JP: SiteMessages = {
     paymentUi: "支払い UI",
     amount: "金額",
     currency: "通貨",
-    locale: "ロケール",
-    localeHint: "セッション、Drop-in、ストアフロント UI の言語に使用。",
+    locale: "Drop-in ロケール",
+    localeHint:
+      "Drop-in SDK・セッション・ストアフロント用。サイト UI の言語はヘッダーで別途切り替えます。",
     mode: "モード",
     modeEmbedded: "Builder プレビューカードとストアフロント決済ドロワーに埋め込み。",
     modeFullPage:

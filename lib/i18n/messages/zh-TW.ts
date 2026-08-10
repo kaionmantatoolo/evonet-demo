@@ -60,8 +60,9 @@ export const ZH_TW: SiteMessages = {
     paymentUi: "付款介面",
     amount: "金額",
     currency: "幣別",
-    locale: "語系",
-    localeHint: "用於 session、Drop-in 與店面 UI 語言。",
+    locale: "Drop-in 語系",
+    localeHint:
+      "用於 Drop-in SDK、session 與店面預覽。網站介面語言請在標頭單獨切換。",
     mode: "模式",
     modeEmbedded: "嵌入 Builder 預覽卡與店面結帳抽屜。",
     modeFullPage: "真實 SDK fullPage — Builder 與店面使用全螢幕舞台。",
