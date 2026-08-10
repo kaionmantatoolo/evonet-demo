@@ -108,7 +108,11 @@ export function ThemeToggle({
         type="button"
         variant={variant}
         size={size === "icon" ? "icon" : "sm"}
-        className={cn(size === "icon" ? "size-8" : undefined, className)}
+        className={cn(
+          size === "icon" ? "size-8" : undefined,
+          "text-current! opacity-100 disabled:opacity-100",
+          className
+        )}
         aria-label={messages.common.theme}
         disabled
       >
@@ -123,7 +127,11 @@ export function ThemeToggle({
       type="button"
       variant={variant}
       size={size === "icon" ? "icon" : "sm"}
-      className={cn(size === "icon" ? "size-8 shrink-0" : "gap-1.5", className)}
+      className={cn(
+        size === "icon" ? "size-8 shrink-0" : "gap-1.5",
+        "text-current!",
+        className
+      )}
       onClick={() => {
         const next = isDark ? "light" : "dark";
         const rect = buttonRef.current?.getBoundingClientRect();

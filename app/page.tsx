@@ -29,57 +29,50 @@ export default function HomePage() {
   const t = messages.home;
 
   return (
-    <Box
-      component="main"
-      sx={
-        [
-          applePageShellSx,
-          pageEnter(),
-          (theme: Theme) =>
-            theme.palette.mode === "dark"
-              ? {
-                  bgcolor: "#07111F",
-                  color: "#E8EEF8",
-                  backgroundImage: `
-                  linear-gradient(180deg, #0A1628 0%, #07111F 42%, #050D18 100%)
-                `,
-                  backgroundAttachment: "fixed",
-                }
-              : {},
-        ] as SxProps<Theme>
-      }
-    >
+    <>
       <Box
-        sx={(theme) => ({
-          position: "fixed",
-          top: {
-            xs: "max(10px, env(safe-area-inset-top, 0px))",
-            sm: 16,
-          },
-          right: { xs: 12, sm: 20 },
-          zIndex: 20,
-          display: "flex",
-          alignItems: "center",
-          gap: 0.25,
-          p: 0.45,
-          borderRadius: "999px",
-          bgcolor:
-            theme.palette.mode === "dark"
+        sx={(theme) => {
+          const dark = theme.palette.mode === "dark";
+          const ink = dark ? "#E8EEF8" : apple.label;
+          return {
+            position: "fixed",
+            top: {
+              xs: "max(10px, env(safe-area-inset-top, 0px))",
+              sm: 16,
+            },
+            right: { xs: 12, sm: 20 },
+            zIndex: 20,
+            display: "flex",
+            alignItems: "center",
+            gap: 0.25,
+            p: 0.45,
+            borderRadius: "999px",
+            bgcolor: dark
               ? "rgba(14, 36, 72, 0.82)"
               : "rgba(255, 255, 255, 0.82)",
-          backdropFilter: "blur(22px) saturate(1.45)",
-          WebkitBackdropFilter: "blur(22px) saturate(1.45)",
-          border:
-            theme.palette.mode === "dark"
+            backdropFilter: "blur(22px) saturate(1.45)",
+            WebkitBackdropFilter: "blur(22px) saturate(1.45)",
+            border: dark
               ? "1px solid rgba(96, 165, 250, 0.35)"
               : appleHairline,
-          boxShadow:
-            theme.palette.mode === "dark"
+            boxShadow: dark
               ? "0 10px 30px rgba(2, 12, 32, 0.45), inset 0 1px 0 rgba(147, 197, 253, 0.16)"
               : "0 6px 20px rgba(15, 23, 42, 0.08)",
-          color:
-            theme.palette.mode === "dark" ? "#E8EEF8" : apple.label,
-        })}
+            // Self-contained ink — do not use --foreground (can desync from MUI
+            // mode before next-themes settles → white text on white pill).
+            color: ink,
+            "& [data-slot='select-trigger'], & [data-slot='select-value'], & [data-slot='button'], & svg":
+              {
+                color: "currentColor",
+              },
+            "& [data-slot='select-trigger']": {
+              opacity: 1,
+            },
+            "& [data-slot='button']:disabled": {
+              opacity: 1,
+            },
+          };
+        }}
       >
         <LocaleSwitcher compact />
         <Box
@@ -99,6 +92,26 @@ export default function HomePage() {
           className="size-8 rounded-full bg-transparent shadow-none focus-visible:ring-0 dark:bg-transparent dark:hover:bg-white/[0.12] hover:bg-black/[0.06]"
         />
       </Box>
+      <Box
+        component="main"
+        sx={
+          [
+            applePageShellSx,
+            pageEnter(),
+            (theme: Theme) =>
+              theme.palette.mode === "dark"
+                ? {
+                    bgcolor: "#07111F",
+                    color: "#E8EEF8",
+                    backgroundImage: `
+                  linear-gradient(180deg, #0A1628 0%, #07111F 42%, #050D18 100%)
+                `,
+                    backgroundAttachment: "fixed",
+                  }
+                : {},
+          ] as SxProps<Theme>
+        }
+      >
       <LandingAtmosphere />
 
       <Container
@@ -384,6 +397,7 @@ export default function HomePage() {
           </Typography>
         </Stack>
       </Container>
-    </Box>
+      </Box>
+    </>
   );
 }

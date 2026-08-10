@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTheme } from "next-themes";
 import { AppRouterCacheProvider } from "@mui/material-nextjs/v13-appRouter";
 import { CssBaseline, ThemeProvider, createTheme } from "@mui/material";
@@ -87,7 +87,25 @@ function buildMuiTheme(mode: "light" | "dark") {
 
 export default function ThemeRegistry({ children }: { children: ReactNode }) {
   const { resolvedTheme } = useTheme();
-  const mode = resolvedTheme === "dark" ? "dark" : "light";
+  // next-themes leaves resolvedTheme undefined until mount; meanwhile the
+  // blocking script may already have set html.dark. Track that so MUI mode
+  // matches CSS variables as soon as the client hydrates.
+  const [htmlDark, setHtmlDark] = useState(false);
+  useEffect(() => {
+    const root = document.documentElement;
+    const sync = () => setHtmlDark(root.classList.contains("dark"));
+    sync();
+    const observer = new MutationObserver(sync);
+    observer.observe(root, { attributes: true, attributeFilter: ["class"] });
+    return () => observer.disconnect();
+  }, []);
+
+  const mode: "light" | "dark" =
+    resolvedTheme === "dark" || resolvedTheme === "light"
+      ? resolvedTheme
+      : htmlDark
+        ? "dark"
+        : "light";
   const theme = useMemo(() => buildMuiTheme(mode), [mode]);
 
   return (

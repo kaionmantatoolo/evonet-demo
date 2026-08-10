@@ -40,7 +40,7 @@ export function LocaleSwitcher({
       <SelectTrigger
         className={cn(
           compact
-            ? "h-8 w-auto min-w-0 gap-1 rounded-full border-0 bg-transparent px-2.5 text-xs font-semibold text-foreground shadow-none hover:bg-black/[0.06] focus-visible:border-transparent focus-visible:ring-0 dark:border-transparent dark:bg-transparent dark:hover:bg-white/[0.12] dark:focus-visible:border-transparent"
+            ? "h-8 w-auto min-w-0 gap-1 rounded-full border-0 bg-transparent px-2.5 text-xs font-semibold text-current! shadow-none hover:bg-black/[0.06] focus-visible:border-transparent focus-visible:ring-0 disabled:opacity-100 dark:border-transparent dark:bg-transparent dark:hover:bg-white/[0.12] dark:focus-visible:border-transparent [&_svg]:text-current!"
             : size === "sm"
               ? "h-8 w-[128px] text-xs"
               : "w-[160px]",
