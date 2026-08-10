@@ -157,6 +157,30 @@ const LIGHT_SHELL = {
   borderFallback: "#e7e5e4",
 } as const;
 
+/** Builder default action when colorAction is empty. */
+const DEFAULT_ACTION = "#111827";
+/** Evonet blue — used for dark-shell CTAs when the theme action is near-black. */
+const EVONET_CTA_BLUE = "#1a86e8";
+
+/** Dark, low-chroma fills look disabled on a dark storefront shell. */
+function isNearBlackNeutral(hex: string): boolean {
+  const rgb = parseRgb(hex);
+  if (!rgb) return false;
+  const [r, g, b] = rgb;
+  const chroma = Math.max(r, g, b) - Math.min(r, g, b);
+  return hexLuminance(hex) < 0.14 && chroma < 48;
+}
+
+function resolveDarkShellAction(action: string, shopBg: string): string {
+  if (
+    action.toLowerCase() === DEFAULT_ACTION ||
+    isNearBlackNeutral(action)
+  ) {
+    return EVONET_CTA_BLUE;
+  }
+  return ensureContrastOnBg(action, shopBg, 4.5);
+}
+
 export function writeStorefrontSnapshot(snapshot: Omit<StorefrontSnapshot, "savedAt">): void {
   if (typeof window === "undefined") return;
   const payload: StorefrontSnapshot = {
@@ -230,11 +254,13 @@ export function appearanceToStorefrontCssVars(
 
   const useDarkShell = colorMode === "dark" && isLightHex(background);
   const tintSeed =
-    !isLightHex(action) && action !== "#111827"
+    !isLightHex(action) &&
+    action.toLowerCase() !== DEFAULT_ACTION &&
+    !isNearBlackNeutral(action)
       ? action
-      : !isLightHex(primary)
+      : !isLightHex(primary) && !isNearBlackNeutral(primary)
         ? primary
-        : action;
+        : EVONET_CTA_BLUE;
   const darkShell = useDarkShell ? themeTintedDarkShell(tintSeed) : null;
 
   const shopBg = darkShell ? darkShell.bg : background;
@@ -258,9 +284,9 @@ export function appearanceToStorefrontCssVars(
     ? darkShell.border
     : asHex(appearance?.colorBoxStroke, LIGHT_SHELL.borderFallback);
 
-  // Keep brand action; only lift toward white when contrast on dark shell fails.
+  // Default near-black action → Evonet blue on dark shell (gray lift looks disabled).
   const shopAction = darkShell
-    ? ensureContrastOnBg(action, shopBg, 3)
+    ? resolveDarkShellAction(action, shopBg)
     : action;
   const shopActionText = darkShell
     ? actionLabelOn(shopAction, inverse)

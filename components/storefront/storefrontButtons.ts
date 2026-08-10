@@ -13,19 +13,19 @@ export const shopPrimaryButtonSx: SxProps<Theme> = {
   borderRadius: 2.5,
   bgcolor: "var(--shop-action)",
   color: "var(--shop-action-text)",
-  border: "1px solid color-mix(in srgb, var(--shop-action) 88%, #000)",
+  border: "1px solid color-mix(in srgb, var(--shop-action) 82%, #fff)",
   boxShadow: [
-    "0 1px 0 color-mix(in srgb, #fff 18%, transparent) inset",
-    "0 10px 28px color-mix(in srgb, var(--shop-action) 26%, transparent)",
+    "0 1px 0 color-mix(in srgb, #fff 22%, transparent) inset",
+    "0 10px 28px color-mix(in srgb, var(--shop-action) 32%, transparent)",
   ].join(", "),
   transition: `transform 200ms ${EASE}, filter 200ms ease, box-shadow 200ms ease`,
   "&:hover": {
     bgcolor: "var(--shop-action)",
-    filter: "brightness(1.07)",
+    filter: "brightness(1.08)",
     transform: "translateY(-2px)",
     boxShadow: [
-      "0 1px 0 color-mix(in srgb, #fff 22%, transparent) inset",
-      "0 16px 36px color-mix(in srgb, var(--shop-action) 34%, transparent)",
+      "0 1px 0 color-mix(in srgb, #fff 28%, transparent) inset",
+      "0 16px 36px color-mix(in srgb, var(--shop-action) 40%, transparent)",
     ].join(", "),
   },
   "&:active": {
