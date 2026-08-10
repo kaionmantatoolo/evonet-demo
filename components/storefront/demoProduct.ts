@@ -1,6 +1,10 @@
+import { getStorefrontCopy } from "../../lib/storefrontCopy";
+
 export interface DemoProductImage {
   src: string;
   alt: string;
+  /** CSS object-position for cover crops (keeps face / logo in frame). */
+  objectPosition?: string;
 }
 
 export interface DemoProductColor {
@@ -44,74 +48,83 @@ export function productThumbForColor(
 
 /** Default demo SKU for the storefront preview. */
 export const DEMO_PRODUCT: DemoProduct = {
-  id: "evo-studio-hoodie",
-  name: "Studio Heavyweight Hoodie",
-  brand: "ATELIER NORTH",
+  id: "anon-founder-hoodie",
+  name: "Founder Zip Hoodie",
+  brand: "ANON TOKYO",
   description:
-    "A mid-season staple in dense cotton jersey. Soft brushed interior, clean set-in sleeves, and a quietly structured hood—built for everyday wear and clean payment demos.",
+    "Heavyweight zip hoodie with the pink Founder shield on the left chest and gothic Anon Tokyo mark on the hood. Relaxed streetwear cut, silver hardware, and a clean studio look—built for bandwear demos and a sharp Evonet checkout.",
   price: 128,
   compareAtPrice: 168,
-  fabric: "420gsm organic cotton fleece",
+  fabric: "Heavyweight cotton fleece",
   fit: "Relaxed unisex fit",
   sizes: ["XS", "S", "M", "L", "XL"],
   colors: [
     {
-      id: "charcoal",
-      label: "Charcoal",
-      swatch: "#3f3f46",
-      sku: "AN-HD-01-CHA",
+      id: "black",
+      label: "Black",
+      swatch: "#111111",
+      sku: "AT-HD-01-BLK",
       images: [
         {
-          src: "/storefront/hoodie-flat.png",
-          alt: "Charcoal hoodie laid flat on concrete",
+          src: "/storefront/hoodie-black-front.png",
+          alt: "Model wearing black Founder zip hoodie, front view",
+          objectPosition: "50% 8%",
         },
         {
-          src: "/storefront/hoodie-lifestyle.png",
-          alt: "Charcoal hoodie worn in café light",
+          src: "/storefront/hoodie-black-back.png",
+          alt: "Model wearing black Founder zip hoodie, back with Anon Tokyo hood mark",
+          objectPosition: "50% 12%",
         },
         {
-          src: "/storefront/hoodie-detail.png",
-          alt: "Close-up of charcoal hoodie ribbed cuff texture",
+          src: "/storefront/hoodie-black-hood.png",
+          alt: "Close-up of gothic Anon Tokyo text on the black hoodie hood",
+          objectPosition: "50% 42%",
         },
       ],
     },
     {
-      id: "sand",
-      label: "Sand",
-      swatch: "#d6c6b0",
-      sku: "AN-HD-01-SND",
+      id: "pink",
+      label: "Anon Pink",
+      swatch: "#ff8899",
+      sku: "AT-HD-01-PNK",
       images: [
         {
-          src: "/storefront/hoodie-flat-sand.png",
-          alt: "Sand hoodie laid flat on concrete",
+          src: "/storefront/hoodie-pink-front.png",
+          alt: "Model wearing pink Founder zip hoodie, front view",
+          objectPosition: "50% 6%",
         },
         {
-          src: "/storefront/hoodie-lifestyle-sand.png",
-          alt: "Sand hoodie worn in café light",
+          src: "/storefront/hoodie-pink-back.png",
+          alt: "Model wearing pink Founder zip hoodie, back with Anon Tokyo hood mark",
+          objectPosition: "50% 10%",
         },
         {
-          src: "/storefront/hoodie-detail-sand.png",
-          alt: "Close-up of sand hoodie ribbed cuff texture",
+          src: "/storefront/hoodie-pink-hood.png",
+          alt: "Close-up of gothic Anon Tokyo text on the pink hoodie hood",
+          objectPosition: "50% 40%",
         },
       ],
     },
     {
-      id: "ink",
-      label: "Ink",
-      swatch: "#1e293b",
-      sku: "AN-HD-01-INK",
+      id: "blue",
+      label: "Tokyo Blue",
+      swatch: "#3388bb",
+      sku: "AT-HD-01-BLU",
       images: [
         {
-          src: "/storefront/hoodie-flat-ink.png",
-          alt: "Ink hoodie laid flat on concrete",
+          src: "/storefront/hoodie-blue-front.png",
+          alt: "Model wearing blue Founder zip hoodie, front view",
+          objectPosition: "50% 8%",
         },
         {
-          src: "/storefront/hoodie-lifestyle-ink.png",
-          alt: "Ink hoodie worn in café light",
+          src: "/storefront/hoodie-blue-back.png",
+          alt: "Model wearing blue Founder zip hoodie, back with Anon Tokyo hood mark",
+          objectPosition: "50% 12%",
         },
         {
-          src: "/storefront/hoodie-detail-ink.png",
-          alt: "Close-up of ink hoodie ribbed cuff texture",
+          src: "/storefront/hoodie-blue-hood.png",
+          alt: "Close-up of gothic Anon Tokyo text on the blue hoodie hood",
+          objectPosition: "50% 38%",
         },
       ],
     },
@@ -122,3 +135,34 @@ export const DEMO_PRODUCT: DemoProduct = {
     "Ships in 1–2 business days",
   ],
 };
+
+/** Clone demo product with locale-specific name, copy, and color labels. */
+export function getLocalizedDemoProduct(
+  locale: string | undefined,
+  unitPrice?: number
+): DemoProduct {
+  const copy = getStorefrontCopy(locale);
+  const p = copy.product;
+  const price = unitPrice ?? DEMO_PRODUCT.price;
+  return {
+    ...DEMO_PRODUCT,
+    name: p.name,
+    description: p.description,
+    fabric: p.fabric,
+    fit: p.fit,
+    price,
+    highlights: [...p.highlights],
+    colors: DEMO_PRODUCT.colors.map((color) => ({
+      ...color,
+      label:
+        color.id === "black"
+          ? p.colors.black
+          : color.id === "pink"
+            ? p.colors.pink
+            : color.id === "blue"
+              ? p.colors.blue
+              : color.label,
+      images: color.images.map((image) => ({ ...image })),
+    })),
+  };
+}

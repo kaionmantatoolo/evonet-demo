@@ -1,4 +1,7 @@
+"use client";
+
 import { Alert, type AlertProps } from "@mui/material";
+import { useSiteLocale } from "@/components/SiteLocaleProvider";
 import { isEvonetProductionEnvironment } from "../lib/evonetEnvironment";
 
 type DemoTransactionWarningProps = AlertProps & {
@@ -14,15 +17,28 @@ export function DemoTransactionWarning({
   environment,
   ...props
 }: DemoTransactionWarningProps) {
+  const { messages } = useSiteLocale();
+  const tc = messages.common;
+
   if (!isEvonetProductionEnvironment(environment)) {
     return null;
   }
 
   return (
-    <Alert severity="error" variant="outlined" {...props}>
-      <strong>Demo only — do not complete real payments.</strong> This site uses live
-      production credentials for integration testing. Any payment you complete is a real
-      charge and <strong>cannot be refunded</strong> through this demo.
+    <Alert
+      severity="error"
+      variant="outlined"
+      {...props}
+      sx={{
+        wordBreak: "break-word",
+        overflowWrap: "anywhere",
+        "& .MuiAlert-message": { overflowWrap: "anywhere" },
+        ...((props.sx as object) ?? {}),
+      }}
+    >
+      <strong>{tc.prodDemoWarningTitle}</strong> {tc.prodDemoWarningBody}{" "}
+      <strong>{tc.prodDemoWarningNoRefund}</strong>
+      {tc.prodDemoWarningSuffix}
     </Alert>
   );
 }

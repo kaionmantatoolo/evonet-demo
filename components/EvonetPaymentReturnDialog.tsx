@@ -20,6 +20,10 @@ interface EvonetPaymentReturnDialogProps {
   onDismiss: () => void;
 }
 
+function isTerminalStatus(status: EvonetReturnParams["status"]): boolean {
+  return status === "success" || status === "failed" || status === "cancelled";
+}
+
 export function EvonetPaymentReturnDialog({
   open,
   params,
@@ -31,6 +35,7 @@ export function EvonetPaymentReturnDialog({
   }
 
   const copy = getEvonetReturnDialogCopy(params.status);
+  const terminal = isTerminalStatus(params.status);
 
   const rows: { label: string; value: string }[] = [];
   if (params.merchantOrderID) {
@@ -61,6 +66,13 @@ export function EvonetPaymentReturnDialog({
             ? "Drop-in reported this result via SDK payment callback."
             : "Wallet / new-tab payment returned to this page via Evonet returnURL."}
         </Alert>
+        {terminal ? (
+          <Alert severity="info" variant="outlined" sx={{ mb: 2 }}>
+            This session ID is spent and cannot power another Drop-in init. Use{" "}
+            <strong>Start new payment</strong> to mint a fresh session (or use
+            Refresh session &amp; Re-init on the preview after dismissing).
+          </Alert>
+        ) : null}
         {rows.length > 0 ? (
           <Box
             component="dl"
@@ -92,12 +104,12 @@ export function EvonetPaymentReturnDialog({
           </Typography>
         )}
       </DialogContent>
-      <DialogActions sx={{ px: 3, pb: 2 }}>
+      <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
         <Button onClick={onDismiss} color="inherit">
           Dismiss
         </Button>
         <Button onClick={onStartNewPayment} variant="contained">
-          Start new payment
+          {terminal ? "Start new payment" : "Continue"}
         </Button>
       </DialogActions>
     </Dialog>

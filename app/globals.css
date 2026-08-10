@@ -80,6 +80,7 @@
     --sidebar-accent-foreground: oklch(0.205 0 0);
     --sidebar-border: oklch(0.922 0 0);
     --sidebar-ring: oklch(0.708 0 0);
+    color-scheme: light;
 }
 
 .dark {
@@ -94,7 +95,8 @@
     --secondary: oklch(0.269 0 0);
     --secondary-foreground: oklch(0.985 0 0);
     --muted: oklch(0.269 0 0);
-    --muted-foreground: oklch(0.708 0 0);
+    /* Brighter than default shadcn dark muted so helper copy stays readable */
+    --muted-foreground: oklch(0.78 0 0);
     --accent: oklch(0.269 0 0);
     --accent-foreground: oklch(0.985 0 0);
     --destructive: oklch(0.704 0.191 22.216);
@@ -114,6 +116,7 @@
     --sidebar-accent-foreground: oklch(0.985 0 0);
     --sidebar-border: oklch(1 0 0 / 10%);
     --sidebar-ring: oklch(0.556 0 0);
+    color-scheme: dark;
 }
 
 @layer base {
@@ -129,6 +132,33 @@
 }
 
 /*
+ * Theme toggle circular reveal (View Transitions API).
+ * JS drives clip-path on ::view-transition-new(root) from the button.
+ */
+@supports (view-transition-name: root) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none;
+    mix-blend-mode: normal;
+  }
+
+  ::view-transition-old(root) {
+    z-index: 1;
+  }
+
+  ::view-transition-new(root) {
+    z-index: 2;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none !important;
+  }
+}
+
+/*
  * MUI CssBaseline injects unlayered `button { color: inherit }`, which beats
  * Tailwind @layer utilities. Keep shadcn primary buttons readable.
  */
@@ -137,6 +167,35 @@
 }
 [data-slot="button"][data-variant="default"] svg {
   color: var(--primary-foreground);
+}
+
+/*
+ * Builder tabs — same unlayered fight as buttons above. Force Figma text colors:
+ * primary selected = Evonet blue; Visual Styling sub-tabs selected = white on blue.
+ */
+[data-builder-chrome] [data-slot="tabs-trigger"][data-builder-tab="primary"] {
+  color: #64748b !important;
+}
+[data-builder-chrome] [data-slot="tabs-trigger"][data-builder-tab="primary"][data-state="active"] {
+  color: #1a86e8 !important;
+}
+[data-builder-chrome] [data-slot="tabs-trigger"][data-builder-tab="appearance"] {
+  color: #000000 !important;
+}
+[data-builder-chrome] [data-slot="tabs-trigger"][data-builder-tab="appearance"][data-state="active"] {
+  color: #ffffff !important;
+}
+.dark [data-builder-chrome] [data-slot="tabs-trigger"][data-builder-tab="primary"] {
+  color: var(--muted-foreground) !important;
+}
+.dark [data-builder-chrome] [data-slot="tabs-trigger"][data-builder-tab="primary"][data-state="active"] {
+  color: #1a86e8 !important;
+}
+.dark [data-builder-chrome] [data-slot="tabs-trigger"][data-builder-tab="appearance"] {
+  color: var(--foreground) !important;
+}
+.dark [data-builder-chrome] [data-slot="tabs-trigger"][data-builder-tab="appearance"][data-state="active"] {
+  color: #ffffff !important;
 }
 
 /* Dark JSON / event panels — keep scrollbars on the panel's right edge */
@@ -229,15 +288,18 @@ a.storefront-cta svg,
 /*
  * Evonet Drop-in SDK applies appearance typography via unscoped element
  * selectors (label, button, input, …) on document. Restore app typography
- * for builder / dev-console chrome only — not inside #evonet-dropin-*.
+ * + Figma chrome colors for builder / dev-console only — not inside
+ * #evonet-dropin-*.
+ * Light: title #0a0a0a, labels #5d5d5d, captions #737373 (Drop-in Builder V2).
  */
 [data-builder-chrome] :not([id^="evonet-dropin"] *) label,
 [data-builder-chrome] :not([id^="evonet-dropin"] *) [data-slot="label"] {
   font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
   font-size: 0.875rem;
-  font-weight: 500;
+  font-weight: 400;
   letter-spacing: normal;
   line-height: 1;
+  color: #5d5d5d;
 }
 
 [data-builder-chrome] :not([id^="evonet-dropin"] *) [data-slot="button"],
@@ -250,15 +312,46 @@ a.storefront-cta svg,
 [data-builder-chrome] :not([id^="evonet-dropin"] *) h3,
 [data-builder-chrome] :not([id^="evonet-dropin"] *) h4 {
   font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  color: #0a0a0a;
 }
 
 [data-builder-chrome] :not([id^="evonet-dropin"] *) input:not([type="color"]),
 [data-builder-chrome] :not([id^="evonet-dropin"] *) textarea {
   font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  color: #5d5d5d;
 }
 
 [data-builder-chrome] :not([id^="evonet-dropin"] *) p {
   font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+[data-builder-chrome] :not([id^="evonet-dropin"] *) [data-slot="select-trigger"],
+[data-builder-chrome] :not([id^="evonet-dropin"] *) [data-slot="select-value"] {
+  color: #5d5d5d;
+}
+
+[data-builder-chrome] :not([id^="evonet-dropin"] *) .text-muted-foreground {
+  color: #737373 !important;
+}
+
+.dark [data-builder-chrome] :not([id^="evonet-dropin"] *) label,
+.dark [data-builder-chrome] :not([id^="evonet-dropin"] *) [data-slot="label"],
+.dark [data-builder-chrome] :not([id^="evonet-dropin"] *) input:not([type="color"]),
+.dark [data-builder-chrome] :not([id^="evonet-dropin"] *) textarea,
+.dark [data-builder-chrome] :not([id^="evonet-dropin"] *) [data-slot="select-trigger"],
+.dark [data-builder-chrome] :not([id^="evonet-dropin"] *) [data-slot="select-value"] {
+  color: var(--muted-foreground);
+}
+
+.dark [data-builder-chrome] :not([id^="evonet-dropin"] *) h1,
+.dark [data-builder-chrome] :not([id^="evonet-dropin"] *) h2,
+.dark [data-builder-chrome] :not([id^="evonet-dropin"] *) h3,
+.dark [data-builder-chrome] :not([id^="evonet-dropin"] *) h4 {
+  color: var(--foreground);
+}
+
+.dark [data-builder-chrome] :not([id^="evonet-dropin"] *) .text-muted-foreground {
+  color: var(--muted-foreground) !important;
 }
 
 [data-builder-chrome]

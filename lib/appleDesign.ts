@@ -161,25 +161,42 @@ export const APPLE_COLOR_SWATCH_SIZE = 28;
 
 /** Glass chrome for preview shells / floating panels. */
 export const appleGlassPanelSx: AppleSx = {
-  bgcolor: "rgba(255, 255, 255, 0.78)",
+  bgcolor: (theme) =>
+    theme.palette.mode === "dark"
+      ? "rgba(18, 38, 72, 0.78)"
+      : "rgba(255, 255, 255, 0.78)",
   backdropFilter: "blur(32px) saturate(1.5)",
   WebkitBackdropFilter: "blur(32px) saturate(1.5)",
-  border: "1px solid rgba(0, 0, 0, 0.12)",
+  border: (theme) =>
+    theme.palette.mode === "dark"
+      ? "1px solid rgba(96, 165, 250, 0.22)"
+      : "1px solid rgba(0, 0, 0, 0.12)",
   borderRadius: 0,
-  boxShadow: [
-    "inset 0 1px 0 rgba(255,255,255,0.7)",
-    "0 8px 28px rgba(0,0,0,0.06)",
-  ].join(", "),
+  boxShadow: (theme) =>
+    theme.palette.mode === "dark"
+      ? "inset 0 1px 0 rgba(147, 197, 253, 0.12), 0 12px 36px rgba(2, 12, 32, 0.45)"
+      : "inset 0 1px 0 rgba(255,255,255,0.7), 0 8px 28px rgba(0,0,0,0.06)",
   overflow: "hidden",
+  color: (theme) =>
+    theme.palette.mode === "dark" ? "#E8EEF8" : apple.label,
 };
 
 /** Settings-style grouped inset section — square to match Builder/Dev Console. */
 export const appleGroupedSectionSx: AppleSx = {
-  bgcolor: apple.secondaryGroupedBackground,
+  bgcolor: (theme) =>
+    theme.palette.mode === "dark" ? "rgba(16, 34, 64, 0.92)" : apple.secondaryGroupedBackground,
   borderRadius: 0,
-  border: appleHairline,
+  border: (theme) =>
+    theme.palette.mode === "dark"
+      ? "1px solid rgba(96, 165, 250, 0.18)"
+      : appleHairline,
   overflow: "hidden",
-  boxShadow: "none",
+  boxShadow: (theme) =>
+    theme.palette.mode === "dark"
+      ? "inset 0 1px 0 rgba(147, 197, 253, 0.08)"
+      : "none",
+  color: (theme) =>
+    theme.palette.mode === "dark" ? "#E8EEF8" : apple.label,
 };
 
 /** Section title above a grouped card (uppercase caption). */
@@ -192,7 +209,10 @@ export const appleToolTitleSx: AppleSx = {
   fontWeight: 500,
   letterSpacing: "0.04em",
   textTransform: "uppercase",
-  color: apple.secondaryLabel,
+  color: (theme) =>
+    theme.palette.mode === "dark"
+      ? "rgba(148, 178, 220, 0.78)"
+      : apple.secondaryLabel,
 };
 
 /** Section header above a grouped list (caption style). */
@@ -205,7 +225,10 @@ export const appleSectionHeaderSx: AppleSx = {
   fontWeight: 500,
   letterSpacing: "0.04em",
   textTransform: "uppercase",
-  color: apple.secondaryLabel,
+  color: (theme) =>
+    theme.palette.mode === "dark"
+      ? "rgba(148, 178, 220, 0.78)"
+      : apple.secondaryLabel,
 };
 
 /** Primary CTA — square language aligned with Builder cards. */
@@ -250,8 +273,12 @@ export const appleCapsuleOutlineSx: AppleSx = {
 /** Page shell background for tool / marketing pages. */
 export const applePageShellSx: AppleSx = {
   minHeight: "100dvh",
-  bgcolor: apple.systemBackground,
-  color: apple.label,
+  bgcolor: (theme) =>
+    theme.palette.mode === "dark"
+      ? theme.palette.background.default
+      : apple.systemBackground,
+  color: (theme) =>
+    theme.palette.mode === "dark" ? theme.palette.text.primary : apple.label,
   fontFamily: apple.fontFamily,
 };
 
@@ -261,14 +288,28 @@ export const appleDisplayTitleSx: AppleSx = {
   fontWeight: 700,
   letterSpacing: "-0.035em",
   lineHeight: 1.08,
-  color: apple.label,
+  color: (theme) =>
+    theme.palette.mode === "dark" ? theme.palette.text.primary : apple.label,
 };
 
 /** Body secondary label. */
 export const appleBodySecondarySx: AppleSx = {
-  color: apple.secondaryLabel,
+  color: (theme) =>
+    theme.palette.mode === "dark"
+      ? "rgba(186, 204, 230, 0.88)"
+      : apple.secondaryLabel,
   lineHeight: 1.55,
   fontSize: "1.0625rem",
+};
+
+/** Muted caption / footer line — readable in both themes. */
+export const appleCaptionSx: AppleSx = {
+  color: (theme) =>
+    theme.palette.mode === "dark"
+      ? "rgba(148, 178, 220, 0.72)"
+      : apple.tertiaryLabel,
+  fontSize: "0.8125rem",
+  letterSpacing: "0.01em",
 };
 
 /** Desktop tool settings row — compact (36pt), 16pt horizontal inset. */

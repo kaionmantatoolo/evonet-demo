@@ -2,7 +2,11 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Box, Button, Container, Stack, Typography } from "@mui/material";
+import { Box, Button, Container, Stack, Typography, type SxProps, type Theme } from "@mui/material";
+import { LocaleSwitcher } from "../components/LocaleSwitcher";
+import { ThemeToggle } from "../components/ThemeToggle";
+import { LandingAtmosphere } from "../components/LandingAtmosphere";
+import { useSiteLocale } from "../components/SiteLocaleProvider";
 import { isEvonetProductionEnvironment } from "../lib/evonetEnvironment";
 import { pageEnter, sectionEnter } from "../lib/pageMotion";
 import {
@@ -10,33 +14,102 @@ import {
   appleBodySecondarySx,
   appleCapsuleButtonSx,
   appleCapsuleOutlineSx,
+  appleCaptionSx,
   appleDisplayTitleSx,
   appleGlassPanelSx,
   appleGroupedSectionSx,
+  appleHairline,
   applePageShellSx,
   appleSectionHeaderSx,
 } from "../lib/appleDesign";
 
 export default function HomePage() {
   const isProd = isEvonetProductionEnvironment();
+  const { messages } = useSiteLocale();
+  const t = messages.home;
 
   return (
-    <Box component="main" sx={{ ...applePageShellSx, ...pageEnter() }}>
-      {/* Soft atmosphere — not a purple gradient */}
+    <Box
+      component="main"
+      sx={
+        [
+          applePageShellSx,
+          pageEnter(),
+          (theme: Theme) =>
+            theme.palette.mode === "dark"
+              ? {
+                  bgcolor: "#07111F",
+                  color: "#E8EEF8",
+                  backgroundImage: `
+                  linear-gradient(180deg, #0A1628 0%, #07111F 42%, #050D18 100%)
+                `,
+                  backgroundAttachment: "fixed",
+                }
+              : {},
+        ] as SxProps<Theme>
+      }
+    >
       <Box
-        aria-hidden
-        sx={{
+        sx={(theme) => ({
           position: "fixed",
-          inset: 0,
-          pointerEvents: "none",
-          background: `
-            radial-gradient(ellipse 90% 55% at 50% -15%, rgba(0, 122, 255, 0.14), transparent 58%),
-            radial-gradient(ellipse 50% 40% at 100% 20%, rgba(52, 199, 89, 0.06), transparent 50%)
-          `,
-        }}
-      />
+          top: {
+            xs: "max(10px, env(safe-area-inset-top, 0px))",
+            sm: 16,
+          },
+          right: { xs: 12, sm: 20 },
+          zIndex: 20,
+          display: "flex",
+          alignItems: "center",
+          gap: 0.25,
+          p: 0.45,
+          borderRadius: "999px",
+          bgcolor:
+            theme.palette.mode === "dark"
+              ? "rgba(14, 36, 72, 0.82)"
+              : "rgba(255, 255, 255, 0.82)",
+          backdropFilter: "blur(22px) saturate(1.45)",
+          WebkitBackdropFilter: "blur(22px) saturate(1.45)",
+          border:
+            theme.palette.mode === "dark"
+              ? "1px solid rgba(96, 165, 250, 0.35)"
+              : appleHairline,
+          boxShadow:
+            theme.palette.mode === "dark"
+              ? "0 10px 30px rgba(2, 12, 32, 0.45), inset 0 1px 0 rgba(147, 197, 253, 0.16)"
+              : "0 6px 20px rgba(15, 23, 42, 0.08)",
+          color:
+            theme.palette.mode === "dark" ? "#E8EEF8" : apple.label,
+        })}
+      >
+        <LocaleSwitcher compact />
+        <Box
+          aria-hidden
+          sx={(theme) => ({
+            width: "1px",
+            height: 16,
+            flexShrink: 0,
+            bgcolor:
+              theme.palette.mode === "dark"
+                ? "rgba(147, 197, 253, 0.28)"
+                : apple.separator,
+          })}
+        />
+        <ThemeToggle
+          variant="ghost"
+          className="size-8 rounded-full bg-transparent shadow-none focus-visible:ring-0 dark:bg-transparent dark:hover:bg-white/[0.12] hover:bg-black/[0.06]"
+        />
+      </Box>
+      <LandingAtmosphere />
 
-      <Container maxWidth="md" sx={{ position: "relative", py: { xs: 5, sm: 8, md: 12 } }}>
+      <Container
+        maxWidth="md"
+        sx={{
+          position: "relative",
+          zIndex: 1,
+          pt: { xs: 7.5, sm: 8, md: 12 },
+          pb: { xs: 5, sm: 8, md: 12 },
+        }}
+      >
         <Stack spacing={{ xs: 4, md: 5 }} alignItems="center" textAlign="center">
           <Stack spacing={1.5} alignItems="center" sx={{ ...sectionEnter(40), maxWidth: 640 }}>
             <Box
@@ -63,16 +136,26 @@ export default function HomePage() {
               component="h1"
               sx={{
                 ...appleDisplayTitleSx,
-                fontSize: { xs: "2.35rem", sm: "3.25rem", md: "3.75rem" },
+                fontSize: { xs: "2rem", sm: "3.25rem", md: "3.75rem" },
+                px: { xs: 0.5, sm: 0 },
+                maxWidth: "100%",
+                overflowWrap: "anywhere",
+                wordBreak: "keep-all",
               }}
             >
-              Checkout,
+              {t.titleLine1}
               <Box component="br" sx={{ display: { xs: "none", sm: "block" } }} />
-              designed to feel effortless.
+              {t.titleLine2}
             </Typography>
-            <Typography sx={{ ...appleBodySecondarySx, maxWidth: 520 }}>
-              A client showcase for Drop-in. Shape the look, preview the journey, and
-              share a clear checkout experience before go-live.
+            <Typography
+              sx={{
+                ...appleBodySecondarySx,
+                maxWidth: 520,
+                px: { xs: 0.5, sm: 0 },
+                overflowWrap: "anywhere",
+              }}
+            >
+              {t.subtitle}
             </Typography>
           </Stack>
 
@@ -89,9 +172,15 @@ export default function HomePage() {
               variant="contained"
               fullWidth
               className="storefront-cta"
-              sx={{ ...appleCapsuleButtonSx, borderRadius: 0 }}
+              sx={{
+                ...appleCapsuleButtonSx,
+                borderRadius: 0,
+                whiteSpace: "normal",
+                lineHeight: 1.25,
+                py: 1.15,
+              }}
             >
-              Start interactive demo
+              {t.startDemo}
             </Button>
             <Button
               component={Link}
@@ -99,9 +188,14 @@ export default function HomePage() {
               size="large"
               variant="outlined"
               fullWidth
-              sx={appleCapsuleOutlineSx}
+              sx={{
+                ...appleCapsuleOutlineSx,
+                whiteSpace: "normal",
+                lineHeight: 1.25,
+                py: 1.1,
+              }}
             >
-              Validation workspace
+              {t.validationWorkspace}
             </Button>
           </Stack>
 
@@ -119,32 +213,23 @@ export default function HomePage() {
               spacing={{ xs: 2.5, sm: 0 }}
               divider={
                 <Box
-                  sx={{
+                  sx={(theme) => ({
                     display: { xs: "none", sm: "block" },
                     width: "1px",
                     alignSelf: "stretch",
-                    bgcolor: apple.separator,
+                    bgcolor:
+                      theme.palette.mode === "dark"
+                        ? "rgba(147, 197, 253, 0.2)"
+                        : apple.separator,
                     mx: 2,
-                  }}
+                  })}
                 />
               }
             >
               {[
-                {
-                  step: "01",
-                  title: "Set the experience",
-                  body: "Pick style and interaction options, then preview instantly.",
-                },
-                {
-                  step: "02",
-                  title: "Walk the journey",
-                  body: "See payment selection through completion in a real browser.",
-                },
-                {
-                  step: "03",
-                  title: "Align to launch",
-                  body: "Give product and engineering one shared checkout reference.",
-                },
+                { step: "01", title: t.step1Title, body: t.step1Body },
+                { step: "02", title: t.step2Title, body: t.step2Body },
+                { step: "03", title: t.step3Title, body: t.step3Body },
               ].map((item) => (
                 <Box key={item.step} sx={{ flex: 1, px: { sm: 0.5 } }}>
                   <Typography
@@ -158,10 +243,24 @@ export default function HomePage() {
                   >
                     {item.step}
                   </Typography>
-                  <Typography sx={{ fontWeight: 650, mb: 0.5, letterSpacing: "-0.02em" }}>
+                  <Typography
+                    sx={{
+                      fontWeight: 650,
+                      mb: 0.5,
+                      letterSpacing: "-0.02em",
+                      color: "inherit",
+                    }}
+                  >
                     {item.title}
                   </Typography>
-                  <Typography variant="body2" sx={{ color: apple.secondaryLabel, lineHeight: 1.5 }}>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      ...appleBodySecondarySx,
+                      fontSize: "0.875rem",
+                      overflowWrap: "anywhere",
+                    }}
+                  >
                     {item.body}
                   </Typography>
                 </Box>
@@ -171,7 +270,7 @@ export default function HomePage() {
 
           <Box sx={{ width: "100%", ...sectionEnter(220) }}>
             <Typography sx={{ ...appleSectionHeaderSx, textAlign: "left", px: 0.5 }}>
-              Choose a path
+              {t.choosePath}
             </Typography>
             <Stack spacing={1.25}>
               <Box sx={{ ...appleGroupedSectionSx, p: { xs: 2, sm: 2.5 }, textAlign: "left" }}>
@@ -181,13 +280,26 @@ export default function HomePage() {
                   alignItems={{ sm: "center" }}
                   justifyContent="space-between"
                 >
-                  <Box sx={{ flex: 1 }}>
-                    <Typography sx={{ fontWeight: 650, letterSpacing: "-0.02em", mb: 0.5 }}>
-                      Guided experience
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Typography
+                      sx={{
+                        fontWeight: 650,
+                        letterSpacing: "-0.02em",
+                        mb: 0.5,
+                        color: "inherit",
+                      }}
+                    >
+                      {t.guidedTitle}
                     </Typography>
-                    <Typography variant="body2" sx={{ color: apple.secondaryLabel }}>
-                      Best for customer meetings. Shape Drop-in and open a polished
-                      storefront preview.
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        ...appleBodySecondarySx,
+                        fontSize: "0.875rem",
+                        overflowWrap: "anywhere",
+                      }}
+                    >
+                      {t.guidedBody}
                     </Typography>
                   </Box>
                   <Button
@@ -199,13 +311,15 @@ export default function HomePage() {
                       ...appleCapsuleButtonSx,
                       flexShrink: 0,
                       borderRadius: 0,
-                      minWidth: 176,
-                      width: 176,
+                      width: { xs: "100%", sm: 176 },
+                      minWidth: { xs: 0, sm: 176 },
                       px: 2.25,
                       py: 1,
+                      whiteSpace: "normal",
+                      lineHeight: 1.25,
                     }}
                   >
-                    Open Builder
+                    {t.openBuilder}
                   </Button>
                 </Stack>
               </Box>
@@ -217,14 +331,26 @@ export default function HomePage() {
                   alignItems={{ sm: "center" }}
                   justifyContent="space-between"
                 >
-                  <Box sx={{ flex: 1 }}>
-                    <Typography sx={{ fontWeight: 650, letterSpacing: "-0.02em", mb: 0.5 }}>
-                      {isProd ? "Production validation" : "Validation workspace"}
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Typography
+                      sx={{
+                        fontWeight: 650,
+                        letterSpacing: "-0.02em",
+                        mb: 0.5,
+                        color: "inherit",
+                      }}
+                    >
+                      {isProd ? t.validationTitleProd : t.validationTitle}
                     </Typography>
-                    <Typography variant="body2" sx={{ color: apple.secondaryLabel }}>
-                      {isProd
-                        ? "Full configuration for internal QA against live credentials."
-                        : "Inspect SDK options, events, and payment outcomes in detail."}
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        ...appleBodySecondarySx,
+                        fontSize: "0.875rem",
+                        overflowWrap: "anywhere",
+                      }}
+                    >
+                      {isProd ? t.validationBodyProd : t.validationBody}
                     </Typography>
                   </Box>
                   <Button
@@ -235,13 +361,15 @@ export default function HomePage() {
                       ...appleCapsuleOutlineSx,
                       flexShrink: 0,
                       borderRadius: 0,
-                      minWidth: 176,
-                      width: 176,
+                      width: { xs: "100%", sm: 176 },
+                      minWidth: { xs: 0, sm: 176 },
                       px: 2.25,
                       py: 0.95,
+                      whiteSpace: "normal",
+                      lineHeight: 1.25,
                     }}
                   >
-                    Open workspace
+                    {t.openWorkspace}
                   </Button>
                 </Stack>
               </Box>
@@ -250,9 +378,9 @@ export default function HomePage() {
 
           <Typography
             variant="caption"
-            sx={{ color: apple.tertiaryLabel, ...sectionEnter(280) }}
+            sx={{ ...appleCaptionSx, ...sectionEnter(280) }}
           >
-            Demo environment · Evonet Drop-in
+            {t.footer}
           </Typography>
         </Stack>
       </Container>

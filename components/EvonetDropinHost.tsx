@@ -9,6 +9,8 @@ import type {
   EvonetDropinSdkOptions,
   EvonetWindow,
 } from "../types/evonet";
+import { buildDropinPulseCss } from "../lib/dropinPulseTargets";
+import { applyDropinAppearanceCss } from "../lib/applyDropinAppearanceCss";
 
 function resolveContainerMinHeight(
   mode: EvonetDropinMode,
@@ -207,6 +209,11 @@ interface EvonetDropinHostProps {
    * leaves it at content end where a constrained drawer can hide it.
    */
   stickyPayButton?: boolean;
+  /**
+   * Builder “Highlight UI Controls”: appearance parameter key whose mapped Drop-in
+   * regions receive a cyan outline pulse. Null/undefined clears the highlight.
+   */
+  pulseKey?: string | null;
 }
 
 export function EvonetDropinHost({
@@ -216,6 +223,7 @@ export function EvonetDropinHost({
   onSdkInitApplied,
   compact = false,
   stickyPayButton = false,
+  pulseKey = null,
 }: EvonetDropinHostProps) {
   // Unique per host — Builder + storefront checkout can both mount Drop-in;
   // a shared `#evonet-dropin-root` made the SDK bind to the hidden Builder node.
@@ -237,6 +245,48 @@ export function EvonetDropinHost({
 
   const initGenRef = useRef(initGeneration);
   initGenRef.current = initGeneration;
+
+  const pulseKeyRef = useRef(pulseKey);
+  pulseKeyRef.current = pulseKey;
+
+  /** Scoped pulse keyframes + selectors (same-document Drop-in chrome). */
+  useEffect(() => {
+    const styleId = `${containerId}-pulse-css`;
+    let styleEl = document.getElementById(styleId) as HTMLStyleElement | null;
+    if (!styleEl) {
+      styleEl = document.createElement("style");
+      styleEl.id = styleId;
+      document.head.appendChild(styleEl);
+    }
+    styleEl.textContent = buildDropinPulseCss(containerId);
+    return () => {
+      styleEl?.remove();
+    };
+  }, [containerId]);
+
+  /**
+   * Apply / restart `data-pulse` after Auto refresh remounts Drop-in children
+   * so the outline animation survives destroy/rebuild.
+   */
+  useEffect(() => {
+    const el = document.getElementById(containerId);
+    if (!el) {
+      return;
+    }
+    const key = pulseKeyRef.current;
+    if (!key) {
+      el.removeAttribute("data-pulse");
+      return;
+    }
+    el.removeAttribute("data-pulse");
+    const raf = requestAnimationFrame(() => {
+      const current = pulseKeyRef.current;
+      if (current) {
+        el.setAttribute("data-pulse", current);
+      }
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [containerId, pulseKey, initGeneration]);
 
   useEffect(() => {
     const handler = (event: MessageEvent) => {
@@ -710,6 +760,8 @@ export function EvonetDropinHost({
         emitHostPhase("construct_ok", {
           note: "new DropInSDK(...) returned; instance ref set",
         });
+        // Keep :root vars aligned with Builder live appearance (same helper as Auto refresh).
+        applyDropinAppearanceCss(appearance);
       } catch (error) {
         const hasBorderRadius =
           Array.isArray(options.appearance?.borderRadius) &&
@@ -750,6 +802,7 @@ export function EvonetDropinHost({
               },
             });
 
+            applyDropinAppearanceCss(appearance);
             return;
           } catch {
             // Fall through to normal error reporting.
@@ -791,6 +844,7 @@ export function EvonetDropinHost({
                 note: "Fallback init succeeded after removing appearance.*.fontWeight.",
               },
             });
+            applyDropinAppearanceCss(appearanceWithoutFontWeight);
             return;
           } catch {
             // Fall through to normal error reporting.
@@ -866,7 +920,7 @@ export function EvonetDropinHost({
   }, [initGeneration, scriptLoaded]);
 
   return (
-    <Box sx={{ width: "100%", maxWidth: "100%", minWidth: 0, overflowX: "auto" }}>
+    <Box sx={{ width: "100%", maxWidth: "100%", minWidth: 0 }}>
       {!scriptLoaded && (
         <Alert severity="warning" variant="outlined" sx={{ mb: compact ? 1 : 2 }}>
           Loading Evonet Drop-in SDK in the browser…
@@ -874,24 +928,31 @@ export function EvonetDropinHost({
       )}
       <Box
         id={containerId}
+        data-pulse={pulseKey || undefined}
         sx={{
           minHeight: resolveContainerMinHeight(config.mode, compact),
           width: "100%",
           maxWidth: "100%",
           minWidth: 0,
           boxSizing: "border-box",
-          bgcolor: "background.paper",
-          px: compact ? { xs: 0.5, sm: 1 } : { xs: 0.75, sm: 2 },
-          py: compact ? { xs: 0.75, sm: 1 } : { xs: 1, sm: 2 },
+          /* Drop-in stays light; don't inherit dark theme paper. */
+          bgcolor: "#ffffff",
+          /* Stage card already provides Figma’s 20px inset — keep host chrome tight. */
+          px: compact ? 0 : { xs: 0.75, sm: 2 },
+          py: compact ? 0 : { xs: 1, sm: 2 },
+          // Keep overflow visible so SDK selection rings are not clipped.
+          overflow: "visible",
         }}
       />
       <style jsx global>{`
         #${containerId} {
           max-width: 100% !important;
-          overflow-x: auto !important;
-          overflow-y: visible !important;
+          /* Do not use overflow-x:auto here — CSS forces the other axis to clip too,
+             which cuts the left/right of .cil-channel-title::after selection rings. */
+          overflow: visible !important;
         }
-        #${containerId} iframe {
+        /* 3DS / payment iframes only — do not restyle wallet button internals. */
+        #${containerId} iframe:not(.google-pay-btn iframe) {
           display: block;
           width: 100% !important;
           max-width: 100% !important;
@@ -903,6 +964,82 @@ export function EvonetDropinHost({
           max-width: 100% !important;
           box-sizing: border-box !important;
         }
+        /* Payment chrome must not clip the checked-channel ring. */
+        #${containerId} .cil-dropIn-container,
+        #${containerId} .cil-payment-method-conatiner,
+        #${containerId} .cil-channel-wrap {
+          overflow: visible !important;
+        }
+        /*
+          SDK hardcodes .cil-dropIn-container { color: #212121 }, so payment
+          method names ignore appearance.colorPrimary. Wire them to the token
+          so Colors → Text → colorPrimary actually controls list labels.
+        */
+        #${containerId} .cil-dropIn-container {
+          color: var(--cil-dropIn-color-primary) !important;
+        }
+        #${containerId} .cil-payment-method-name {
+          color: var(--cil-dropIn-color-primary) !important;
+        }
+        /*
+          SDK design: list has padding 0 16px; selected row paints a ring via
+          .cil-channel-title::after { left/right: -17px } so it sits flush with
+          the list border. Do not inflate padding — that separates the ring
+          from the list stroke (especially on the first row).
+        */
+        #${containerId} .cil-payment-method-conatiner {
+          padding: 0 16px !important;
+          box-sizing: border-box !important;
+        }
+        #${containerId} .cil-channel-title::after {
+          left: -17px !important;
+          right: -17px !important;
+        }
+        /*
+          Google Pay CTA is Google's official button (not colorAction).
+          Tailwind preflight sets button { background-color: transparent;
+          background-image: none }, which washes the GPay button to an empty
+          white slot. Restore Google's default black fill; keep white variant.
+        */
+        #${containerId} .google-pay-btn {
+          width: 100%;
+          min-height: 46px;
+        }
+        #${containerId} .google-pay-btn > button,
+        #${containerId} .google-pay-btn button.gpay-button,
+        #${containerId} .google-pay-btn .gpay-button {
+          /* Solid fill beats Tailwind preflight transparent + background-image:none.
+             Modern GPay buttons put "Pay with" / mark in child nodes, not bg-image. */
+          background-color: #000 !important;
+          background-image: none !important;
+          opacity: 1 !important;
+          visibility: visible !important;
+          border: 0 !important;
+          min-height: 40px !important;
+          width: 100% !important;
+          cursor: pointer !important;
+          color: #fff !important;
+        }
+        #${containerId} .google-pay-btn > button.white,
+        #${containerId} .google-pay-btn button.gpay-button.white,
+        #${containerId} .google-pay-btn .gpay-button.white {
+          background-color: #fff !important;
+          color: #3c4043 !important;
+          outline: 1px solid #dadce0;
+        }
+        #${containerId} .loading-button.google-loading-btn {
+          background: #000 !important;
+          min-height: 46px;
+        }
+        /* Checked radio: keep the inner dot visible (SDK uses #fff on action fill). */
+        #${containerId} .cil-custom-radio.checked .radio-inner {
+          background: #fff !important;
+          width: 6px !important;
+          height: 6px !important;
+          border-radius: 50% !important;
+          display: block !important;
+          opacity: 1 !important;
+        }
         ${
           stickyPayButton
             ? `
@@ -912,14 +1049,18 @@ export function EvonetDropinHost({
           position: sticky !important;
           bottom: 0 !important;
           z-index: 5 !important;
-          margin-top: 12px !important;
-          padding-top: 12px !important;
-          padding-bottom: max(12px, env(safe-area-inset-bottom, 0px)) !important;
+          margin-top: 8px !important;
+          padding-top: 8px !important;
+          padding-bottom: max(8px, env(safe-area-inset-bottom, 0px)) !important;
           background: #fff !important;
-          box-shadow: 0 -6px 16px rgba(0, 0, 0, 0.06) !important;
+          box-shadow: none !important;
         }
         #${containerId} .mixin-payment-info-wrap:not(.has-fixed-footer) {
-          padding-bottom: 8px !important;
+          padding-bottom: 0 !important;
+        }
+        #${containerId} .cil-payment-method-conatiner {
+          /* Avoid SDK default bottom padding stacking with sticky footer. */
+          margin-bottom: 0 !important;
         }
         `
             : ""

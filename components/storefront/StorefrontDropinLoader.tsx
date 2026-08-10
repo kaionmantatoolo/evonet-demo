@@ -34,18 +34,21 @@ function Bone({
 interface StorefrontDropinLoaderProps {
   /** Kept for call-site compatibility; skeleton does not vary by phase. */
   isCreatingSession?: boolean;
+  loadingLabel?: string;
 }
 
 /**
  * Soft payment-panel skeleton shown until Drop-in UI is ready to fade in.
  */
-export function StorefrontDropinLoader(_props: StorefrontDropinLoaderProps) {
+export function StorefrontDropinLoader({
+  loadingLabel = "Loading payment methods",
+}: StorefrontDropinLoaderProps) {
   return (
     <Box
       role="status"
       aria-live="polite"
       aria-busy="true"
-      aria-label="Loading payment methods"
+      aria-label={loadingLabel}
       sx={{
         height: "100%",
         width: "100%",

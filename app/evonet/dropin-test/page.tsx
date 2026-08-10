@@ -21,6 +21,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { LocaleSwitcher } from "@/components/LocaleSwitcher";
 import {
   EvonetDropinHost,
   type SdkInitAppliedInfo,
@@ -225,11 +227,19 @@ function EvonetDropinTestPage() {
   const [returnDialogDismissed, setReturnDialogDismissed] = useState(false);
   const showReturnDialog =
     Boolean(paymentReturnPrompt) && !returnDialogDismissed;
+  const [sessionSpent, setSessionSpent] = useState(false);
 
   useEffect(() => {
     if (paymentReturnFromUrl) {
       setPaymentReturnPrompt(paymentReturnFromUrl);
       setReturnDialogDismissed(false);
+      if (
+        paymentReturnFromUrl.status === "success" ||
+        paymentReturnFromUrl.status === "failed" ||
+        paymentReturnFromUrl.status === "cancelled"
+      ) {
+        setSessionSpent(true);
+      }
     }
   }, [paymentReturnFromUrl]);
 
@@ -408,8 +418,14 @@ function EvonetDropinTestPage() {
     }
     const br = borderRadiusInput
       .split(",")
-      .map((s) => parseInt(s.trim(), 10))
-      .filter((n) => !Number.isNaN(n));
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .map((s) => {
+        if (/^\d+(\.\d+)?px$/i.test(s)) return s.toLowerCase();
+        const n = Number.parseInt(s, 10);
+        return Number.isNaN(n) ? "" : `${n}px`;
+      })
+      .filter(Boolean);
     if (br.length === 4) {
       a.borderRadius = br;
     }
@@ -542,6 +558,10 @@ function EvonetDropinTestPage() {
   }, [isSdkOverlayMode, sdkInitGeneration]);
 
   const handleInitialize = () => {
+    if (sessionSpent) {
+      void handleCreateSession({ initDropin: true });
+      return;
+    }
     if (!sessionId || sessionId === "REPLACE_WITH_REAL_SESSION_ID") {
       alert("Please provide a valid Evonet sessionID before initializing.");
       return;
@@ -667,6 +687,7 @@ function EvonetDropinTestPage() {
       if (fromSdk) {
         setPaymentReturnPrompt(fromSdk);
         setReturnDialogDismissed(false);
+        setSessionSpent(true);
       }
     }
   }, [binRules]);
@@ -778,6 +799,7 @@ function EvonetDropinTestPage() {
 
       const sid = data.sessionId as string;
       setSessionId(sid);
+      setSessionSpent(false);
       if (options?.initDropin) {
         prevSdkFingerprintRef.current = buildDropinSdkFingerprint({
           sessionID: sid,
@@ -1028,10 +1050,12 @@ function EvonetDropinTestPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const envTarget = targetFromSdkEnvironment(environment);
+
   return (
     <main
       data-builder-chrome
-      className="min-h-[var(--console-height)] overflow-x-hidden bg-[#F4F6F8]"
+      className="min-h-[var(--console-height)] overflow-x-hidden bg-background"
       style={{ "--console-height": VIEWPORT_HEIGHT } as React.CSSProperties}
     >
       <div className="mx-auto max-w-[1600px] space-y-4 px-2 py-3 sm:px-4 md:px-6 md:py-4">
@@ -1039,15 +1063,22 @@ function EvonetDropinTestPage() {
           <CardContent className="flex flex-col justify-between gap-3 px-3 py-3 sm:px-4 lg:flex-row lg:items-center">
             <div className="flex min-w-0 flex-wrap items-center gap-2">
               <h1 className="text-base font-bold">Drop-in Dev Console</h1>
-              {isEvonetProductionEnvironment(environment) ? (
-                <Badge variant="destructive">PROD</Badge>
-              ) : null}
               <Badge
-                variant="outline"
-                className="cursor-pointer font-mono"
+                variant={envTarget === "PROD" ? "destructive" : "warning"}
+                className="cursor-pointer select-none"
                 onClick={handleEnvironmentChipTap}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    handleEnvironmentChipTap();
+                  }
+                }}
+                title="Tap 5 times to switch UAT / PROD"
+                aria-label={`Environment ${envTarget}. Tap 5 times to switch.`}
               >
-                {environment}
+                {envTarget}
               </Badge>
               <Badge variant="outline" className="font-mono">init #{sdkInitGeneration}</Badge>
               <Badge variant="outline" className="font-mono">mode: {mode}</Badge>
@@ -1057,19 +1088,27 @@ function EvonetDropinTestPage() {
                   variant={lastResult.type === "payment_fail" ? "destructive" : "secondary"}
                   className={
                     lastResult.type === "payment_success"
-                      ? "border-emerald-200 bg-emerald-100 text-emerald-800"
+                      ? "border-emerald-200 bg-emerald-100 text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-200"
                       : lastResult.type === "payment_cancelled"
-                        ? "border-amber-200 bg-amber-100 text-amber-800"
+                        ? "border-amber-200 bg-amber-100 text-amber-800 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200"
                         : ""
                   }
                 >
                   {lastResult.type.replace("payment_", "")}
                 </Badge>
               ) : null}
+              <div className="ml-auto flex items-center gap-2 lg:hidden">
+                <LocaleSwitcher />
+                <ThemeToggle />
+              </div>
             </div>
             <div className="flex min-w-0 flex-col gap-1 font-mono text-xs text-muted-foreground sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-3 sm:gap-y-1">
-              <span className="truncate text-amber-700">session: {sessionId.slice(0, 12) || "—"}…</span>
+              <span className="truncate text-amber-700 dark:text-amber-400">session: {sessionId.slice(0, 12) || "—"}…</span>
               <span className="truncate">order: {orderId || "—"}</span>
+              <div className="hidden items-center gap-2 lg:flex">
+                <LocaleSwitcher />
+                <ThemeToggle />
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -1217,9 +1256,20 @@ function EvonetDropinTestPage() {
                     {isCreatingSession ? "Creating session…" : "Create session"}
                   </Button>
                   <Button type="button" size="sm" variant="outline" onClick={handleInitialize}>
-                    Initialize / Re-init Drop-in
+                    {sessionSpent
+                      ? "Refresh session & Re-init Drop-in"
+                      : "Initialize / Re-init Drop-in"}
                   </Button>
                 </div>
+                {sessionSpent && !showReturnDialog ? (
+                  <div
+                    role="status"
+                    className="rounded-none border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-foreground"
+                  >
+                    This session was already used for a payment. Re-init alone will fail —
+                    create a fresh session first (the Re-init button does both when spent).
+                  </div>
+                ) : null}
                 <p className="text-xs text-muted-foreground">
                   Session uses server credentials. Initialize runs Drop-in in this browser.
                 </p>
@@ -1433,7 +1483,10 @@ function EvonetDropinTestPage() {
                         <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
                           Typography (appearance.*.font)
                         </p>
-                        <Accordion type="multiple" className="rounded-none border px-3">
+                        <Accordion
+                          type="multiple"
+                          className="rounded-none border border-border bg-card px-4 text-card-foreground"
+                        >
                           {TYPOGRAPHY_GROUPS.map((group) => (
                             <AccordionItem key={group} value={group}>
                               <AccordionTrigger className="capitalize">{group}</AccordionTrigger>
@@ -1751,7 +1804,7 @@ function EvonetDropinTestPage() {
               <CardContent className="min-w-0 space-y-3 p-4">
                 <DemoTransactionWarning
                   environment={environment}
-                  sx={{ wordBreak: "break-word", "& .MuiAlert-message": { overflowWrap: "anywhere" } }}
+                  sx={{ mb: 2, wordBreak: "break-word", "& .MuiAlert-message": { overflowWrap: "anywhere" } }}
                 />
                 {binRejectMessage ? (
                   <div role="alert" className="rounded-none border border-red-200 bg-red-50 p-3 text-sm text-red-950">
@@ -1759,7 +1812,7 @@ function EvonetDropinTestPage() {
                   </div>
                 ) : null}
                 {binPromoMessage ? (
-                  <div role="status" className="rounded-none border border-blue-200 bg-blue-50 p-3 text-sm text-blue-950">
+                  <div role="status" className="rounded-none border border-border bg-muted p-3 text-sm text-foreground">
                     {binPromoMessage}
                   </div>
                 ) : null}
@@ -1794,7 +1847,7 @@ function EvonetDropinTestPage() {
                     </Button>
                   </div>
                 ) : (
-                  <div className="mx-auto w-full max-w-lg overflow-x-auto rounded-none border border-[#D1D5DB] bg-background p-2 sm:p-3">
+                  <div className="mx-auto w-full max-w-lg overflow-visible rounded-none border border-border bg-white p-5 sm:p-6">
                     <EvonetDropinHost
                       config={config}
                       initGeneration={sdkInitGeneration}

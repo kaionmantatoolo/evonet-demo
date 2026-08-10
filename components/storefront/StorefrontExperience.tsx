@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Fraunces, Manrope } from "next/font/google";
+import { useTheme } from "next-themes";
+import { Bebas_Neue, Manrope } from "next/font/google";
 import {
   Alert,
   Badge,
@@ -16,7 +17,12 @@ import {
   Typography,
 } from "@mui/material";
 import ShoppingBagOutlinedIcon from "@mui/icons-material/ShoppingBagOutlined";
-import { DEMO_PRODUCT, type DemoProduct, productImagesForColor } from "./demoProduct";
+import { ThemeToggle } from "../ThemeToggle";
+import {
+  getLocalizedDemoProduct,
+  type DemoProduct,
+  productImagesForColor,
+} from "./demoProduct";
 import { EvonetDropinHost } from "../EvonetDropinHost";
 import { DropinModePreviewShell } from "../DropinModePreviewShell";
 import { StorefrontBagDrawer } from "./StorefrontBagDrawer";
@@ -31,7 +37,6 @@ import { bagBounce, enterUp } from "./storefrontMotion";
 import {
   cartLineCount,
   cartLineId,
-  formatCartLineLabel,
   type StorefrontCartLine,
 } from "./cartTypes";
 import { shopSecondaryButtonSx } from "./storefrontButtons";
@@ -46,9 +51,15 @@ import {
   resolveStorefrontUnitPrice,
   type StorefrontSnapshot,
 } from "../../lib/storefrontSnapshot";
+import {
+  getStorefrontCopy,
+  storefrontHtmlLang,
+} from "../../lib/storefrontCopy";
+import { APPLE_PHONE_PREVIEW_WIDTH } from "../../lib/appleDesign";
 import type { EvonetDropinConfig, EvonetDropinEvent } from "../../types/evonet";
 
-const display = Fraunces({
+const display = Bebas_Neue({
+  weight: "400",
   subsets: ["latin"],
   variable: "--shop-font-display",
   display: "swap",
@@ -83,6 +94,8 @@ export function StorefrontExperience({
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const { resolvedTheme } = useTheme();
+  const colorMode = resolvedTheme === "dark" ? "dark" : "light";
 
   const [cartLines, setCartLines] = useState<StorefrontCartLine[]>([]);
   const [bagOpen, setBagOpen] = useState(false);
@@ -91,10 +104,8 @@ export function StorefrontExperience({
   const [sdkInitGeneration, setSdkInitGeneration] = useState(0);
   const [isCreatingSession, setIsCreatingSession] = useState(false);
   const [sessionError, setSessionError] = useState<string | null>(null);
-  const [selectedSize, setSelectedSize] = useState(DEMO_PRODUCT.sizes[2] ?? "M");
-  const [selectedColorId, setSelectedColorId] = useState(
-    DEMO_PRODUCT.colors[0]?.id ?? "charcoal"
-  );
+  const [selectedSize, setSelectedSize] = useState("M");
+  const [selectedColorId, setSelectedColorId] = useState("black");
   const [justAdded, setJustAdded] = useState(false);
   const [toastOpen, setToastOpen] = useState(false);
   const [checkoutSummary, setCheckoutSummary] =
@@ -103,6 +114,11 @@ export function StorefrontExperience({
     null
   );
   const [shopViewKey, setShopViewKey] = useState(0);
+
+  const copy = useMemo(
+    () => getStorefrontCopy(config.locale),
+    [config.locale]
+  );
 
   const paymentReturnFromUrl = useMemo(
     () => parseEvonetReturnParams(searchParams),
@@ -125,25 +141,37 @@ export function StorefrontExperience({
     applyPaymentResult(paymentReturnFromUrl);
   }, [paymentReturnFromUrl, applyPaymentResult]);
 
+  useEffect(() => {
+    document.documentElement.lang = storefrontHtmlLang(config.locale);
+  }, [config.locale]);
+
   const cssVars = useMemo(
-    () => appearanceToStorefrontCssVars(config.appearance),
-    [config.appearance]
+    () => appearanceToStorefrontCssVars(config.appearance, colorMode),
+    [config.appearance, colorMode]
   );
 
   const currency = config.currency?.trim() || "HKD";
   const unitPrice = resolveStorefrontUnitPrice(config.amount);
   const product: DemoProduct = useMemo(
-    () => ({
-      ...DEMO_PRODUCT,
-      price: unitPrice,
-      compareAtPrice: undefined,
-    }),
-    [unitPrice]
+    () => getLocalizedDemoProduct(config.locale, unitPrice),
+    [config.locale, unitPrice]
   );
   const cartQty = cartLineCount(cartLines);
   const cartTotal = product.price * Math.max(cartQty, 0);
   const colorLabel =
-    product.colors.find((c) => c.id === selectedColorId)?.label ?? "Charcoal";
+    product.colors.find((c) => c.id === selectedColorId)?.label ??
+    copy.product.colors.black;
+
+  useEffect(() => {
+    setCartLines((prev) =>
+      prev.map((line) => ({
+        ...line,
+        colorLabel:
+          product.colors.find((c) => c.id === line.colorId)?.label ??
+          line.colorLabel,
+      }))
+    );
+  }, [product]);
 
   const makeLine = useCallback(
     (quantity: number): StorefrontCartLine => ({
@@ -201,7 +229,10 @@ export function StorefrontExperience({
       const amount = product.price * qty;
       const orderId = generateOrderId();
       const description = `${product.name} · ${checkoutLines
-        .map((line) => `${formatCartLineLabel(line)} × ${line.quantity}`)
+        .map(
+          (line) =>
+            `${copy.sizeLine(line.colorLabel, line.size)} × ${line.quantity}`
+        )
         .join("; ")}`;
 
       setBagOpen(false);
@@ -237,21 +268,29 @@ export function StorefrontExperience({
           error?: string;
         };
         if (!response.ok || !data.sessionId) {
-          throw new Error(
-            data.error ?? "Failed to create session via Evonet interaction API."
-          );
+          throw new Error(data.error ?? copy.sessionFailed);
         }
         setSessionID(data.sessionId);
         setSdkInitGeneration((value) => value + 1);
       } catch (error) {
         setSessionError(
-          error instanceof Error ? error.message : "Unexpected session error."
+          error instanceof Error ? error.message : copy.sessionUnexpected
         );
       } finally {
         setIsCreatingSession(false);
       }
     },
-    [config.environment, config.locale, currency, product.name, product.price]
+    [
+      config.enabledPaymentMethod,
+      config.environment,
+      config.locale,
+      copy.sessionFailed,
+      copy.sessionUnexpected,
+      copy.sizeLine,
+      currency,
+      product.name,
+      product.price,
+    ]
   );
 
   const handleAddToCart = () => {
@@ -390,6 +429,7 @@ export function StorefrontExperience({
           onTryAgain={
             orderResult.status === "success" ? undefined : handleTryCheckoutAgain
           }
+          copy={copy}
         />
       ) : (
         <Box key={shopViewKey} sx={enterUp(0, 420)}>
@@ -401,7 +441,7 @@ export function StorefrontExperience({
           zIndex: 20,
           borderBottom:
             "1px solid color-mix(in srgb, var(--shop-border) 80%, transparent)",
-          bgcolor: "color-mix(in srgb, var(--shop-bg) 92%, #ffffff)",
+          bgcolor: "color-mix(in srgb, var(--shop-bg) 92%, var(--shop-surface))",
           backdropFilter: "blur(14px)",
           ...enterUp(40, 500),
         }}
@@ -416,9 +456,9 @@ export function StorefrontExperience({
               <Typography
                 sx={{
                   fontFamily: "var(--shop-font-display)",
-                  fontWeight: 650,
-                  fontSize: "1.2rem",
-                  letterSpacing: "-0.03em",
+                  fontWeight: 400,
+                  fontSize: "1.45rem",
+                  letterSpacing: "0.04em",
                 }}
               >
                 {product.brand}
@@ -432,11 +472,12 @@ export function StorefrontExperience({
                   textTransform: "uppercase",
                 }}
               >
-                New season
+                {copy.navTagline}
               </Typography>
             </Stack>
 
             <Stack direction="row" spacing={0.5} alignItems="center">
+              <ThemeToggle />
               <Button
                 size="small"
                 onClick={handleBack}
@@ -449,14 +490,14 @@ export function StorefrontExperience({
                 }}
               >
                 <Box component="span" sx={{ display: { xs: "none", sm: "inline" } }}>
-                  Back to Builder
+                  {copy.backToBuilder}
                 </Box>
                 <Box component="span" sx={{ display: { xs: "inline", sm: "none" } }}>
-                  Builder
+                  {copy.builderShort}
                 </Box>
               </Button>
               <IconButton
-                aria-label="Open bag"
+                aria-label={copy.openBag}
                 onClick={() => setBagOpen(true)}
                 sx={{
                   color: "var(--shop-text)",
@@ -503,8 +544,7 @@ export function StorefrontExperience({
               letterSpacing: 0.2,
             }}
           >
-            Complimentary shipping on orders over {currency} 500 · Easy 30-day
-            returns
+            {copy.promoBar(currency)}
           </Typography>
         </Container>
       </Box>
@@ -524,6 +564,7 @@ export function StorefrontExperience({
           onBuyNow={handleBuyNow}
           justAdded={justAdded}
           themeVars={cssVars}
+          copy={copy}
         />
       </Container>
 
@@ -553,7 +594,7 @@ export function StorefrontExperience({
                 borderRadius: 3,
                 overflow: "hidden",
                 aspectRatio: "4 / 5",
-                bgcolor: "#ece8e1",
+                bgcolor: "var(--shop-muted-surface, #f3f4f6)",
                 boxShadow: "0 28px 70px rgba(15, 23, 42, 0.1)",
               }}
             >
@@ -567,7 +608,17 @@ export function StorefrontExperience({
                 alt={
                   productImagesForColor(product, selectedColorId)[1]?.alt ?? ""
                 }
-                sx={{ width: "100%", height: "100%", objectFit: "cover" }}
+                sx={{
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "cover",
+                  objectPosition:
+                    productImagesForColor(product, selectedColorId)[1]
+                      ?.objectPosition ??
+                    productImagesForColor(product, selectedColorId)[0]
+                      ?.objectPosition ??
+                    "50% 12%",
+                }}
               />
             </Box>
             <Box sx={{ maxWidth: 480 }}>
@@ -575,27 +626,25 @@ export function StorefrontExperience({
                 sx={{
                   fontFamily: "var(--shop-font-display)",
                   fontSize: { xs: "1.85rem", md: "2.35rem" },
-                  fontWeight: 550,
-                  letterSpacing: "-0.035em",
+                  fontWeight: 400,
+                  letterSpacing: "0.02em",
                   lineHeight: 1.15,
                   mb: 2,
                 }}
               >
-                Built for everyday motion. Styled for a clean checkout.
+                {copy.editorialTitle}
               </Typography>
               <Typography
                 sx={{ color: "var(--shop-muted)", lineHeight: 1.7, mb: 3 }}
               >
-                This storefront inherits your Drop-in Builder palette—CTAs,
-                accents, and the payment panel all speak the same visual language
-                when you pay with Evonet.
+                {copy.editorialBody}
               </Typography>
               <Button
                 variant="outlined"
                 onClick={() => setBagOpen(true)}
                 sx={shopSecondaryButtonSx}
               >
-                View bag
+                {copy.viewBag}
               </Button>
             </Box>
           </Box>
@@ -606,7 +655,12 @@ export function StorefrontExperience({
         component="footer"
         sx={{
           borderTop: "1px solid var(--shop-border)",
-          py: 3.5,
+          pt: 3.5,
+          // Clear the mobile sticky Buy now bar (+ home-indicator safe area).
+          pb: {
+            xs: "calc(28px + 76px + env(safe-area-inset-bottom, 0px))",
+            md: 3.5,
+          },
           mt: 2,
         }}
       >
@@ -619,14 +673,15 @@ export function StorefrontExperience({
             <Typography
               sx={{
                 fontFamily: "var(--shop-font-display)",
-                fontWeight: 600,
-                letterSpacing: "-0.02em",
+                fontWeight: 400,
+                fontSize: "1.25rem",
+                letterSpacing: "0.04em",
               }}
             >
               {product.brand}
             </Typography>
             <Typography variant="caption" sx={{ color: "var(--shop-muted)" }}>
-              Demo storefront · Theme from Builder · {config.environment} ·{" "}
+              {copy.footerMeta} · {config.environment} ·{" "}
               {config.locale} · {checkoutMode}
             </Typography>
           </Stack>
@@ -643,6 +698,7 @@ export function StorefrontExperience({
         onDecrement={handleDecrementLine}
         onCheckout={handlePayFromCart}
         themeVars={cssVars}
+        copy={copy}
       />
 
       {!isSdkOverlayMode ? (
@@ -668,13 +724,15 @@ export function StorefrontExperience({
           sdkInitGeneration={sdkInitGeneration}
           onEvent={handleDropinEvent}
           themeVars={cssVars}
+          copy={copy}
+          environment={config.environment}
         />
       ) : (
         <DropinModePreviewShell
           mode={checkoutMode}
           open={checkoutOpen}
           onClose={closeCheckout}
-          closeHint="Close to return to the storefront"
+          closeHint={copy.closeToStorefront}
         >
           <Box
             sx={{
@@ -683,23 +741,42 @@ export function StorefrontExperience({
               bgcolor: "var(--shop-bg, #fff)",
               px: { xs: 2, sm: 3 },
               py: 2,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
             }}
           >
             {sessionError ? (
-              <Alert severity="error" sx={{ mb: 2 }}>
+              <Alert severity="error" sx={{ mb: 2, width: "100%", maxWidth: APPLE_PHONE_PREVIEW_WIDTH }}>
                 {sessionError}
               </Alert>
             ) : null}
             {(isCreatingSession || !dropinConfig) && !sessionError ? (
-              <StorefrontDropinLoader />
+              <Box sx={{ width: "100%", maxWidth: APPLE_PHONE_PREVIEW_WIDTH }}>
+                <StorefrontDropinLoader />
+              </Box>
             ) : null}
             {dropinConfig ? (
-              <EvonetDropinHost
-                key={`storefront-overlay-${sdkInitGeneration}`}
-                config={dropinConfig}
-                initGeneration={sdkInitGeneration}
-                onEvent={handleDropinEvent}
-              />
+              <Box
+                sx={{
+                  width: "100%",
+                  maxWidth: APPLE_PHONE_PREVIEW_WIDTH,
+                  borderRadius: "20px",
+                  border: "1px solid color-mix(in srgb, var(--shop-border, #e7e5e4) 100%, transparent)",
+                  bgcolor: "#fff",
+                  p: 2.5,
+                  boxShadow: "0 8px 28px rgba(0,0,0,0.06)",
+                  boxSizing: "border-box",
+                }}
+              >
+                <EvonetDropinHost
+                  key={`storefront-overlay-${sdkInitGeneration}`}
+                  config={dropinConfig}
+                  initGeneration={sdkInitGeneration}
+                  onEvent={handleDropinEvent}
+                  compact
+                />
+              </Box>
             ) : null}
           </Box>
         </DropinModePreviewShell>
@@ -709,7 +786,7 @@ export function StorefrontExperience({
         open={toastOpen}
         autoHideDuration={2200}
         onClose={() => setToastOpen(false)}
-        message="Added to bag"
+        message={copy.addedToBag}
         action={
           <Button
             color="inherit"
@@ -719,7 +796,7 @@ export function StorefrontExperience({
               setBagOpen(true);
             }}
           >
-            View
+            {copy.view}
           </Button>
         }
       />
@@ -731,11 +808,20 @@ export function StorefrontExperience({
 
 /** Empty state when no Builder config / snapshot is available. */
 export function StorefrontEmptyState() {
+  const { resolvedTheme } = useTheme();
+  const dark = resolvedTheme === "dark";
+  const copy = useMemo(() => {
+    const nav =
+      typeof navigator !== "undefined" ? navigator.language : "en-US";
+    return getStorefrontCopy(nav);
+  }, []);
+
   return (
     <Box
       sx={{
         minHeight: "100dvh",
-        bgcolor: "#f4f1ec",
+        bgcolor: dark ? "#0c0a09" : "#f5f5f5",
+        color: dark ? "#fafaf9" : "#1c1917",
         display: "grid",
         placeItems: "center",
         px: 2,
@@ -746,11 +832,17 @@ export function StorefrontEmptyState() {
           maxWidth: 440,
           p: 4,
           borderRadius: 3,
-          bgcolor: "#fff",
-          border: "1px solid #e7e2d9",
-          boxShadow: "0 20px 50px rgba(28, 25, 23, 0.06)",
+          bgcolor: dark ? "#1c1917" : "#fff",
+          border: dark ? "1px solid #44403c" : "1px solid #e7e2d9",
+          boxShadow: dark
+            ? "0 20px 50px rgba(0, 0, 0, 0.45)"
+            : "0 20px 50px rgba(28, 25, 23, 0.06)",
+          position: "relative",
         }}
       >
+        <Box sx={{ position: "absolute", top: 16, right: 16 }}>
+          <ThemeToggle />
+        </Box>
         <Typography
           sx={{
             fontFamily: "Georgia, serif",
@@ -758,14 +850,19 @@ export function StorefrontEmptyState() {
             fontWeight: 600,
             letterSpacing: "-0.03em",
             mb: 1.25,
+            pr: 5,
           }}
         >
-          Open from Builder first
+          {copy.emptyTitle}
         </Typography>
-        <Typography sx={{ color: "#78716c", mb: 2.5, lineHeight: 1.6 }}>
-          Configure appearance and order amount in Drop-in Builder, then click{" "}
-          <strong>Open as storefront</strong>. Your Builder settings stay in place
-          when you return.
+        <Typography
+          sx={{
+            color: dark ? "#a8a29e" : "#78716c",
+            mb: 2.5,
+            lineHeight: 1.6,
+          }}
+        >
+          {copy.emptyBody}
         </Typography>
         <Button
           component={Link}
@@ -774,11 +871,12 @@ export function StorefrontEmptyState() {
           sx={{
             textTransform: "none",
             fontWeight: 650,
-            bgcolor: "#1c1917",
-            "&:hover": { bgcolor: "#292524" },
+            bgcolor: dark ? "#fafaf9" : "#1c1917",
+            color: dark ? "#0c0a09" : "#fff",
+            "&:hover": { bgcolor: dark ? "#e7e5e4" : "#292524" },
           }}
         >
-          Back to Builder
+          {copy.emptyCta}
         </Button>
       </Box>
     </Box>

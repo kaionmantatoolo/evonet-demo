@@ -1,7 +1,8 @@
-import { Fraunces, Manrope } from "next/font/google";
+import { Bebas_Neue, Manrope } from "next/font/google";
 import type { ReactNode } from "react";
 
-const display = Fraunces({
+const display = Bebas_Neue({
+  weight: "400",
   subsets: ["latin"],
   variable: "--shop-font-display",
   display: "swap",

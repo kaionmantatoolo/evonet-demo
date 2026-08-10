@@ -63,8 +63,11 @@ export interface EvonetSdkAppearance {
   colorPrimary?: string;
   colorSecondary?: string;
   logoPosition?: "left" | "middle" | "right";
-  /** Corner radii [r1, r2, r3, r4]. */
-  borderRadius?: number[];
+  /**
+   * Corner radii. Evonet Drop-in SDK requires CSS length strings
+   * (e.g. `["10px","2px","50px","8px"]`), not bare numbers.
+   */
+  borderRadius?: string[];
   button?: EvonetSdkFontObject;
   heading?: EvonetSdkFontObject;
   subHeading?: EvonetSdkFontObject;

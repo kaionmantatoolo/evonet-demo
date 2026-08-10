@@ -16,9 +16,9 @@ import CloseIcon from "@mui/icons-material/Close";
 import type { DemoProduct } from "./demoProduct";
 import { productThumbForColor } from "./demoProduct";
 import type { StorefrontCssVars } from "../../lib/storefrontSnapshot";
+import type { StorefrontCopy } from "../../lib/storefrontCopy";
 import {
   cartLineCount,
-  formatCartLineLabel,
   type StorefrontCartLine,
 } from "./cartTypes";
 import {
@@ -39,6 +39,7 @@ interface StorefrontBagDrawerProps {
   onDecrement: (lineId: string) => void;
   onCheckout: () => void;
   themeVars?: StorefrontCssVars;
+  copy: StorefrontCopy;
 }
 
 export function StorefrontBagDrawer({
@@ -51,6 +52,7 @@ export function StorefrontBagDrawer({
   onDecrement,
   onCheckout,
   themeVars,
+  copy,
 }: StorefrontBagDrawerProps) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
@@ -129,9 +131,9 @@ export function StorefrontBagDrawer({
               letterSpacing: "-0.02em",
             }}
           >
-            Your bag
+            {copy.bagTitle}
           </Typography>
-          <IconButton onClick={onClose} aria-label="Close bag" size="small">
+          <IconButton onClick={onClose} aria-label={copy.closeBag} size="small">
             <CloseIcon />
           </IconButton>
         </Stack>
@@ -139,14 +141,14 @@ export function StorefrontBagDrawer({
         {quantity < 1 ? (
           <Stack spacing={2} sx={{ flex: 1, justifyContent: "center", py: 4 }}>
             <Typography sx={{ color: "var(--shop-muted)" }}>
-              Your bag is empty. Add the Studio Hoodie to continue.
+              {copy.bagEmpty}
             </Typography>
             <Button
               onClick={onClose}
               variant="outlined"
               sx={{ ...shopSecondaryButtonSx, alignSelf: "flex-start" }}
             >
-              Keep browsing
+              {copy.keepBrowsing}
             </Button>
           </Stack>
         ) : (
@@ -157,6 +159,7 @@ export function StorefrontBagDrawer({
             >
               {lines.map((line) => {
                 const thumb = productThumbForColor(product, line.colorId);
+                const lineLabel = copy.sizeLine(line.colorLabel, line.size);
                 return (
                   <Box
                     key={line.id}
@@ -172,7 +175,7 @@ export function StorefrontBagDrawer({
                         height: 90,
                         borderRadius: 2,
                         overflow: "hidden",
-                        bgcolor: "#ece8e1",
+                        bgcolor: "var(--shop-muted-surface, #f3f4f6)",
                       }}
                     >
                       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -184,6 +187,7 @@ export function StorefrontBagDrawer({
                           width: "100%",
                           height: "100%",
                           objectFit: "cover",
+                          objectPosition: thumb?.objectPosition ?? "50% 12%",
                         }}
                       />
                     </Box>
@@ -196,7 +200,7 @@ export function StorefrontBagDrawer({
                           variant="caption"
                           sx={{ color: "var(--shop-muted)" }}
                         >
-                          {formatCartLineLabel(line)}
+                          {lineLabel}
                         </Typography>
                         <Typography
                           variant="body2"
@@ -209,7 +213,7 @@ export function StorefrontBagDrawer({
                         <Button
                           size="small"
                           onClick={() => onDecrement(line.id)}
-                          aria-label={`Decrease ${formatCartLineLabel(line)}`}
+                          aria-label={copy.decreaseQty(lineLabel)}
                           sx={shopQtyButtonSx}
                         >
                           −
@@ -226,7 +230,7 @@ export function StorefrontBagDrawer({
                         <Button
                           size="small"
                           onClick={() => onIncrement(line.id)}
-                          aria-label={`Increase ${formatCartLineLabel(line)}`}
+                          aria-label={copy.increaseQty(lineLabel)}
                           sx={shopQtyButtonSx}
                         >
                           +
@@ -243,14 +247,14 @@ export function StorefrontBagDrawer({
             <Stack spacing={1}>
               <Stack direction="row" justifyContent="space-between">
                 <Typography sx={{ color: "var(--shop-muted)" }}>
-                  Subtotal
+                  {copy.subtotal}
                 </Typography>
                 <Typography fontWeight={700}>
                   {currency} {total.toFixed(2)}
                 </Typography>
               </Stack>
               <Typography variant="caption" sx={{ color: "var(--shop-muted)" }}>
-                Shipping calculated at checkout.
+                {copy.shippingNote}
               </Typography>
               <Button
                 fullWidth
@@ -259,7 +263,7 @@ export function StorefrontBagDrawer({
                 onClick={onCheckout}
                 sx={{ ...shopPrimaryButtonSx, mt: 0.5 }}
               >
-                Checkout
+                {copy.checkout}
               </Button>
             </Stack>
           </>

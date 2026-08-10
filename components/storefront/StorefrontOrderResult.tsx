@@ -13,11 +13,11 @@ import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
 import WarningAmberOutlinedIcon from "@mui/icons-material/WarningAmberOutlined";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import type { EvonetReturnParams } from "../../lib/evonetReturnParams";
+import type { StorefrontCopy } from "../../lib/storefrontCopy";
 import type { DemoProduct } from "./demoProduct";
 import { productThumbForColor } from "./demoProduct";
 import {
   cartLineCount,
-  formatCartLineLabel,
   type StorefrontCartLine,
 } from "./cartTypes";
 import {
@@ -46,41 +46,38 @@ interface StorefrontOrderResultProps {
   result: EvonetReturnParams;
   onContinueShopping: () => void;
   onTryAgain?: () => void;
+  copy: StorefrontCopy;
 }
 
-function statusChrome(status: EvonetReturnParams["status"]) {
+function statusChrome(
+  status: EvonetReturnParams["status"],
+  copy: StorefrontCopy
+) {
+  const s = copy.status;
   switch (status) {
     case "success":
       return {
         Icon: CheckCircleOutlineIcon,
         tone: "var(--shop-action, #1c1917)",
-        eyebrow: "Order confirmed",
-        title: "Thank you — your order is placed",
-        body: "We’ve emailed a receipt and started packing. You’ll get tracking updates as soon as it ships.",
+        ...s.success,
       };
     case "failed":
       return {
         Icon: ErrorOutlineIcon,
         tone: "#b91c1c",
-        eyebrow: "Payment unsuccessful",
-        title: "We couldn’t complete your payment",
-        body: "Nothing was charged. You can try checkout again with the same bag, or continue shopping.",
+        ...s.failed,
       };
     case "cancelled":
       return {
         Icon: WarningAmberOutlinedIcon,
         tone: "#b45309",
-        eyebrow: "Payment cancelled",
-        title: "Checkout was cancelled",
-        body: "Your bag is still here. Resume when you’re ready — no charge was made.",
+        ...s.cancelled,
       };
     default:
       return {
         Icon: InfoOutlinedIcon,
         tone: "#0369a1",
-        eyebrow: "Payment pending",
-        title: "We’re confirming your payment",
-        body: "This can take a moment for some payment methods. Hang tight — we’ll update this page when it’s ready.",
+        ...s.pending,
       };
   }
 }
@@ -91,24 +88,27 @@ export function StorefrontOrderResult({
   result,
   onContinueShopping,
   onTryAgain,
+  copy,
 }: StorefrontOrderResultProps) {
-  const chrome = statusChrome(result.status);
+  const chrome = statusChrome(result.status, copy);
   const Icon = chrome.Icon;
   const isSuccess = result.status === "success";
   const isNegative =
     result.status === "failed" || result.status === "cancelled";
 
   const detailRows: { label: string; value: string }[] = [
-    { label: "Order number", value: summary.orderId },
+    { label: copy.orderNumber, value: summary.orderId },
   ];
   const paymentRef =
     result.merchantTransID || result.merchantOrderID || null;
   if (paymentRef) {
-    detailRows.push({ label: "Payment reference", value: paymentRef });
+    detailRows.push({ label: copy.paymentReference, value: paymentRef });
   }
   if (result.message && !isSuccess) {
-    detailRows.push({ label: "Note", value: result.message });
+    detailRows.push({ label: copy.note, value: result.message });
   }
+
+  const itemCount = cartLineCount(summary.lines);
 
   return (
     <Box
@@ -123,7 +123,7 @@ export function StorefrontOrderResult({
       <Box
         sx={{
           borderBottom: "1px solid var(--shop-border, #e7e2d9)",
-          bgcolor: "color-mix(in srgb, var(--shop-bg) 92%, #ffffff)",
+          bgcolor: "color-mix(in srgb, var(--shop-bg) 92%, var(--shop-surface))",
           ...enterUp(40, 500),
         }}
       >
@@ -132,9 +132,9 @@ export function StorefrontOrderResult({
             <Typography
               sx={{
                 fontFamily: "var(--shop-font-display)",
-                fontWeight: 650,
-                fontSize: "1.1rem",
-                letterSpacing: "-0.03em",
+                fontWeight: 400,
+                fontSize: "1.35rem",
+                letterSpacing: "0.04em",
               }}
             >
               {product.brand}
@@ -147,7 +147,7 @@ export function StorefrontOrderResult({
                 textTransform: "uppercase",
               }}
             >
-              Order status
+              {copy.orderStatus}
             </Typography>
           </Stack>
         </Container>
@@ -262,7 +262,7 @@ export function StorefrontOrderResult({
                       height: 72,
                       borderRadius: 2,
                       overflow: "hidden",
-                      bgcolor: "#ece8e1",
+                      bgcolor: "var(--shop-muted-surface, #f3f4f6)",
                     }}
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -270,7 +270,12 @@ export function StorefrontOrderResult({
                       component="img"
                       src={thumb?.src}
                       alt={thumb?.alt ?? product.name}
-                      sx={{ width: "100%", height: "100%", objectFit: "cover" }}
+                      sx={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                        objectPosition: thumb?.objectPosition ?? "50% 12%",
+                      }}
                     />
                   </Box>
                   <Box>
@@ -278,7 +283,8 @@ export function StorefrontOrderResult({
                       {product.name}
                     </Typography>
                     <Typography variant="body2" sx={{ color: "var(--shop-muted)" }}>
-                      {formatCartLineLabel(line)} · Qty {line.quantity}
+                      {copy.sizeLine(line.colorLabel, line.size)} ·{" "}
+                      {copy.qty(line.quantity)}
                     </Typography>
                     <Typography variant="body2" sx={{ mt: 0.75, fontWeight: 650 }}>
                       {summary.currency}{" "}
@@ -291,8 +297,7 @@ export function StorefrontOrderResult({
               <Divider sx={{ borderColor: "var(--shop-border)" }} />
               <Stack direction="row" justifyContent="space-between">
                 <Typography variant="body2" sx={{ color: "var(--shop-muted)" }}>
-                  {cartLineCount(summary.lines)} item
-                  {cartLineCount(summary.lines) === 1 ? "" : "s"}
+                  {copy.itemsCount(itemCount)}
                 </Typography>
                 <Typography variant="body1" sx={{ fontWeight: 700 }}>
                   {summary.currency} {summary.total.toFixed(2)}
@@ -313,10 +318,10 @@ export function StorefrontOrderResult({
               }}
             >
               <Typography variant="body2" sx={{ fontWeight: 650, mb: 0.75 }}>
-                Estimated delivery
+                {copy.estimatedDelivery}
               </Typography>
               <Typography variant="body2" sx={{ color: "var(--shop-muted)" }}>
-                1–2 business days · Free returns within 30 days
+                {copy.deliveryNote}
               </Typography>
             </Box>
           ) : null}
@@ -326,7 +331,7 @@ export function StorefrontOrderResult({
               variant="overline"
               sx={{ color: "var(--shop-muted)", letterSpacing: 1.2 }}
             >
-              Order details
+              {copy.orderDetails}
             </Typography>
             <Divider sx={{ my: 1.25, borderColor: "var(--shop-border)" }} />
             <Box
@@ -370,7 +375,7 @@ export function StorefrontOrderResult({
                 onClick={onContinueShopping}
                 sx={shopPrimaryButtonSx}
               >
-                Continue shopping
+                {copy.continueShopping}
               </Button>
             ) : (
               <>
@@ -381,7 +386,7 @@ export function StorefrontOrderResult({
                     onClick={onTryAgain}
                     sx={shopPrimaryButtonSx}
                   >
-                    Try checkout again
+                    {copy.tryCheckoutAgain}
                   </Button>
                 ) : null}
                 <Button
@@ -390,7 +395,7 @@ export function StorefrontOrderResult({
                   onClick={onContinueShopping}
                   sx={shopSecondaryButtonSx}
                 >
-                  Back to product
+                  {copy.backToProduct}
                 </Button>
               </>
             )}

@@ -21,16 +21,17 @@ import type { EvonetDropinConfig, EvonetDropinEvent } from "../../types/evonet";
 import type { DemoProduct } from "./demoProduct";
 import { productThumbForColor } from "./demoProduct";
 import type { StorefrontCssVars } from "../../lib/storefrontSnapshot";
+import type { StorefrontCopy } from "../../lib/storefrontCopy";
 import { StorefrontDropinLoader } from "./StorefrontDropinLoader";
-import {
-  formatCartLineLabel,
-  type StorefrontCartLine,
-} from "./cartTypes";
+import { type StorefrontCartLine } from "./cartTypes";
 import { shopGhostButtonSx } from "./storefrontButtons";
 import { enterFade } from "../../lib/pageMotion";
 import { SHEET_MAX_HEIGHT } from "../../lib/responsiveLayout";
+import { APPLE_PHONE_PREVIEW_WIDTH } from "../../lib/appleDesign";
 
-/** Drawer is ~460–500px; SDK columns layout needs ~950px and parks Pay in the off-screen summary column. */
+/** Match Builder Drop-in stage content width (Figma phone frame). */
+const STOREFRONT_DROPIN_MAX_WIDTH = APPLE_PHONE_PREVIEW_WIDTH;
+/** Drawer is ~phone + chrome; SDK columns layout needs ~950px and parks Pay off-screen. */
 function dropinConfigForNarrowDrawer(
   config: EvonetDropinConfig
 ): EvonetDropinConfig {
@@ -61,6 +62,9 @@ interface StorefrontCheckoutDrawerProps {
   onEvent: (event: EvonetDropinEvent) => void;
   /** CSS vars must be set on the portal Paper — Drawer leaves the themed page tree. */
   themeVars?: StorefrontCssVars;
+  copy: StorefrontCopy;
+  /** Runtime Evonet environment from Builder (gates prod-only demo warning). */
+  environment?: string;
 }
 
 function panelHasDropinUi(root: HTMLElement): boolean {
@@ -84,6 +88,8 @@ export function StorefrontCheckoutDrawer({
   sdkInitGeneration,
   onEvent,
   themeVars,
+  copy,
+  environment,
 }: StorefrontCheckoutDrawerProps) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
@@ -178,7 +184,8 @@ export function StorefrontCheckoutDrawer({
           backgroundImage: "none",
         },
         sx: {
-          width: { xs: "100%", sm: 460, md: 500 },
+          // Phone-width Drop-in + side inset (~16–20px) + hairline border.
+          width: { xs: "100%", sm: STOREFRONT_DROPIN_MAX_WIDTH + 48 },
           // iPhone: full usable height; avoid nested maxHeight that clips Drop-in.
           height: { xs: SHEET_MAX_HEIGHT, sm: "100%" },
           maxHeight: { xs: SHEET_MAX_HEIGHT, sm: "100%" },
@@ -245,16 +252,16 @@ export function StorefrontCheckoutDrawer({
                 letterSpacing: "-0.02em",
               }}
             >
-              Secure checkout
+              {copy.secureCheckout}
             </Typography>
             <Typography
               variant="body2"
               sx={{ color: "var(--shop-muted)", display: { xs: "none", sm: "block" } }}
             >
-              Powered by Evonet Drop-in
+              {copy.poweredByEvonet}
             </Typography>
           </Box>
-          <IconButton onClick={onClose} aria-label="Close checkout" size="small">
+          <IconButton onClick={onClose} aria-label={copy.closeCheckout} size="small">
             <CloseIcon />
           </IconButton>
         </Stack>
@@ -292,7 +299,7 @@ export function StorefrontCheckoutDrawer({
             }}
           >
             <Typography variant="body2" sx={{ fontWeight: 650 }}>
-              Order · {lineCount} item{lineCount === 1 ? "" : "s"}
+              {copy.orderItems(lineCount)}
             </Typography>
             <Stack direction="row" spacing={1} alignItems="center">
               <Typography variant="body2" sx={{ fontWeight: 700 }}>
@@ -329,7 +336,7 @@ export function StorefrontCheckoutDrawer({
                           height: 48,
                           borderRadius: 1.25,
                           overflow: "hidden",
-                          bgcolor: "#ece8e1",
+                          bgcolor: "var(--shop-muted-surface, #f3f4f6)",
                         }}
                       >
                         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -341,6 +348,7 @@ export function StorefrontCheckoutDrawer({
                             width: "100%",
                             height: "100%",
                             objectFit: "cover",
+                            objectPosition: thumb?.objectPosition ?? "50% 12%",
                           }}
                         />
                       </Box>
@@ -359,7 +367,8 @@ export function StorefrontCheckoutDrawer({
                           variant="caption"
                           sx={{ color: "var(--shop-muted)", display: "block" }}
                         >
-                          {formatCartLineLabel(line)} · Qty {line.quantity}
+                          {copy.sizeLine(line.colorLabel, line.size)} ·{" "}
+                          {copy.qty(line.quantity)}
                         </Typography>
                       </Box>
                       <Typography
@@ -378,7 +387,7 @@ export function StorefrontCheckoutDrawer({
 
         {!isMobile ? (
           <Box sx={{ px: { sm: 2.5 }, mb: 1.25, flexShrink: 0 }}>
-            <DemoTransactionWarning />
+            <DemoTransactionWarning environment={environment} />
           </Box>
         ) : null}
 
@@ -394,20 +403,24 @@ export function StorefrontCheckoutDrawer({
           ref={dropinPanelRef}
           sx={{
             position: "relative",
-            // Mobile: grow with Drop-in content (parent sheet scrolls).
-            // Desktop: fill remaining drawer height and scroll inside.
-            flex: { xs: "0 0 auto", sm: "1 1 auto" },
-            minHeight: { xs: 280, sm: 0 },
-            mx: { xs: 2, sm: 2.5 },
-            mb: { xs: 1, sm: 1.5 },
+            // Content-sized: growing to fill the drawer left a tall empty shell
+            // with sticky Pay parked at the bottom (weird gap + shadow band).
+            flex: { xs: "0 0 auto", sm: "0 1 auto" },
+            minHeight: 0,
+            maxHeight: { sm: "100%" },
+            mx: { xs: 2, sm: "auto" },
+            mb: { xs: 0.75, sm: 1 },
+            width: { xs: "calc(100% - 32px)", sm: "100%" },
+            maxWidth: STOREFRONT_DROPIN_MAX_WIDTH,
             border: "1px solid var(--shop-border)",
-            borderRadius: 2,
+            borderRadius: "20px",
             overflow: { xs: "visible", sm: "auto" },
             WebkitOverflowScrolling: "touch",
+            // Drop-in keeps merchant/default light appearance for readability.
             bgcolor: "#fff",
             overscrollBehavior: "contain",
-            maxWidth: "100%",
             boxSizing: "border-box",
+            boxShadow: "0 8px 28px rgba(0,0,0,0.06)",
           }}
         >
           {(isCreatingSession ||
@@ -422,10 +435,13 @@ export function StorefrontCheckoutDrawer({
                 opacity: showLoader ? 1 : 0,
                 transition: "opacity 360ms ease",
                 pointerEvents: showLoader ? "auto" : "none",
-                minHeight: showLoader ? 200 : undefined,
+                minHeight: showLoader ? 160 : undefined,
               }}
             >
-              <StorefrontDropinLoader isCreatingSession={isCreatingSession} />
+              <StorefrontDropinLoader
+                isCreatingSession={isCreatingSession}
+                loadingLabel={copy.loadingPayment}
+              />
             </Box>
           ) : null}
 
@@ -435,10 +451,10 @@ export function StorefrontCheckoutDrawer({
                 opacity: dropinUiReady ? 1 : 0,
                 transition: "opacity 420ms ease",
                 pointerEvents: dropinUiReady ? "auto" : "none",
-                p: { xs: 1.5, sm: 2 },
+                // Match Builder stage inset (Figma 20px).
+                p: 2.5,
                 maxWidth: "100%",
                 boxSizing: "border-box",
-                // Content-sized frame — avoid a tall empty Drop-in shell.
                 "& iframe": {
                   maxWidth: "100%",
                 },
@@ -456,7 +472,7 @@ export function StorefrontCheckoutDrawer({
           ) : !isCreatingSession && !sessionError ? (
             <Box sx={{ p: 2.5 }}>
               <Typography variant="body2" sx={{ color: "var(--shop-muted)" }}>
-                Buy now or checkout from your bag to load Drop-in here.
+                  {copy.checkoutEmpty}
               </Typography>
             </Box>
           ) : null}
@@ -467,11 +483,12 @@ export function StorefrontCheckoutDrawer({
             px: { xs: 2, sm: 2.5 },
             pb: { xs: "max(8px, env(safe-area-inset-bottom))", sm: 1.5 },
             pt: 0.25,
+            mt: "auto",
             flexShrink: 0,
           }}
         >
           <Button fullWidth onClick={onClose} sx={shopGhostButtonSx} size="small">
-            Continue shopping
+            {copy.continueShopping}
           </Button>
         </Box>
       </Stack>

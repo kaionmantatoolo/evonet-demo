@@ -21,6 +21,7 @@ import {
 } from "./storefrontButtons";
 import { bagBounce, enterUp } from "./storefrontMotion";
 import type { StorefrontCssVars } from "../../lib/storefrontSnapshot";
+import type { StorefrontCopy } from "../../lib/storefrontCopy";
 
 interface StorefrontProductCardProps {
   product: DemoProduct;
@@ -34,6 +35,7 @@ interface StorefrontProductCardProps {
   justAdded: boolean;
   /** Needed when sticky CTA is portaled outside the themed tree. */
   themeVars?: StorefrontCssVars;
+  copy: StorefrontCopy;
 }
 
 export function StorefrontProductCard({
@@ -47,6 +49,7 @@ export function StorefrontProductCard({
   onBuyNow,
   justAdded,
   themeVars,
+  copy,
 }: StorefrontProductCardProps) {
   const [activeImage, setActiveImage] = useState(0);
   const colorImages = productImagesForColor(product, selectedColorId);
@@ -82,8 +85,8 @@ export function StorefrontProductCard({
             position: "relative",
             borderRadius: { xs: 2, md: 3 },
             overflow: "hidden",
-            bgcolor: "#ece8e1",
-            aspectRatio: { xs: "4 / 5", md: "1 / 1" },
+            bgcolor: "var(--shop-muted-surface, #f3f4f6)",
+            aspectRatio: "4 / 5",
             boxShadow: "0 24px 60px rgba(15, 23, 42, 0.08)",
             transition: "transform 420ms cubic-bezier(0.22, 1, 0.36, 1)",
             "&:hover": {
@@ -104,6 +107,8 @@ export function StorefrontProductCard({
               width: "100%",
               height: "100%",
               objectFit: "cover",
+              objectPosition:
+                colorImages[activeImage]?.objectPosition ?? "50% 12%",
               display: "block",
               ...enterUp(0, 480),
             }}
@@ -135,7 +140,7 @@ export function StorefrontProductCard({
                 component="button"
                 type="button"
                 onClick={() => setActiveImage(index)}
-                aria-label={`Show image ${index + 1}`}
+                aria-label={copy.showImage(index + 1)}
                 sx={{
                   p: 0,
                   border: selected
@@ -147,7 +152,7 @@ export function StorefrontProductCard({
                   height: 76,
                   flexShrink: 0,
                   cursor: "pointer",
-                  bgcolor: "#ece8e1",
+                  bgcolor: "var(--shop-muted-surface, #f3f4f6)",
                   opacity: selected ? 1 : 0.72,
                   transition:
                     "opacity 160ms ease, border-color 160ms ease, transform 180ms ease",
@@ -164,6 +169,7 @@ export function StorefrontProductCard({
                     width: "100%",
                     height: "100%",
                     objectFit: "cover",
+                    objectPosition: image.objectPosition ?? "50% 12%",
                     display: "block",
                   }}
                 />
@@ -191,10 +197,10 @@ export function StorefrontProductCard({
             sx={{
               mt: 0.75,
               fontFamily: "var(--shop-font-display)",
-              fontWeight: 550,
-              fontSize: { xs: "1.65rem", sm: "2rem", md: "2.55rem" },
-              lineHeight: 1.08,
-              letterSpacing: "-0.035em",
+              fontWeight: 400,
+              fontSize: { xs: "1.85rem", sm: "2.25rem", md: "2.75rem" },
+              lineHeight: 1.05,
+              letterSpacing: "0.02em",
               color: "var(--shop-text)",
             }}
           >
@@ -217,10 +223,10 @@ export function StorefrontProductCard({
           <Typography
             sx={{
               fontFamily: "var(--shop-font-display)",
-              fontSize: "1.75rem",
-              fontWeight: 600,
+              fontSize: "1.85rem",
+              fontWeight: 400,
               color: "var(--shop-text)",
-              letterSpacing: "-0.02em",
+              letterSpacing: "0.02em",
             }}
           >
             {currency} {product.price.toFixed(2)}
@@ -245,7 +251,7 @@ export function StorefrontProductCard({
             variant="subtitle2"
             sx={{ mb: 1.25, fontWeight: 650, color: "var(--shop-text)" }}
           >
-            Color —{" "}
+            {copy.colorLabel} —{" "}
             <Box component="span" sx={{ fontWeight: 500, color: "var(--shop-muted)" }}>
               {product.colors.find((c) => c.id === selectedColorId)?.label}
             </Box>
@@ -297,7 +303,7 @@ export function StorefrontProductCard({
             sx={{ mb: 1.25 }}
           >
             <Typography variant="subtitle2" sx={{ fontWeight: 650 }}>
-              Size
+              {copy.sizeLabel}
             </Typography>
             <Typography variant="caption" sx={{ color: "var(--shop-muted)" }}>
               {product.fit}
@@ -331,7 +337,7 @@ export function StorefrontProductCard({
             onClick={onBuyNow}
             sx={shopPrimaryButtonSx}
           >
-            Buy now — {currency} {product.price.toFixed(2)}
+            {copy.buyNow(currency, product.price.toFixed(2))}
           </Button>
           <Button
             fullWidth
@@ -348,7 +354,7 @@ export function StorefrontProductCard({
                 : "none",
             }}
           >
-            {justAdded ? "Added to bag" : "Add to bag"}
+            {justAdded ? copy.addedToBag : copy.addToBag}
           </Button>
         </Stack>
 
@@ -366,7 +372,7 @@ export function StorefrontProductCard({
               px: 1.5,
               pt: 1.1,
               pb: "max(12px, env(safe-area-inset-bottom))",
-              bgcolor: "var(--shop-bg, #f4f1ec)",
+              bgcolor: "var(--shop-bg, #f5f5f5)",
               borderTop: "1px solid var(--shop-border, #e7e2d9)",
               boxShadow: "0 -8px 24px rgba(28, 25, 23, 0.08)",
             }}
@@ -375,7 +381,7 @@ export function StorefrontProductCard({
               <Button
                 variant="outlined"
                 onClick={onAddToCart}
-                aria-label={justAdded ? "Added to bag" : "Add to bag"}
+                aria-label={justAdded ? copy.addedToBag : copy.addToBag}
                 sx={{
                   ...shopSecondaryButtonSx,
                   flex: "0 0 auto",
@@ -415,7 +421,7 @@ export function StorefrontProductCard({
                   textOverflow: "ellipsis",
                 }}
               >
-                Buy now · {currency} {product.price.toFixed(2)}
+                {copy.buyNowShort(currency, product.price.toFixed(2))}
               </Button>
             </Stack>
           </Box>
@@ -458,7 +464,7 @@ export function StorefrontProductCard({
             variant="caption"
             sx={{ color: "var(--shop-muted)", display: "block" }}
           >
-            Fabric
+            {copy.fabric}
           </Typography>
           <Typography variant="body2" sx={{ fontWeight: 600, mb: 1.25 }}>
             {product.fabric}
@@ -467,7 +473,7 @@ export function StorefrontProductCard({
             variant="caption"
             sx={{ color: "var(--shop-muted)", display: "block" }}
           >
-            SKU
+            {copy.sku}
           </Typography>
           <Typography
             variant="body2"

@@ -56,13 +56,14 @@ export const DEV_CONSOLE_PAPER_SX = {
   p: 3,
   borderRadius: 0,
   border: "1px solid",
-  borderColor: "#E5E7EB",
-  bgcolor: "#FFFFFF",
+  borderColor: "divider",
+  bgcolor: "background.paper",
   boxShadow: "none",
 } as const;
 
+/** Prefer Tailwind `text-foreground` — avoid hardcoded light-theme gray. */
 export const DEV_CONSOLE_SECTION_TITLE_SX = {
   fontWeight: 600,
   mb: 1.5,
-  color: "#1F2937",
+  color: "inherit",
 } as const;

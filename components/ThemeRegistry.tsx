@@ -1,34 +1,95 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { useMemo } from "react";
+import { useTheme } from "next-themes";
 import { AppRouterCacheProvider } from "@mui/material-nextjs/v13-appRouter";
 import { CssBaseline, ThemeProvider, createTheme } from "@mui/material";
 
-const theme = createTheme({
-  palette: {
-    background: {
-      default: "#f8fafc",
-      paper: "#ffffff",
+/**
+ * Concrete hex mirrors of app/globals.css tokens.
+ * MUI palette must be parseable (#/rgb/hsl) — CSS `var(...)` / `oklch(...)`
+ * crash getContrastText / alpha and break routes like storefront.
+ */
+const LIGHT = {
+  background: "#ffffff",
+  paper: "#ffffff",
+  text: "#0a0a0a",
+  textSecondary: "#737373",
+  divider: "#ebebeb",
+} as const;
+
+const DARK = {
+  background: "#111111",
+  paper: "#1a1a1a",
+  text: "#fafafa",
+  textSecondary: "#c4c4c4",
+  divider: "rgba(255,255,255,0.12)",
+} as const;
+
+function buildMuiTheme(mode: "light" | "dark") {
+  const colors = mode === "dark" ? DARK : LIGHT;
+  return createTheme({
+    palette: {
+      mode,
+      background: {
+        default: colors.background,
+        paper: colors.paper,
+      },
+      text: {
+        primary: colors.text,
+        secondary: colors.textSecondary,
+      },
+      divider: colors.divider,
     },
-  },
-  shape: {
-    borderRadius: 12,
-  },
-  components: {
-    MuiCssBaseline: {
-      styleOverrides: {
-        // MUI sets `button { color: inherit }` outside @layer, which beats
-        // Tailwind utility layers and makes shadcn primary buttons unreadable
-        // (dark text on dark bg). Revert to the previous cascade layer.
-        "button, [data-slot='button']": {
-          color: "revert-layer",
+    shape: {
+      borderRadius: 12,
+    },
+    components: {
+      MuiCssBaseline: {
+        styleOverrides: {
+          // Prefer CSS variables on the document so body tracks Tailwind tokens;
+          // palette above stays hex for MUI math.
+          body: {
+            backgroundColor: "var(--background)",
+            color: "var(--foreground)",
+          },
+          // MUI sets `button { color: inherit }` outside @layer, which beats
+          // Tailwind utility layers and makes shadcn primary buttons unreadable
+          // (dark text on dark bg). Revert to the previous cascade layer.
+          "button, [data-slot='button']": {
+            color: "revert-layer",
+          },
+        },
+      },
+      MuiSnackbarContent: {
+        styleOverrides: {
+          root: {
+            backgroundColor: colors.paper,
+            color: colors.text,
+            border: `1px solid ${colors.divider}`,
+            boxShadow:
+              mode === "dark"
+                ? "0 8px 24px rgba(0,0,0,0.45)"
+                : "0 8px 24px rgba(0,0,0,0.12)",
+          },
+          message: {
+            color: colors.text,
+          },
+          action: {
+            color: colors.textSecondary,
+          },
         },
       },
     },
-  },
-});
+  });
+}
 
 export default function ThemeRegistry({ children }: { children: ReactNode }) {
+  const { resolvedTheme } = useTheme();
+  const mode = resolvedTheme === "dark" ? "dark" : "light";
+  const theme = useMemo(() => buildMuiTheme(mode), [mode]);
+
   return (
     <AppRouterCacheProvider options={{ key: "mui" }}>
       <ThemeProvider theme={theme}>

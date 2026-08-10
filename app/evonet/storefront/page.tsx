@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { Box } from "@mui/material";
+import { useTheme } from "next-themes";
 import {
   StorefrontEmptyState,
   StorefrontExperience,
@@ -10,6 +11,19 @@ import {
   readStorefrontSnapshot,
   type StorefrontSnapshot,
 } from "../../../lib/storefrontSnapshot";
+
+function StorefrontHydrateSplash() {
+  const { resolvedTheme } = useTheme();
+  const dark = resolvedTheme === "dark";
+  return (
+    <Box
+      sx={{
+        minHeight: "100dvh",
+        bgcolor: dark ? "#0c0a09" : "#f5f5f5",
+      }}
+    />
+  );
+}
 
 function StorefrontPage() {
   const [snapshot, setSnapshot] = useState<StorefrontSnapshot | null>(null);
@@ -21,7 +35,7 @@ function StorefrontPage() {
   }, []);
 
   if (!hydrated) {
-    return <Box sx={{ minHeight: "100dvh", bgcolor: "#f4f1ec" }} />;
+    return <StorefrontHydrateSplash />;
   }
 
   if (!snapshot) {
@@ -33,7 +47,7 @@ function StorefrontPage() {
 
 export default function StorefrontPageRoute() {
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<StorefrontHydrateSplash />}>
       <StorefrontPage />
     </Suspense>
   );

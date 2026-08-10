@@ -47,7 +47,8 @@ export function StorefrontMorphOverlay({
           position: "fixed",
           inset: 0,
           zIndex: (theme) => theme.zIndex.modal + 4,
-          bgcolor: "#ffffff",
+          bgcolor: (theme) =>
+            theme.palette.mode === "dark" ? "#0c0a09" : "#ffffff",
           overflow: "auto",
           opacity: active ? 1 : 0,
           transition: `opacity ${FADE_MS}ms ease`,

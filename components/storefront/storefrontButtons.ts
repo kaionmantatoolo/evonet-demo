@@ -50,7 +50,7 @@ export const shopSecondaryButtonSx: SxProps<Theme> = {
   transition: `transform 200ms ${EASE}, background-color 200ms ease, border-color 200ms ease`,
   "&:hover": {
     borderColor: "var(--shop-action)",
-    bgcolor: "color-mix(in srgb, var(--shop-action) 8%, transparent)",
+    bgcolor: "color-mix(in srgb, var(--shop-action) 12%, var(--shop-surface))",
     transform: "translateY(-1px)",
   },
   "&:active": {
