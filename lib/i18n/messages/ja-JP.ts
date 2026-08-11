@@ -28,8 +28,6 @@ export const JA_JP: SiteMessages = {
     titleLine2: "もっと自然に。",
     subtitle:
       "Evonet Drop-in のデモ。見た目を整え、流れを確認し、本番前に決済体験を共有できます。",
-    startDemo: "デモを始める",
-    validationWorkspace: "検証スペース",
     step1Title: "体験を設定",
     step1Body: "スタイルと操作を選び、すぐにプレビュー。",
     step2Title: "流れを体験",
@@ -39,19 +37,21 @@ export const JA_JP: SiteMessages = {
     choosePath: "パスを選ぶ",
     guidedTitle: "ガイド付き体験",
     guidedBody:
-      "お客様向けデモに最適。Drop-in を整え、ストアフロントを開きます。",
+      "Drop-in がブランドにどう合うかを体験できます。見た目と決済オプションを調整し、ライブプレビューやストアフロント形式の決済で、カスタマイズをかんたんに確認できます。",
     openBuilder: "Builder を開く",
     validationTitle: "検証ワークスペース",
-    validationTitleProd: "本番検証",
-    validationBody: "SDK 設定・イベント・決済結果を詳しく確認。",
-    validationBodyProd: "本番クレデンシャル向けの内部 QA 設定。",
-    openWorkspace: "ワークスペースへ",
-    footer: "デモ環境 · Evonet Drop-in",
+    validationBody:
+      "貴社の開発チームが Drop-in を連携するときに。SDK 設定、ライブイベント、決済結果を確認し、Drop-in の動きを一連の流れで把握できます。",
+    openWorkspace: "ワークスペースを開く",
+    footerTitle: "Evonet Drop-in Demo",
+    footerBody:
+      "Builder でブランドに合わせたカスタマイズを体験し、ワークスペースで Drop-in の動きを確認。リリース前にチェックアウトを評価できます。",
+    footerNote: "デモ環境 · 本番の加盟店チェックアウトではありません",
   },
   builder: {
     title: "Drop-in Builder",
     description:
-      "ガイド付き UI で Drop-in を設定し、すぐプレビュー、JSON をコピー。",
+      "ブランドに合わせて Drop-in をカスタマイズ。設定を調整し、すぐプレビュー、UI 設定 JSON をコピー。",
     openAsStorefront: "ストアフロントで開く",
     jumpToPreview: "プレビューへ",
     tabOrderInfo: "注文情報",
@@ -76,6 +76,30 @@ export const JA_JP: SiteMessages = {
     allowAuthentication: "認証を許可",
     allowAuthenticationHint:
       "有効時、セッション作成で allowAuthentication=true を送信。既定はオフ（フィールド省略）。変更後はセッションを更新。",
+    binVerificationAccordion: "BIN 検証",
+    verifyPaymentBrand: "BIN チェックを有効化",
+    verifyPaymentBrandHint:
+      "カード番号の先頭 6 桁（または Apple Pay の dpan）を照合。ルールでプロモ表示や決済ブロックが可能。未一致の BIN は許可されます。",
+    maxWaitTime: "最大待機時間（秒）",
+    maxWaitTimeHint:
+      "既定は 10。Apple Pay はこのタイムアウト前に検証コールバックを受け取る必要があります。",
+    binRulesHint:
+      "ルールは順に照合。Allow はプロモ表示、Block はカードを拒否。BIN はちょうど 6 桁である必要があります。",
+    binRulesEmpty: "BIN ルールはまだありません。追加するまで全カードが許可されます。",
+    binRuleLabel: (index) => `ルール ${index}`,
+    binRuleBlocking: "ブロック中",
+    binRuleAllowing: "許可中",
+    binRuleIncomplete: "未完成",
+    removeBinRule: "削除",
+    cardBin: "カード BIN（6 桁）",
+    cardBinIncompleteHint: "6 桁を入力してください — 完了するまでこのルールは無視されます。",
+    binAction: "アクション",
+    binActionAllow: "許可（プロモ）",
+    binActionBlock: "ブロック",
+    promoMessage: "プロモーションメッセージ",
+    rejectMessage: "拒否メッセージ",
+    rejectMessagePlaceholder: "このカードはご利用いただけません",
+    addBinRule: "+ BIN ルールを追加",
     saveCardAccordion: "次回購入用にカードを保存",
     allowSaveCard: "次回購入用のカード保存を許可",
     allowSaveCardHint:

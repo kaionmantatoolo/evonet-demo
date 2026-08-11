@@ -24,8 +24,6 @@ export interface SiteMessages {
     titleLine1: string;
     titleLine2: string;
     subtitle: string;
-    startDemo: string;
-    validationWorkspace: string;
     step1Title: string;
     step1Body: string;
     step2Title: string;
@@ -37,11 +35,11 @@ export interface SiteMessages {
     guidedBody: string;
     openBuilder: string;
     validationTitle: string;
-    validationTitleProd: string;
     validationBody: string;
-    validationBodyProd: string;
     openWorkspace: string;
-    footer: string;
+    footerTitle: string;
+    footerBody: string;
+    footerNote: string;
   };
   builder: {
     title: string;
@@ -66,6 +64,27 @@ export interface SiteMessages {
     sessionSpentHint: string;
     allowAuthentication: string;
     allowAuthenticationHint: string;
+    binVerificationAccordion: string;
+    verifyPaymentBrand: string;
+    verifyPaymentBrandHint: string;
+    maxWaitTime: string;
+    maxWaitTimeHint: string;
+    binRulesHint: string;
+    binRulesEmpty: string;
+    binRuleLabel: (index: number) => string;
+    binRuleBlocking: string;
+    binRuleAllowing: string;
+    binRuleIncomplete: string;
+    removeBinRule: string;
+    cardBin: string;
+    cardBinIncompleteHint: string;
+    binAction: string;
+    binActionAllow: string;
+    binActionBlock: string;
+    promoMessage: string;
+    rejectMessage: string;
+    rejectMessagePlaceholder: string;
+    addBinRule: string;
     saveCardAccordion: string;
     allowSaveCard: string;
     allowSaveCardHint: string;
@@ -160,8 +179,6 @@ export const EN_US: SiteMessages = {
     titleLine2: "designed to feel effortless.",
     subtitle:
       "A client showcase for Drop-in. Shape the look, preview the journey, and share a clear checkout experience before go-live.",
-    startDemo: "Start interactive demo",
-    validationWorkspace: "Validation workspace",
     step1Title: "Set the experience",
     step1Body: "Pick style and interaction options, then preview instantly.",
     step2Title: "Walk the journey",
@@ -171,19 +188,21 @@ export const EN_US: SiteMessages = {
     choosePath: "Choose a path",
     guidedTitle: "Guided experience",
     guidedBody:
-      "Best for customer meetings. Shape Drop-in and open a polished storefront preview.",
+      "See how Drop-in can fit your brand. Adjust look and payment options, preview live, and open a storefront-style checkout—a simple way to explore customization.",
     openBuilder: "Open Builder",
     validationTitle: "Validation workspace",
-    validationTitleProd: "Production validation",
-    validationBody: "Inspect SDK options, events, and payment outcomes in detail.",
-    validationBodyProd: "Full configuration for internal QA against live credentials.",
+    validationBody:
+      "For your developers integrating Drop-in. Inspect SDK options, watch live events, and review payment outcomes to understand how Drop-in behaves end to end.",
     openWorkspace: "Open workspace",
-    footer: "Demo environment · Evonet Drop-in",
+    footerTitle: "Evonet Drop-in Demo",
+    footerBody:
+      "Explore brand customization in Builder, or review Drop-in behavior in the workspace—so your team can evaluate checkout before go-live.",
+    footerNote: "Demo environment · Not a live merchant checkout",
   },
   builder: {
     title: "Drop-in Builder",
     description:
-      "Configure Evonet Drop-in SDK options with a guided interface, preview the result instantly, and copy JSON in one click.",
+      "Customize Drop-in for your brand. Adjust options, preview live, and copy UI config JSON in one click.",
     openAsStorefront: "Open as storefront",
     jumpToPreview: "Jump to preview",
     tabOrderInfo: "Order Info",
@@ -208,6 +227,30 @@ export const EN_US: SiteMessages = {
     allowAuthentication: "Allow authentication",
     allowAuthenticationHint:
       "When enabled, sends allowAuthentication=true on session create. Off by default (field omitted). Refresh the session after changing this.",
+    binVerificationAccordion: "BIN verification",
+    verifyPaymentBrand: "Enable BIN check",
+    verifyPaymentBrandHint:
+      "Match the first 6 digits of the card (or Apple Pay dpan). Rules can show a promo or block payment; unmatched BINs are allowed.",
+    maxWaitTime: "Max wait time (seconds)",
+    maxWaitTimeHint:
+      "Default: 10. Apple Pay must receive the verification callback before this timeout.",
+    binRulesHint:
+      "Rules are checked in order. Allow shows a promo message; Block rejects the card. BIN must be exactly 6 digits.",
+    binRulesEmpty: "No BIN rules yet. Every card is allowed until you add one.",
+    binRuleLabel: (index) => `Rule ${index}`,
+    binRuleBlocking: "Blocking",
+    binRuleAllowing: "Allowing",
+    binRuleIncomplete: "Incomplete",
+    removeBinRule: "Remove",
+    cardBin: "Card BIN (6 digits)",
+    cardBinIncompleteHint: "Enter 6 digits — this rule is ignored until then.",
+    binAction: "Action",
+    binActionAllow: "Allow (promo)",
+    binActionBlock: "Block",
+    promoMessage: "Promotion message",
+    rejectMessage: "Reject message",
+    rejectMessagePlaceholder: "Card not accepted",
+    addBinRule: "+ Add BIN rule",
     saveCardAccordion: "Save card for next purchase",
     allowSaveCard: "Allow save card for next purchase",
     allowSaveCardHint:

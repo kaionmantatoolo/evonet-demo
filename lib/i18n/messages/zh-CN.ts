@@ -28,8 +28,6 @@ export const ZH_CN: SiteMessages = {
     titleLine2: "设计得毫不费力。",
     subtitle:
       "Evonet Drop-in 客户展示。调整外观、预览流程，并在上线前分享清晰一致的结账体验。",
-    startDemo: "开始互动演示",
-    validationWorkspace: "验证工作区",
     step1Title: "设置体验",
     step1Body: "选择风格与交互选项，即时预览。",
     step2Title: "走一遍流程",
@@ -38,19 +36,22 @@ export const ZH_CN: SiteMessages = {
     step3Body: "让产品与工程共享同一份结账参考。",
     choosePath: "选择路径",
     guidedTitle: "引导式体验",
-    guidedBody: "适合客户会议。调整 Drop-in 并打开精致的店面预览。",
+    guidedBody:
+      "看看 Drop-in 如何贴合你的品牌。调整外观与支付选项、即时预览，再打开店面式结账——轻松体验定制效果。",
     openBuilder: "打开 Builder",
     validationTitle: "验证工作区",
-    validationTitleProd: "生产环境验证",
-    validationBody: "详细查看 SDK 选项、事件与支付结果。",
-    validationBodyProd: "完整配置，供内部使用正式凭证进行 QA。",
+    validationBody:
+      "供贵司开发团队对接 Drop-in 时使用。查看 SDK 选项、实时事件与支付结果，掌握 Drop-in 端到端行为。",
     openWorkspace: "打开工作区",
-    footer: "演示环境 · Evonet Drop-in",
+    footerTitle: "Evonet Drop-in 演示",
+    footerBody:
+      "用 Builder 体验品牌定制，或在工作区查看 Drop-in 行为——协助你的团队在上线前评估结账体验。",
+    footerNote: "演示环境 · 非正式商户结账",
   },
   builder: {
     title: "Drop-in Builder",
     description:
-      "用引导界面配置 Evonet Drop-in SDK、即时预览结果，并一键复制 JSON。",
+      "为你的品牌定制 Drop-in。调整选项、即时预览，并一键复制 UI 配置 JSON。",
     openAsStorefront: "以店面打开",
     jumpToPreview: "跳转到预览",
     tabOrderInfo: "订单信息",
@@ -73,6 +74,29 @@ export const ZH_CN: SiteMessages = {
     allowAuthentication: "允许验证",
     allowAuthenticationHint:
       "启用时，创建 session 会发送 allowAuthentication=true。默认关闭（省略字段）。更改后请刷新 session。",
+    binVerificationAccordion: "BIN 验证",
+    verifyPaymentBrand: "启用 BIN 检查",
+    verifyPaymentBrandHint:
+      "比对卡号前 6 位（或 Apple Pay dpan）。规则可显示优惠或拦截支付；未命中的 BIN 一律放行。",
+    maxWaitTime: "最长等待时间（秒）",
+    maxWaitTimeHint: "默认 10。Apple Pay 须在超时前收到验证回调。",
+    binRulesHint:
+      "规则按顺序比对。允许会显示优惠信息；拦截会拒绝该卡。BIN 须刚好 6 位数字。",
+    binRulesEmpty: "尚无 BIN 规则。新增前所有卡片都会放行。",
+    binRuleLabel: (index) => `规则 ${index}`,
+    binRuleBlocking: "拦截中",
+    binRuleAllowing: "允许中",
+    binRuleIncomplete: "未完成",
+    removeBinRule: "移除",
+    cardBin: "卡 BIN（6 位）",
+    cardBinIncompleteHint: "请输入 6 位数字——完成前此规则不会生效。",
+    binAction: "动作",
+    binActionAllow: "允许（优惠）",
+    binActionBlock: "拦截",
+    promoMessage: "优惠信息",
+    rejectMessage: "拒绝信息",
+    rejectMessagePlaceholder: "不接受此卡",
+    addBinRule: "+ 新增 BIN 规则",
     saveCardAccordion: "保存卡片供下次购买",
     allowSaveCard: "允许保存卡片供下次购买",
     allowSaveCardHint:

@@ -200,6 +200,7 @@ export function StorefrontExperience({
         : undefined,
       uiOption: config.uiOption,
       appearance: config.appearance,
+      binRules: config.verifyPaymentBrand ? config.binRules : undefined,
     };
   }, [config, storefrontLocale, sessionID]);
 

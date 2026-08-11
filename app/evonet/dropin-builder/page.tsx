@@ -90,6 +90,7 @@ import {
   builderStageMorphSx,
 } from "../../../components/storefront/StorefrontMorphOverlay";
 import type {
+  BinRule,
   EvonetDropinConfig,
   EvonetDropinEvent,
   EvonetDropinMode,
@@ -310,6 +311,15 @@ function DropinBuilderPage() {
   const [verifyPaymentBrand, setVerifyPaymentBrand] = useState(true);
 
   const [maxWaitTime, setMaxWaitTime] = useState("10");
+  const [binRules, setBinRules] = useState<BinRule[]>([
+    {
+      first6No: "552343",
+      action: "allow",
+      message: "This card is eligible for a limited-time checkout promotion.",
+    },
+  ]);
+  const [binPromoMessage, setBinPromoMessage] = useState<string | null>(null);
+  const [binRejectMessage, setBinRejectMessage] = useState<string | null>(null);
 
   const [showSaveImage, setShowSaveImage] = useState(false);
   const [columnsLayout, setColumnsLayout] = useState(false);
@@ -557,10 +567,12 @@ function DropinBuilderPage() {
         : { isVerifyPaymentBrand: false },
       uiOption: sdkUiOption,
       appearance: sdkAppearance,
+      binRules: verifyPaymentBrand ? binRules : undefined,
       _note:
         "Callbacks (payment_method_select, payment_method_selected, payment_completed, payment_failed, payment_not_preformed, payment_cancelled) should be attached in your integration code. Two-column layout requires uiOption.columns: true (lowercase).",
     };
   }, [
+    binRules,
     environment,
     locale,
     maxWaitTime,
@@ -584,8 +596,10 @@ function DropinBuilderPage() {
         : undefined,
       uiOption: sdkUiOption,
       appearance: sdkAppearance,
+      binRules: verifyPaymentBrand ? binRules : undefined,
     }),
     [
+      binRules,
       environment,
       locale,
       maxWaitTime,
@@ -743,11 +757,13 @@ function DropinBuilderPage() {
       uiOption: sdkUiOption,
       verifyPaymentBrand,
       maxWaitTime: maxWaitTime.trim() || "10",
+      binRules: verifyPaymentBrand ? binRules : undefined,
       enabledPaymentMethod: parseEnabledPaymentMethodInput(
         enabledPaymentMethodInput
       ),
     }),
     [
+      binRules,
       enabledPaymentMethodInput,
       environment,
       locale,
@@ -853,6 +869,104 @@ function DropinBuilderPage() {
     }
   }, []);
 
+  const handleDropinPreviewEvent = useCallback(
+    (event: EvonetDropinEvent) => {
+      const payload = event.payload as
+        | {
+            source?: string;
+            phase?: string;
+            matchedRule?: BinRule | null;
+            first6No?: string;
+            dpanFirst6No?: string;
+            isValid?: boolean;
+            action?: string;
+            msg?: string;
+          }
+        | undefined;
+
+      if (event.type === "sdk_message" && payload?.source === "dropin_host") {
+        if (payload.phase === "construct_ok") setPreviewFallbackBadge(null);
+        else if (payload.phase === "construct_ok_without_font_weight") {
+          setPreviewFallbackBadge(
+            "SDK fallback: fontWeight was ignored for compatibility."
+          );
+        } else if (payload.phase === "construct_ok_without_border_radius") {
+          setPreviewFallbackBadge(
+            "SDK fallback: borderRadius was ignored for compatibility."
+          );
+        }
+      }
+
+      if (
+        event.type === "sdk_message" &&
+        payload?.source === "bin_verification_cleared"
+      ) {
+        setBinPromoMessage(null);
+        setBinRejectMessage(null);
+      } else if (
+        event.type === "sdk_message" &&
+        payload?.source === "bin_verification_decision"
+      ) {
+        const matchedRule = payload.matchedRule;
+        const first6 = String(payload.first6No ?? "");
+        const isValid = Boolean(payload.isValid);
+        const action =
+          payload.action === "block" || matchedRule?.action === "block"
+            ? "block"
+            : "allow";
+
+        if (!first6 || first6.length < 6) {
+          setBinPromoMessage(null);
+          setBinRejectMessage(null);
+        } else if (!isValid || action === "block") {
+          setBinPromoMessage(null);
+          setBinRejectMessage(
+            String(payload.msg ?? "").trim() ||
+              matchedRule?.rejectMessage?.trim() ||
+              t.rejectMessagePlaceholder
+          );
+        } else {
+          setBinRejectMessage(null);
+          setBinPromoMessage(matchedRule?.message?.trim() || null);
+        }
+      } else if (event.type === "payment_method_selected") {
+        const maybeFirst6 =
+          payload?.first6No || payload?.dpanFirst6No;
+        if (maybeFirst6 && maybeFirst6.length >= 6) {
+          const matchedRule = binRules.find(
+            (rule) =>
+              rule.first6No.length === 6 && rule.first6No === maybeFirst6
+          );
+          if (matchedRule?.action === "block") {
+            setBinPromoMessage(null);
+            setBinRejectMessage(
+              matchedRule.rejectMessage?.trim() ||
+                matchedRule.message?.trim() ||
+                t.rejectMessagePlaceholder
+            );
+          } else {
+            setBinRejectMessage(null);
+            setBinPromoMessage(matchedRule?.message?.trim() || null);
+          }
+        } else {
+          setBinPromoMessage(null);
+          setBinRejectMessage(null);
+        }
+      }
+
+      if (
+        event.type === "payment_success" ||
+        event.type === "payment_fail" ||
+        event.type === "payment_cancelled"
+      ) {
+        const fromSdk = parseEvonetSdkPaymentEvent(event.type, event.payload);
+        if (fromSdk) markSessionSpentFromPayment(fromSdk);
+      }
+      setPreviewEvents((previous) => [event, ...previous].slice(0, 20));
+    },
+    [binRules, markSessionSpentFromPayment, t.rejectMessagePlaceholder]
+  );
+
   /** Re-init alone cannot revive a spent session — mint a new one first. */
   const handlePreviewInit = useCallback(() => {
     if (sessionSpent) {
@@ -860,6 +974,8 @@ function DropinBuilderPage() {
       return;
     }
     setPreviewFallbackBadge(null);
+    setBinPromoMessage(null);
+    setBinRejectMessage(null);
     setPreviewEvents([]);
     setSdkInitGeneration((value) => value + 1);
   }, [sessionSpent]);
@@ -1302,6 +1418,291 @@ function DropinBuilderPage() {
                         </AccordionContent>
                       </AccordionItem>
                     </Accordion>
+                    <Accordion
+                      type="single"
+                      collapsible
+                      className="rounded-none border border-border bg-card px-4 text-card-foreground"
+                    >
+                      <AccordionItem value="bin-verification" className="border-0">
+                        <AccordionTrigger>
+                          {t.binVerificationAccordion}
+                        </AccordionTrigger>
+                        <AccordionContent className="space-y-4 pt-2">
+                          <div className="flex items-start justify-between gap-4 rounded-none border p-3">
+                            <div>
+                              <Label
+                                htmlFor="verify-payment-brand"
+                                className="font-medium"
+                              >
+                                {t.verifyPaymentBrand}
+                              </Label>
+                              <p className="mt-1 text-xs text-muted-foreground">
+                                {t.verifyPaymentBrandHint}
+                              </p>
+                            </div>
+                            <Switch
+                              id="verify-payment-brand"
+                              checked={verifyPaymentBrand}
+                              onCheckedChange={(checked) => {
+                                setVerifyPaymentBrand(checked);
+                                if (!checked) {
+                                  setBinPromoMessage(null);
+                                  setBinRejectMessage(null);
+                                }
+                              }}
+                              aria-label={t.verifyPaymentBrand}
+                            />
+                          </div>
+                          {verifyPaymentBrand ? (
+                            <>
+                              <div className="space-y-2">
+                                <Label htmlFor="max-wait-time">
+                                  {t.maxWaitTime}
+                                </Label>
+                                <Input
+                                  id="max-wait-time"
+                                  value={maxWaitTime}
+                                  onChange={(event) =>
+                                    setMaxWaitTime(event.target.value)
+                                  }
+                                  inputMode="numeric"
+                                />
+                                <p className="text-xs text-muted-foreground">
+                                  {t.maxWaitTimeHint}
+                                </p>
+                              </div>
+                              <p className="text-xs text-muted-foreground">
+                                {t.binRulesHint}
+                              </p>
+                              {binRules.length === 0 ? (
+                                <div className="rounded-none border border-dashed border-border bg-muted/30 p-3 text-xs text-muted-foreground">
+                                  {t.binRulesEmpty}
+                                </div>
+                              ) : null}
+                              <div className="space-y-3">
+                                {binRules.map((rule, index) => {
+                                  const ruleAction =
+                                    rule.action === "block" ? "block" : "allow";
+                                  const binReady = rule.first6No.length === 6;
+                                  return (
+                                    <div
+                                      key={index}
+                                      className="rounded-none border border-border bg-muted/20 p-3"
+                                    >
+                                      <div className="mb-2.5 flex items-center justify-between gap-2">
+                                        <div className="flex min-w-0 items-center gap-2">
+                                          <p className="text-xs font-semibold tracking-tight">
+                                            {t.binRuleLabel(index + 1)}
+                                          </p>
+                                          <Badge
+                                            variant={
+                                              binReady
+                                                ? ruleAction === "block"
+                                                  ? "destructive"
+                                                  : "secondary"
+                                                : "outline"
+                                            }
+                                            className="rounded-none px-1.5 py-0 font-mono text-[10px] uppercase tracking-wide"
+                                          >
+                                            {binReady
+                                              ? ruleAction === "block"
+                                                ? t.binRuleBlocking
+                                                : t.binRuleAllowing
+                                              : t.binRuleIncomplete}
+                                          </Badge>
+                                        </div>
+                                        <Button
+                                          type="button"
+                                          variant="ghost"
+                                          size="sm"
+                                          className="h-7 shrink-0 px-2 text-destructive"
+                                          onClick={() =>
+                                            setBinRules((previous) =>
+                                              previous.filter(
+                                                (_, ruleIndex) =>
+                                                  ruleIndex !== index
+                                              )
+                                            )
+                                          }
+                                        >
+                                          {t.removeBinRule}
+                                        </Button>
+                                      </div>
+
+                                      <div className="grid gap-2.5 sm:grid-cols-[minmax(0,7.5rem)_minmax(0,1fr)]">
+                                        <div className="space-y-1.5">
+                                          <Label
+                                            htmlFor={`builder-bin-${index}`}
+                                            className="text-xs"
+                                          >
+                                            {t.cardBin}
+                                          </Label>
+                                          <Input
+                                            id={`builder-bin-${index}`}
+                                            value={rule.first6No}
+                                            onChange={(event) => {
+                                              const value = event.target.value
+                                                .replace(/\D/g, "")
+                                                .slice(0, 6);
+                                              setBinRules((previous) =>
+                                                previous.map(
+                                                  (item, ruleIndex) =>
+                                                    ruleIndex === index
+                                                      ? {
+                                                          ...item,
+                                                          first6No: value,
+                                                        }
+                                                      : item
+                                                )
+                                              );
+                                            }}
+                                            maxLength={6}
+                                            placeholder="491794"
+                                            className="font-mono tabular-nums"
+                                            inputMode="numeric"
+                                            aria-invalid={!binReady}
+                                          />
+                                        </div>
+                                        <div className="space-y-1.5">
+                                          <Label
+                                            htmlFor={`builder-bin-action-${index}`}
+                                            className="text-xs"
+                                          >
+                                            {t.binAction}
+                                          </Label>
+                                          <Select
+                                            value={ruleAction}
+                                            onValueChange={(value) =>
+                                              setBinRules((previous) =>
+                                                previous.map(
+                                                  (item, ruleIndex) =>
+                                                    ruleIndex === index
+                                                      ? {
+                                                          ...item,
+                                                          action: value as
+                                                            | "allow"
+                                                            | "block",
+                                                        }
+                                                      : item
+                                                )
+                                              )
+                                            }
+                                          >
+                                            <SelectTrigger
+                                              id={`builder-bin-action-${index}`}
+                                              className="w-full"
+                                              aria-label={t.binRuleLabel(
+                                                index + 1
+                                              )}
+                                            >
+                                              <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                              <SelectItem value="allow">
+                                                {t.binActionAllow}
+                                              </SelectItem>
+                                              <SelectItem value="block">
+                                                {t.binActionBlock}
+                                              </SelectItem>
+                                            </SelectContent>
+                                          </Select>
+                                        </div>
+                                      </div>
+
+                                      {!binReady ? (
+                                        <p className="mt-1.5 text-xs text-muted-foreground">
+                                          {t.cardBinIncompleteHint}
+                                        </p>
+                                      ) : null}
+
+                                      <div className="mt-2.5 space-y-1.5">
+                                        {ruleAction === "allow" ? (
+                                          <>
+                                            <Label
+                                              htmlFor={`builder-bin-promo-${index}`}
+                                              className="text-xs"
+                                            >
+                                              {t.promoMessage}
+                                            </Label>
+                                            <Input
+                                              id={`builder-bin-promo-${index}`}
+                                              value={rule.message ?? ""}
+                                              onChange={(event) =>
+                                                setBinRules((previous) =>
+                                                  previous.map(
+                                                    (item, ruleIndex) =>
+                                                      ruleIndex === index
+                                                        ? {
+                                                            ...item,
+                                                            message:
+                                                              event.target
+                                                                .value,
+                                                          }
+                                                        : item
+                                                  )
+                                                )
+                                              }
+                                            />
+                                          </>
+                                        ) : (
+                                          <>
+                                            <Label
+                                              htmlFor={`builder-bin-reject-${index}`}
+                                              className="text-xs"
+                                            >
+                                              {t.rejectMessage}
+                                            </Label>
+                                            <Input
+                                              id={`builder-bin-reject-${index}`}
+                                              value={rule.rejectMessage ?? ""}
+                                              placeholder={
+                                                t.rejectMessagePlaceholder
+                                              }
+                                              onChange={(event) =>
+                                                setBinRules((previous) =>
+                                                  previous.map(
+                                                    (item, ruleIndex) =>
+                                                      ruleIndex === index
+                                                        ? {
+                                                            ...item,
+                                                            rejectMessage:
+                                                              event.target
+                                                                .value,
+                                                          }
+                                                        : item
+                                                  )
+                                                )
+                                              }
+                                            />
+                                          </>
+                                        )}
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                className="w-full"
+                                onClick={() => {
+                                  setBinRules((previous) => [
+                                    ...previous,
+                                    {
+                                      first6No: "",
+                                      action: "block",
+                                      rejectMessage: t.rejectMessagePlaceholder,
+                                    },
+                                  ]);
+                                }}
+                              >
+                                {t.addBinRule}
+                              </Button>
+                            </>
+                          ) : null}
+                        </AccordionContent>
+                      </AccordionItem>
+                    </Accordion>
                   </AppearanceSectionCard>
                 </TabsContent>
 
@@ -1568,6 +1969,22 @@ function DropinBuilderPage() {
                     environment={environment}
                     sx={{ mb: 2, wordBreak: "break-word" }}
                   />
+                  {binRejectMessage ? (
+                    <div
+                      role="alert"
+                      className="rounded-none border border-red-200 bg-red-50 p-3 text-sm text-red-950 dark:border-red-400/40 dark:bg-red-950/40 dark:text-red-100"
+                    >
+                      {binRejectMessage}
+                    </div>
+                  ) : null}
+                  {binPromoMessage ? (
+                    <div
+                      role="status"
+                      className="rounded-none border border-border bg-muted p-3 text-sm text-foreground"
+                    >
+                      {binPromoMessage}
+                    </div>
+                  ) : null}
                   {isSdkOverlayMode ? (
                     <div className="space-y-3 rounded-none border border-dashed border-border bg-muted/30 p-4">
                       <p className="text-sm font-medium">{t.sdkModeTitle(mode)}</p>
@@ -1603,19 +2020,7 @@ function DropinBuilderPage() {
                         config={dropinConfigForPreview}
                         initGeneration={sdkInitGeneration}
                         pulseKey={activePulseKey}
-                        onEvent={(event) => {
-                          const payload = event.payload as { source?: string; phase?: string } | undefined;
-                          if (event.type === "sdk_message" && payload?.source === "dropin_host") {
-                            if (payload.phase === "construct_ok") setPreviewFallbackBadge(null);
-                            else if (payload.phase === "construct_ok_without_font_weight") setPreviewFallbackBadge("SDK fallback: fontWeight was ignored for compatibility.");
-                            else if (payload.phase === "construct_ok_without_border_radius") setPreviewFallbackBadge("SDK fallback: borderRadius was ignored for compatibility.");
-                          }
-                          if (event.type === "payment_success" || event.type === "payment_fail" || event.type === "payment_cancelled") {
-                            const fromSdk = parseEvonetSdkPaymentEvent(event.type, event.payload);
-                            if (fromSdk) markSessionSpentFromPayment(fromSdk);
-                          }
-                          setPreviewEvents((previous) => [event, ...previous].slice(0, 20));
-                        }}
+                        onEvent={handleDropinPreviewEvent}
                         onSdkInitApplied={(info) => setLastSdkInitInfo(info)}
                         compact
                       />
@@ -1631,19 +2036,7 @@ function DropinBuilderPage() {
                         config={dropinConfigForPreview}
                         initGeneration={sdkInitGeneration}
                         pulseKey={activePulseKey}
-                        onEvent={(event) => {
-                          const payload = event.payload as { source?: string; phase?: string } | undefined;
-                          if (event.type === "sdk_message" && payload?.source === "dropin_host") {
-                            if (payload.phase === "construct_ok") setPreviewFallbackBadge(null);
-                            else if (payload.phase === "construct_ok_without_font_weight") setPreviewFallbackBadge("SDK fallback: fontWeight was ignored for compatibility.");
-                            else if (payload.phase === "construct_ok_without_border_radius") setPreviewFallbackBadge("SDK fallback: borderRadius was ignored for compatibility.");
-                          }
-                          if (event.type === "payment_success" || event.type === "payment_fail" || event.type === "payment_cancelled") {
-                            const fromSdk = parseEvonetSdkPaymentEvent(event.type, event.payload);
-                            if (fromSdk) markSessionSpentFromPayment(fromSdk);
-                          }
-                          setPreviewEvents((previous) => [event, ...previous].slice(0, 20));
-                        }}
+                        onEvent={handleDropinPreviewEvent}
                         onSdkInitApplied={(info) => setLastSdkInitInfo(info)}
                         compact={false}
                       />

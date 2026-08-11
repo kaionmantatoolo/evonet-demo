@@ -1,4 +1,5 @@
 import type {
+  BinRule,
   EvonetDropinMode,
   EvonetSdkAppearance,
   EvonetSdkUiOption,
@@ -17,6 +18,7 @@ export interface StorefrontSnapshot {
   uiOption?: EvonetSdkUiOption;
   verifyPaymentBrand?: boolean;
   maxWaitTime?: string;
+  binRules?: BinRule[];
   /**
    * From Builder Order Payment Methods → interaction
    * `merchantOrderInfo.enabledPaymentMethod` when storefront creates a session.

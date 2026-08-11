@@ -317,7 +317,7 @@ function EvonetDropinTestPage() {
     {
       first6No: "552343",
       action: "allow",
-      message: "This card is eligible for the promotion with SC Double Fun points",
+      message: "This card is eligible for a limited-time checkout promotion.",
     },
   ]);
 

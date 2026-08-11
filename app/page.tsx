@@ -7,7 +7,6 @@ import { LocaleSwitcher } from "../components/LocaleSwitcher";
 import { ThemeToggle } from "../components/ThemeToggle";
 import { LandingAtmosphere } from "../components/LandingAtmosphere";
 import { useSiteLocale } from "../components/SiteLocaleProvider";
-import { isEvonetProductionEnvironment } from "../lib/evonetEnvironment";
 import { pageEnter, sectionEnter } from "../lib/pageMotion";
 import {
   apple,
@@ -24,7 +23,6 @@ import {
 } from "../lib/appleDesign";
 
 export default function HomePage() {
-  const isProd = isEvonetProductionEnvironment();
   const { messages } = useSiteLocale();
   const t = messages.home;
 
@@ -193,7 +191,7 @@ export default function HomePage() {
                 py: 1.15,
               }}
             >
-              {t.startDemo}
+              {t.openBuilder}
             </Button>
             <Button
               component={Link}
@@ -208,7 +206,7 @@ export default function HomePage() {
                 py: 1.1,
               }}
             >
-              {t.validationWorkspace}
+              {t.openWorkspace}
             </Button>
           </Stack>
 
@@ -353,7 +351,7 @@ export default function HomePage() {
                         color: "inherit",
                       }}
                     >
-                      {isProd ? t.validationTitleProd : t.validationTitle}
+                      {t.validationTitle}
                     </Typography>
                     <Typography
                       variant="body2"
@@ -363,7 +361,7 @@ export default function HomePage() {
                         overflowWrap: "anywhere",
                       }}
                     >
-                      {isProd ? t.validationBodyProd : t.validationBody}
+                      {t.validationBody}
                     </Typography>
                   </Box>
                   <Button
@@ -389,12 +387,42 @@ export default function HomePage() {
             </Stack>
           </Box>
 
-          <Typography
-            variant="caption"
-            sx={{ ...appleCaptionSx, ...sectionEnter(280) }}
+          <Stack
+            spacing={0.75}
+            alignItems="center"
+            sx={{
+              ...sectionEnter(280),
+              width: "100%",
+              maxWidth: 440,
+              pt: { xs: 1, sm: 1.5 },
+              px: 1,
+            }}
           >
-            {t.footer}
-          </Typography>
+            <Typography
+              sx={{
+                fontWeight: 650,
+                fontSize: "0.8125rem",
+                letterSpacing: "-0.015em",
+                color: "inherit",
+              }}
+            >
+              {t.footerTitle}
+            </Typography>
+            <Typography
+              sx={{
+                ...appleBodySecondarySx,
+                fontSize: "0.8125rem",
+                lineHeight: 1.45,
+                textAlign: "center",
+                overflowWrap: "anywhere",
+              }}
+            >
+              {t.footerBody}
+            </Typography>
+            <Typography variant="caption" sx={{ ...appleCaptionSx, mt: 0.25 }}>
+              {t.footerNote}
+            </Typography>
+          </Stack>
         </Stack>
       </Container>
       </Box>
