@@ -16,7 +16,7 @@ interface LocaleSwitcherProps {
   /** Compact trigger for header toolbars. */
   size?: "default" | "sm";
   /**
-   * Short trigger labels (EN / 繁 / 简 / 日) for tight chrome such as
+   * Short trigger labels (EN / 繁 / 简 / 日 / 한) for tight chrome such as
    * the mobile landing glass pill. Menu items stay full native names.
    */
   compact?: boolean;

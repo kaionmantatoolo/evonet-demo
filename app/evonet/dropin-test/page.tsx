@@ -291,7 +291,9 @@ function EvonetDropinTestPage() {
   const [tncMode, setTncMode] = useState<"checkbox" | "click2accept">(
     "click2accept"
   );
-  const [tncUrl, setTncUrl] = useState("");
+  const [tncUrl, setTncUrl] = useState(
+    "https://evonetglobal.com/company-policies/privacy-policy/"
+  );
   const [columnsLayout, setColumnsLayout] = useState(false);
 
   const [colorAction, setColorAction] = useState("");

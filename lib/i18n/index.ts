@@ -4,6 +4,7 @@ import { EN_US } from "./messages/en-US";
 import { ZH_TW } from "./messages/zh-TW";
 import { ZH_CN } from "./messages/zh-CN";
 import { JA_JP } from "./messages/ja-JP";
+import { KO_KR } from "./messages/ko-KR";
 
 export * from "./locale";
 export type { SiteMessages } from "./messages/en-US";
@@ -13,6 +14,7 @@ const MESSAGES: Record<SiteLocale, SiteMessages> = {
   "zh-TW": ZH_TW,
   "zh-CN": ZH_CN,
   "ja-JP": JA_JP,
+  "ko-KR": KO_KR,
 };
 
 export function getSiteMessages(locale: SiteLocale): SiteMessages {

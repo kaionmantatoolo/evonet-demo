@@ -331,7 +331,9 @@ function DropinBuilderPage() {
   const [tncMode, setTncMode] = useState<"checkbox" | "click2accept">(
     "click2accept"
   );
-  const [tncUrl, setTncUrl] = useState("");
+  const [tncUrl, setTncUrl] = useState(
+    "https://evonetglobal.com/company-policies/privacy-policy/"
+  );
 
   const [colorAction, setColorAction] = useState("");
   const [colorBackground, setColorBackground] = useState("");
@@ -1249,7 +1251,7 @@ function DropinBuilderPage() {
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            {["en-US", "zh-TW", "zh-CN", "ja-JP"].map((value) => (
+                            {["en-US", "zh-TW", "zh-CN", "ja-JP", "ko-KR"].map((value) => (
                               <SelectItem key={value} value={value}>
                                 {value}
                               </SelectItem>

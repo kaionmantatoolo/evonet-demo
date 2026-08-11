@@ -149,6 +149,53 @@ export interface SiteMessages {
     border: string;
     borderRadius: string;
   };
+  pciSniff: {
+    title: string;
+    badge: string;
+    subtitle: string;
+    howToDemo: string;
+    step1: string;
+    step2: string;
+    step3: string;
+    creditOrDebitCard: string;
+    newSession: string;
+    loading: string;
+    preparing: string;
+    dropinReady: string;
+    sessionFailed: string;
+    cardFormOpen: string;
+    merchantCheckout: string;
+    waitingSession: string;
+    loadingDropin: string;
+    footer: string;
+    builderLink: string;
+    testCardsLink: string;
+    envChipTitle: string;
+    envChipAria: (target: string) => string;
+    switchedTo: (target: string) => string;
+    snifferTitle: string;
+    snifferListening: string;
+    snifferExposed: string;
+    snifferHint: string;
+    snifferWaiting: string;
+    snifferFail: string;
+    fieldPan: string;
+    fieldExpiry: string;
+    fieldCvv: string;
+    readable: string;
+    notSet: string;
+    panEmptyHint: string;
+    expiryEmptyHint: string;
+    cvvEmptyHint: string;
+    cvvPresentHint: string;
+    architecture: string;
+    architectureFail: string;
+    architectureWait: string;
+    hostedIframes: string;
+    merchantSnippet: string;
+    demoCardsPrefix: string;
+    copied: string;
+  };
 }
 
 export const EN_US: SiteMessages = {
@@ -322,5 +369,54 @@ export const EN_US: SiteMessages = {
     text: "Text",
     border: "Border",
     borderRadius: "Border Radius",
+  },
+  pciSniff: {
+    title: "PCI DOM Sniff Demo",
+    badge: "Internal QA",
+    subtitle:
+      "Live proof that merchant JS can read Drop-in card fields from the parent DOM.",
+    howToDemo: "How to demo",
+    step1: "Click {method} in Drop-in.",
+    step2: "Type sandbox Visa {pan} · Exp {exp} · CVV {cvv}",
+    step3: "Watch the sniffer panel light up — that is live merchant-readable CHD.",
+    creditOrDebitCard: "Credit or Debit Card",
+    newSession: "New session",
+    loading: "Loading…",
+    preparing: "Preparing Drop-in session…",
+    dropinReady: "Drop-in ready — open Credit or Debit Card and type a test PAN",
+    sessionFailed: "Session failed",
+    cardFormOpen: "Card form open — watch the sniffer fill in real time",
+    merchantCheckout: "Merchant checkout · Drop-in",
+    waitingSession: "Waiting for session…",
+    loadingDropin: "Loading Evonet Drop-in…",
+    footer: "Internal PCI architecture demo · Do not use real cards",
+    builderLink: "Drop-in Builder",
+    testCardsLink: "Test cards",
+    envChipTitle: "Tap 5 times to switch UAT / PROD",
+    envChipAria: (target) => `Environment ${target}. Tap 5 times to switch.`,
+    switchedTo: (target) => `Switched to ${target}`,
+    snifferTitle: "Merchant DOM sniffer",
+    snifferListening: "Listening for card fields…",
+    snifferExposed: "CHD exposed to merchant JS",
+    snifferHint:
+      "Same-origin scrape — what a merchant (or XSS) can read without entering any iframe.",
+    snifferWaiting: "Waiting",
+    snifferFail: "FAIL · PCI risk",
+    fieldPan: "Card number (PAN)",
+    fieldExpiry: "Expiry",
+    fieldCvv: "CVV / CVC",
+    readable: "Readable",
+    notSet: "Not set",
+    panEmptyHint: "Type a test card in Drop-in →",
+    expiryEmptyHint: "MM/YY",
+    cvvEmptyHint: "—",
+    cvvPresentHint: "Field is in top document — type CVV to reveal",
+    architecture: "Architecture",
+    architectureFail: "Inputs in merchant document",
+    architectureWait: "No CHD inputs found yet",
+    hostedIframes: "Hosted card iframes",
+    merchantSnippet: "Merchant one-liner",
+    demoCardsPrefix: "Demo cards:",
+    copied: "Copied",
   },
 };

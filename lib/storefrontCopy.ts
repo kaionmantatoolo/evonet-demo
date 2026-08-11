@@ -1,4 +1,4 @@
-export type StorefrontLocale = "en-US" | "zh-TW" | "zh-CN" | "ja-JP";
+export type StorefrontLocale = "en-US" | "zh-TW" | "zh-CN" | "ja-JP" | "ko-KR";
 
 export interface StorefrontCopy {
   navTagline: string;
@@ -442,11 +442,107 @@ const JA: StorefrontCopy = {
   },
 };
 
+const KO: StorefrontCopy = {
+  ...EN,
+  navTagline: "공식 밴드웨어",
+  backToBuilder: "Builder로 돌아가기",
+  builderShort: "Builder",
+  openBag: "가방 열기",
+  promoBar: (currency) =>
+    `${currency} 500 이상 무료 배송 · 30일 간편 반품`,
+  editorialTitle: "평생의 밴드를, 평생의 패션을.",
+  editorialBody:
+    "ANON TOKYO 의상 디자인이 Drop-in Builder 팔레트와 어우러집니다. CTA·강조색·결제 패널이 Evonet 체크아웃에서 같은 비주얼 언어를 씁니다.",
+  viewBag: "가방 보기",
+  footerMeta: "데모 스토어프론트 · Builder 테마",
+  closeToStorefront: "닫고 스토어프론트로 돌아가기",
+  addedToBag: "가방에 담았습니다",
+  view: "보기",
+  colorLabel: "색상",
+  sizeLabel: "사이즈",
+  buyNow: (currency, price) => `지금 구매 — ${currency} ${price}`,
+  buyNowShort: (currency, price) => `지금 구매 · ${currency} ${price}`,
+  addToBag: "가방에 담기",
+  fabric: "소재",
+  sku: "SKU",
+  bagTitle: "내 가방",
+  closeBag: "가방 닫기",
+  bagEmpty: "가방이 비어 있습니다. Founder Zip Hoodie를 담아 주세요.",
+  keepBrowsing: "계속 둘러보기",
+  subtotal: "소계",
+  shippingNote: "배송비는 체크아웃에서 계산됩니다.",
+  checkout: "체크아웃",
+  decreaseQty: (label) => `${label} 줄이기`,
+  increaseQty: (label) => `${label} 늘리기`,
+  sizeLine: (color, size) => `${color} · 사이즈 ${size}`,
+  secureCheckout: "보안 체크아웃",
+  poweredByEvonet: "Evonet Drop-in 제공",
+  closeCheckout: "체크아웃 닫기",
+  orderItems: (count) => `주문 · ${count}개`,
+  qty: (n) => `수량 ${n}`,
+  checkoutEmpty: "지금 구매하거나 가방에서 체크아웃해 Drop-in을 불러오세요.",
+  continueShopping: "쇼핑 계속하기",
+  orderStatus: "주문 상태",
+  orderNumber: "주문 번호",
+  paymentReference: "결제 참조 번호",
+  note: "메모",
+  estimatedDelivery: "예상 배송",
+  deliveryNote: "영업일 1–2일 · 30일 이내 무료 반품",
+  orderDetails: "주문 상세",
+  tryCheckoutAgain: "다시 체크아웃",
+  backToProduct: "상품으로 돌아가기",
+  itemsCount: (count) => `${count}개`,
+  status: {
+    success: {
+      eyebrow: "주문 확정",
+      title: "감사합니다 — 주문이 접수되었습니다",
+      body: "영수증을 이메일로 보냈고 포장을 시작했습니다. 발송되면 추적 정보를 알려 드립니다.",
+    },
+    failed: {
+      eyebrow: "결제 실패",
+      title: "결제를 완료할 수 없습니다",
+      body: "청구되지 않았습니다. 같은 가방으로 다시 시도하거나 쇼핑을 계속하세요.",
+    },
+    cancelled: {
+      eyebrow: "결제 취소",
+      title: "체크아웃이 취소되었습니다",
+      body: "가방은 그대로입니다. 준비되면 이어서 진행하세요. 청구는 없습니다.",
+    },
+    pending: {
+      eyebrow: "결제 확인 중",
+      title: "결제를 확인하고 있습니다",
+      body: "일부 결제 수단은 시간이 조금 걸릴 수 있습니다. 완료되면 이 페이지를 업데이트합니다.",
+    },
+  },
+  emptyTitle: "먼저 Builder에서 열어 주세요",
+  emptyBody:
+    "Drop-in Builder에서 외관과 주문 금액을 설정한 뒤 「Open as storefront」를 클릭하세요. 돌아와도 Builder 설정은 유지됩니다.",
+  emptyCta: "Builder로 돌아가기",
+  loadingPayment: "결제 수단 불러오는 중",
+  showImage: (n) => `이미지 ${n} 보기`,
+  sessionFailed: "Evonet interaction API로 세션 생성에 실패했습니다.",
+  sessionUnexpected: "예기치 않은 세션 오류가 발생했습니다.",
+  product: {
+    name: "Founder 집업 후디",
+    description:
+      "왼쪽 가슴 핑크 Founder 실드와 후드 고딕 「Anon Tokyo」가 들어간 헤비웨이트 집업 후디. 릴랙스드 스트리트 실루엣과 실버 하드웨어로 밴드웨어 데모와 Evonet 체크아웃에 적합합니다.",
+    fabric: "헤비웨이트 코튼 플리스",
+    fit: "릴랙스드 유니섹스 핏",
+    colors: { black: "블랙", pink: "Anon 핑크", blue: "Tokyo 블루" },
+    highlights: [
+      "HKD 500 이상 무료 배송",
+      "30일 간편 반품",
+      "영업일 1–2일 내 발송",
+    ],
+  },
+};
+
 const COPY_BY_LOCALE: Record<StorefrontLocale, StorefrontCopy> = {
   "en-US": EN,
   "zh-TW": ZH_TW,
   "zh-CN": ZH_CN,
   "ja-JP": JA,
+  "ko-KR": KO,
 };
 
 export function normalizeStorefrontLocale(locale: string | undefined): StorefrontLocale {
@@ -458,6 +554,7 @@ export function normalizeStorefrontLocale(locale: string | undefined): Storefron
     return "zh-CN";
   }
   if (base === "ja") return "ja-JP";
+  if (base === "ko") return "ko-KR";
   return "en-US";
 }
 

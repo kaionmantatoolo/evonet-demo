@@ -23,6 +23,7 @@ export const SITE_LOCALES: {
     shortLabel: "简",
   },
   { value: "ja-JP", label: "Japanese", nativeLabel: "日本語", shortLabel: "日" },
+  { value: "ko-KR", label: "Korean", nativeLabel: "한국어", shortLabel: "한" },
 ];
 
 export const SITE_LOCALE_STORAGE_KEY = "evonet-demo-site-locale";
@@ -56,13 +57,20 @@ export function detectBrowserSiteLocale(
       return "zh-CN";
     }
     if (lower.startsWith("ja")) return "ja-JP";
+    if (lower.startsWith("ko")) return "ko-KR";
     if (lower.startsWith("en")) return "en-US";
   }
   return "en-US";
 }
 
 export function normalizeSiteLocale(value: string | null | undefined): SiteLocale {
-  if (value === "en-US" || value === "zh-TW" || value === "zh-CN" || value === "ja-JP") {
+  if (
+    value === "en-US" ||
+    value === "zh-TW" ||
+    value === "zh-CN" ||
+    value === "ja-JP" ||
+    value === "ko-KR"
+  ) {
     return value;
   }
   return detectBrowserSiteLocale(value ? [value] : undefined);
