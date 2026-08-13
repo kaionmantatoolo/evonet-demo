@@ -110,6 +110,11 @@ export const JA_JP: SiteMessages = {
     recurringModelPlaceholder: "定期モデル",
     recurringSubscription: "Subscription（定期）",
     recurringUnscheduled: "Unscheduled（不定期自動引き落とし）",
+    freeTrial: "無料トライアル（0円サブスク）",
+    freeTrialHint:
+      "金額を 0 にし、セーブカード + Subscription が必要。Drop-in に uiOption.customDescription を送ります。",
+    freeTrialDescription: "無料トライアル説明",
+    freeTrialBtnText: "無料トライアルボタン文言",
     refreshSessionId: "Session ID を更新",
     refreshSessionIdRequired: "Session ID を更新（必須）",
     creatingSession: "セッション作成中...",

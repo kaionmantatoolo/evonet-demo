@@ -49,6 +49,9 @@ export interface ImportedBuilderUiConfig {
     showTnC: boolean;
     tncMode: TnCMode;
     tncUrl: string;
+    freeTrial: boolean;
+    freeTrialDescription: string;
+    freeTrialBtnText: string;
   };
   appearance: {
     colors: Record<ImportedColorKey, string>;
@@ -197,6 +200,9 @@ function normalizeUiOption(
     showTnC: false,
     tncMode: "click2accept" as TnCMode,
     tncUrl: "",
+    freeTrial: false,
+    freeTrialDescription: "This is a 0 subscription test",
+    freeTrialBtnText: "TEST",
   };
 
   if (!isRecord(uiOption)) return base;
@@ -232,6 +238,22 @@ function normalizeUiOption(
     }
     if (typeof tnc.url === "string") {
       base.tncUrl = normalizeTnCUrl(tnc.url);
+    }
+  }
+
+  const customDescription = isRecord(uiOption.customDescription)
+    ? uiOption.customDescription
+    : null;
+  if (customDescription) {
+    if (typeof customDescription.freeTrialDescription === "string") {
+      base.freeTrialDescription = customDescription.freeTrialDescription;
+      base.freeTrial = customDescription.freeTrialDescription.trim().length > 0;
+    }
+    if (typeof customDescription.freeTrialBtnText === "string") {
+      base.freeTrialBtnText = customDescription.freeTrialBtnText;
+      if (customDescription.freeTrialBtnText.trim().length > 0) {
+        base.freeTrial = true;
+      }
     }
   }
 

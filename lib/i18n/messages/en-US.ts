@@ -94,6 +94,10 @@ export interface SiteMessages {
     recurringModelPlaceholder: string;
     recurringSubscription: string;
     recurringUnscheduled: string;
+    freeTrial: string;
+    freeTrialHint: string;
+    freeTrialDescription: string;
+    freeTrialBtnText: string;
     refreshSessionId: string;
     refreshSessionIdRequired: string;
     creatingSession: string;
@@ -308,6 +312,11 @@ export const EN_US: SiteMessages = {
     recurringModelPlaceholder: "Recurring model",
     recurringSubscription: "Subscription",
     recurringUnscheduled: "Unscheduled (auto-debit)",
+    freeTrial: "Free trial (0 subscription)",
+    freeTrialHint:
+      "Sets amount to 0, requires save-card + Subscription, and sends uiOption.customDescription for Drop-in free-trial copy.",
+    freeTrialDescription: "Free trial description",
+    freeTrialBtnText: "Free trial button text",
     refreshSessionId: "Refresh Session ID",
     refreshSessionIdRequired: "Refresh Session ID (required)",
     creatingSession: "Creating Session...",

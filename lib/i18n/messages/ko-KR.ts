@@ -110,6 +110,11 @@ export const KO_KR: SiteMessages = {
     recurringModelPlaceholder: "반복 모델",
     recurringSubscription: "Subscription(구독)",
     recurringUnscheduled: "Unscheduled(비정기 자동 출금)",
+    freeTrial: "무료 체험(0 구독)",
+    freeTrialHint:
+      "금액을 0으로 설정하고 카드 저장 + Subscription이 필요합니다. Drop-in에 uiOption.customDescription을 보냅니다.",
+    freeTrialDescription: "무료 체험 설명",
+    freeTrialBtnText: "무료 체험 버튼 문구",
     refreshSessionId: "Session ID 새로고침",
     refreshSessionIdRequired: "Session ID 새로고침(필수)",
     creatingSession: "세션 생성 중...",

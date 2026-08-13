@@ -33,6 +33,14 @@ export interface EvonetSdkUiOption {
     url?: string;
   };
   /**
+   * Zero-amount subscription / free-trial copy shown by Drop-in
+   * when `transAmount.value` is `"0"` with Subscription.
+   */
+  customDescription?: {
+    freeTrialDescription?: string;
+    freeTrialBtnText?: string;
+  };
+  /**
    * Two-column web layout (method list + payment summary).
    * cil-dropin-components reads lowercase `columns` under uiOption
    * (docs examples sometimes show `Columns` — that key is ignored by the SDK).

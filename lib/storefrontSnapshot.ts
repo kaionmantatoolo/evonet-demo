@@ -237,14 +237,14 @@ export function clearStorefrontSnapshot(): void {
   window.sessionStorage.removeItem(STOREFRONT_SNAPSHOT_KEY);
 }
 
-/** Parse Builder order amount into a positive unit price for the storefront. */
+/** Parse Builder order amount into a unit price for the storefront (0 allowed). */
 export function resolveStorefrontUnitPrice(
   amount: unknown,
   fallback = 128
 ): number {
   const parsed =
     typeof amount === "number" ? amount : Number.parseFloat(String(amount ?? ""));
-  if (!Number.isFinite(parsed) || parsed <= 0) return fallback;
+  if (!Number.isFinite(parsed) || parsed < 0) return fallback;
   return Math.round(parsed * 100) / 100;
 }
 

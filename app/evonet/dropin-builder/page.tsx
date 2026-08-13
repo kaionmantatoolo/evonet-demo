@@ -323,6 +323,12 @@ function DropinBuilderPage() {
     useState(true);
   const [recurringProcessingModel, setRecurringProcessingModel] =
     useState<EvonetRecurringProcessingModel>("Subscription");
+  const [freeTrial, setFreeTrial] = useState(false);
+  const [freeTrialDescription, setFreeTrialDescription] = useState(
+    "This is a 0 subscription test"
+  );
+  const [freeTrialBtnText, setFreeTrialBtnText] = useState("TEST");
+  const amountBeforeFreeTrialRef = useRef("128.00");
   const [enabledPaymentMethodInput, setEnabledPaymentMethodInput] = useState(
     DEFAULT_ENABLED_PAYMENT_METHOD
   );
@@ -460,11 +466,22 @@ function DropinBuilderPage() {
         ...(autoInvokeCardScanner ? { autoInvokeCardScanner: true } : {}),
       },
       ...(tnc ? { TnC: tnc } : {}),
+      ...(freeTrial
+        ? {
+            customDescription: {
+              freeTrialDescription: freeTrialDescription.trim() || undefined,
+              freeTrialBtnText: freeTrialBtnText.trim() || undefined,
+            },
+          }
+        : {}),
     };
   }, [
       autoInvokeCardScanner,
       columnsLayout,
       cvvForSavedCard,
+      freeTrial,
+      freeTrialBtnText,
+      freeTrialDescription,
       showCardHolderName,
       showSaveImage,
       showScanCardButton,
@@ -473,6 +490,20 @@ function DropinBuilderPage() {
       tncUrl,
     ]
   );
+
+  const handleFreeTrialChange = (enabled: boolean) => {
+    setFreeTrial(enabled);
+    if (enabled) {
+      amountBeforeFreeTrialRef.current = orderAmount.trim() || "128.00";
+      setOrderAmount("0");
+      setSaveCardForNextPurchase(true);
+      setIncludeRecurringProcessingModel(true);
+      setRecurringProcessingModel("Subscription");
+      return;
+    }
+    const restored = amountBeforeFreeTrialRef.current.trim();
+    setOrderAmount(restored && restored !== "0" ? restored : "128.00");
+  };
 
   const parsedBorderRadius = useMemo(() => {
     if (!borderRadiusSet) {
@@ -728,6 +759,16 @@ function DropinBuilderPage() {
     setShowTnC(uiOption.showTnC);
     setTncMode(uiOption.tncMode);
     setTncUrl(uiOption.tncUrl);
+    setFreeTrial(uiOption.freeTrial);
+    setFreeTrialDescription(uiOption.freeTrialDescription);
+    setFreeTrialBtnText(uiOption.freeTrialBtnText);
+    if (uiOption.freeTrial) {
+      amountBeforeFreeTrialRef.current = orderAmount.trim() || "128.00";
+      setOrderAmount("0");
+      setSaveCardForNextPurchase(true);
+      setIncludeRecurringProcessingModel(true);
+      setRecurringProcessingModel("Subscription");
+    }
 
     setColorAction(appearance.colors.colorAction);
     setColorBackground(appearance.colors.colorBackground);
@@ -846,20 +887,30 @@ function DropinBuilderPage() {
     setIsCreatingSession(true);
     try {
       const parsedAmount = Number.parseFloat(orderAmount);
-      if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
+      if (!Number.isFinite(parsedAmount) || parsedAmount < 0) {
+        throw new Error("Amount must be a non-negative number.");
+      }
+      if (!freeTrial && parsedAmount <= 0) {
         throw new Error("Amount must be a positive number.");
       }
+      const amountForSession = freeTrial ? 0 : parsedAmount;
       const envForSession = options?.environmentOverride ?? environment;
       const targetForSession = targetFromSdkEnvironment(envForSession);
       const enabledPaymentMethod = parseEnabledPaymentMethodInput(
         enabledPaymentMethodInput
       );
       const returnURL = buildClientEvonetReturnUrl();
+      const useSaveCard = freeTrial || saveCardForNextPurchase;
+      const useRecurring =
+        freeTrial || includeRecurringProcessingModel;
+      const recurringModel = freeTrial
+        ? "Subscription"
+        : recurringProcessingModel;
       const response = await fetch("/api/evonet/session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          amount: parsedAmount,
+          amount: amountForSession,
           currency: orderCurrency.trim() || "HKD",
           orderId: generateOrderId(),
           description: orderDescription.trim() || "Drop-in Builder Session",
@@ -869,13 +920,13 @@ function DropinBuilderPage() {
           ...(returnURL ? { returnURL } : {}),
           ...(enabledPaymentMethod ? { enabledPaymentMethod } : {}),
           ...(allowAuthentication ? { allowAuthentication: true } : {}),
-          ...(saveCardForNextPurchase
+          ...(useSaveCard
             ? {
                 saveCardForNextPurchase: true,
                 userInfoReference: userInfoReference.trim(),
-                includeRecurringProcessingModel,
-                ...(includeRecurringProcessingModel
-                  ? { recurringProcessingModel }
+                includeRecurringProcessingModel: useRecurring,
+                ...(useRecurring
+                  ? { recurringProcessingModel: recurringModel }
                   : {}),
               }
             : {}),
@@ -902,6 +953,26 @@ function DropinBuilderPage() {
       setIsCreatingSession(false);
     }
   };
+
+  /** Amount/currency are baked into the Interaction session — recreate when they change. */
+  const skipAmountAutoSessionRef = useRef(true);
+  useEffect(() => {
+    if (skipAmountAutoSessionRef.current) {
+      skipAmountAutoSessionRef.current = false;
+      return;
+    }
+    const parsed = Number.parseFloat(orderAmount);
+    if (!Number.isFinite(parsed) || parsed < 0) return;
+    if (!freeTrial && parsed <= 0) return;
+    if ((freeTrial || saveCardForNextPurchase) && !userInfoReference.trim()) {
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      void handleCreateSession();
+    }, 650);
+    return () => window.clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only recreate when money fields change
+  }, [orderAmount, orderCurrency, freeTrial]);
 
   const markSessionSpentFromPayment = useCallback((result: EvonetReturnParams) => {
     setPaymentReturnPrompt(result);
@@ -1276,7 +1347,13 @@ function DropinBuilderPage() {
                           onChange={(event) => setOrderAmount(event.target.value)}
                           placeholder="128.00"
                           aria-label="Order amount"
+                          disabled={freeTrial}
                         />
+                        {freeTrial ? (
+                          <p className="text-xs text-muted-foreground">
+                            {t.freeTrialHint}
+                          </p>
+                        ) : null}
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="order-currency">{t.currency}</Label>
@@ -1399,6 +1476,7 @@ function DropinBuilderPage() {
                               id="save-card"
                               checked={saveCardForNextPurchase}
                               onCheckedChange={setSaveCardForNextPurchase}
+                              disabled={freeTrial}
                               aria-label={t.allowSaveCard}
                             />
                           </div>
@@ -1430,7 +1508,7 @@ function DropinBuilderPage() {
                                   id="recurring-enabled"
                                   checked={includeRecurringProcessingModel}
                                   onCheckedChange={setIncludeRecurringProcessingModel}
-                                  disabled={!saveCardForNextPurchase}
+                                  disabled={!saveCardForNextPurchase || freeTrial}
                                 />
                               </div>
                               <Select
@@ -1442,7 +1520,8 @@ function DropinBuilderPage() {
                                 }
                                 disabled={
                                   !saveCardForNextPurchase ||
-                                  !includeRecurringProcessingModel
+                                  !includeRecurringProcessingModel ||
+                                  freeTrial
                                 }
                               >
                                 <SelectTrigger
@@ -1461,6 +1540,52 @@ function DropinBuilderPage() {
                               </Select>
                             </div>
                           </div>
+                          <div className="flex items-start justify-between gap-4 rounded-none border p-3">
+                            <div>
+                              <Label htmlFor="free-trial" className="font-medium">
+                                {t.freeTrial}
+                              </Label>
+                              <p className="mt-1 text-xs text-muted-foreground">
+                                {t.freeTrialHint}
+                              </p>
+                            </div>
+                            <Switch
+                              id="free-trial"
+                              checked={freeTrial}
+                              onCheckedChange={handleFreeTrialChange}
+                              aria-label={t.freeTrial}
+                            />
+                          </div>
+                          {freeTrial ? (
+                            <div className="grid gap-4 sm:grid-cols-2">
+                              <div className="space-y-2">
+                                <Label htmlFor="free-trial-description">
+                                  {t.freeTrialDescription}
+                                </Label>
+                                <Input
+                                  id="free-trial-description"
+                                  value={freeTrialDescription}
+                                  onChange={(event) =>
+                                    setFreeTrialDescription(event.target.value)
+                                  }
+                                  placeholder="This is a 0 subscription test"
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="free-trial-btn-text">
+                                  {t.freeTrialBtnText}
+                                </Label>
+                                <Input
+                                  id="free-trial-btn-text"
+                                  value={freeTrialBtnText}
+                                  onChange={(event) =>
+                                    setFreeTrialBtnText(event.target.value)
+                                  }
+                                  placeholder="TEST"
+                                />
+                              </div>
+                            </div>
+                          ) : null}
                         </AccordionContent>
                       </AccordionItem>
                     </Accordion>

@@ -107,6 +107,11 @@ export const ZH_CN: SiteMessages = {
     recurringModelPlaceholder: "循环模式",
     recurringSubscription: "订阅（Subscription）",
     recurringUnscheduled: "非定期扣款（Unscheduled）",
+    freeTrial: "免费试用（0 元订阅）",
+    freeTrialHint:
+      "金额设为 0，需开启存卡 + Subscription，并向 Drop-in 发送 uiOption.customDescription 试用文案。",
+    freeTrialDescription: "免费试用说明",
+    freeTrialBtnText: "免费试用按钮文案",
     refreshSessionId: "刷新 Session ID",
     refreshSessionIdRequired: "刷新 Session ID（必需）",
     creatingSession: "正在创建 Session...",

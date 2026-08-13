@@ -259,6 +259,12 @@ function EvonetDropinTestPage() {
     useState(true);
   const [recurringProcessingModel, setRecurringProcessingModel] =
     useState<EvonetRecurringProcessingModel>("Subscription");
+  const [freeTrial, setFreeTrial] = useState(false);
+  const [freeTrialDescription, setFreeTrialDescription] = useState(
+    "This is a 0 subscription test"
+  );
+  const [freeTrialBtnText, setFreeTrialBtnText] = useState("TEST");
+  const amountBeforeFreeTrialRef = useRef("10.00");
   const [enabledPaymentMethodInput, setEnabledPaymentMethodInput] = useState(
     DEFAULT_ENABLED_PAYMENT_METHOD
   );
@@ -382,11 +388,22 @@ function EvonetDropinTestPage() {
         ...(autoInvokeCardScanner ? { autoInvokeCardScanner: true } : {}),
       },
       ...(tnc ? { TnC: tnc } : {}),
+      ...(freeTrial
+        ? {
+            customDescription: {
+              freeTrialDescription: freeTrialDescription.trim() || undefined,
+              freeTrialBtnText: freeTrialBtnText.trim() || undefined,
+            },
+          }
+        : {}),
     };
   }, [
       autoInvokeCardScanner,
       columnsLayout,
       cvvForSavedCard,
+      freeTrial,
+      freeTrialBtnText,
+      freeTrialDescription,
       showCardHolderName,
       showSaveImage,
       showScanCardButton,
@@ -395,6 +412,20 @@ function EvonetDropinTestPage() {
       tncUrl,
     ]
   );
+
+  const handleFreeTrialChange = (enabled: boolean) => {
+    setFreeTrial(enabled);
+    if (enabled) {
+      amountBeforeFreeTrialRef.current = amount.trim() || "10.00";
+      setAmount("0");
+      setSaveCardForNextPurchase(true);
+      setIncludeRecurringProcessingModel(true);
+      setRecurringProcessingModel("Subscription");
+      return;
+    }
+    const restored = amountBeforeFreeTrialRef.current.trim();
+    setAmount(restored && restored !== "0" ? restored : "10.00");
+  };
 
   const sdkAppearance: EvonetSdkAppearance = useMemo(() => {
     const a: EvonetSdkAppearance = {};
@@ -724,10 +755,15 @@ function EvonetDropinTestPage() {
     }
 
     const numericAmount = parseFloat(amount);
-    if (Number.isNaN(numericAmount) || numericAmount <= 0) {
+    if (Number.isNaN(numericAmount) || numericAmount < 0) {
       setSessionError("Please enter a valid amount before creating sessionID.");
       return;
     }
+    if (!freeTrial && numericAmount <= 0) {
+      setSessionError("Please enter a valid amount before creating sessionID.");
+      return;
+    }
+    const amountForSession = freeTrial ? 0 : numericAmount;
 
     if (!currency) {
       setSessionError("Currency is required.");
@@ -746,13 +782,18 @@ function EvonetDropinTestPage() {
         enabledPaymentMethodInput
       );
       const returnURL = buildClientEvonetReturnUrl();
+      const useSaveCard = freeTrial || saveCardForNextPurchase;
+      const useRecurring = freeTrial || includeRecurringProcessingModel;
+      const recurringModel = freeTrial
+        ? "Subscription"
+        : recurringProcessingModel;
       const response = await fetch("/api/evonet/session", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          amount: numericAmount,
+          amount: amountForSession,
           currency,
           orderId: newOrderId,
           description,
@@ -762,13 +803,13 @@ function EvonetDropinTestPage() {
           ...(returnURL ? { returnURL } : {}),
           ...(enabledPaymentMethod ? { enabledPaymentMethod } : {}),
           ...(allowAuthentication ? { allowAuthentication: true } : {}),
-          ...(saveCardForNextPurchase
+          ...(useSaveCard
             ? {
                 saveCardForNextPurchase: true,
                 userInfoReference: userInfoReference.trim(),
-                includeRecurringProcessingModel,
-                ...(includeRecurringProcessingModel
-                  ? { recurringProcessingModel }
+                includeRecurringProcessingModel: useRecurring,
+                ...(useRecurring
+                  ? { recurringProcessingModel: recurringModel }
                   : {}),
               }
             : {}),
@@ -824,6 +865,26 @@ function EvonetDropinTestPage() {
       setIsCreatingSession(false);
     }
   };
+
+  /** Amount/currency live in the Interaction session — recreate when they change. */
+  const skipAmountAutoSessionRef = useRef(true);
+  useEffect(() => {
+    if (skipAmountAutoSessionRef.current) {
+      skipAmountAutoSessionRef.current = false;
+      return;
+    }
+    const numericAmount = parseFloat(amount);
+    if (Number.isNaN(numericAmount) || numericAmount < 0) return;
+    if (!freeTrial && numericAmount <= 0) return;
+    if ((freeTrial || saveCardForNextPurchase) && !userInfoReference.trim()) {
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      void handleCreateSession({ initDropin: true });
+    }, 650);
+    return () => window.clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only recreate when money fields change
+  }, [amount, currency, freeTrial]);
 
   const handleEnvironmentChipTap = () => {
     if (envChipTapTimerRef.current) {
@@ -914,6 +975,7 @@ function EvonetDropinTestPage() {
       userInfoReference,
       includeRecurringProcessingModel,
       recurringProcessingModel,
+      freeTrial,
       mode,
       verifyPaymentBrand,
       maxWaitTime,
@@ -925,17 +987,25 @@ function EvonetDropinTestPage() {
     void (async () => {
       setSessionError(null);
       const numericAmount = parseFloat(snap.amount);
-      if (Number.isNaN(numericAmount) || numericAmount <= 0) {
+      if (Number.isNaN(numericAmount) || numericAmount < 0) {
         setSessionError(
           "Enter a valid amount, then create a session."
         );
         return;
       }
+      if (!snap.freeTrial && numericAmount <= 0) {
+        setSessionError(
+          "Enter a valid amount, then create a session."
+        );
+        return;
+      }
+      const amountForSession = snap.freeTrial ? 0 : numericAmount;
       if (!snap.currency?.trim()) {
         setSessionError("Currency is required.");
         return;
       }
-      if (snap.saveCardForNextPurchase && !snap.userInfoReference.trim()) {
+      const useSaveCard = snap.freeTrial || snap.saveCardForNextPurchase;
+      if (useSaveCard && !snap.userInfoReference.trim()) {
         setSessionError(
           "User reference is required when save-card is enabled."
         );
@@ -951,13 +1021,18 @@ function EvonetDropinTestPage() {
           snap.enabledPaymentMethodInput
         );
         const returnURL = buildClientEvonetReturnUrl();
+        const useRecurring =
+          snap.freeTrial || snap.includeRecurringProcessingModel;
+        const recurringModel = snap.freeTrial
+          ? "Subscription"
+          : snap.recurringProcessingModel;
         const response = await fetch("/api/evonet/session", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            amount: numericAmount,
+            amount: amountForSession,
             currency: snap.currency,
             orderId: newOrderId,
             description: snap.description,
@@ -967,16 +1042,14 @@ function EvonetDropinTestPage() {
             ...(returnURL ? { returnURL } : {}),
             ...(enabledPaymentMethod ? { enabledPaymentMethod } : {}),
             ...(snap.allowAuthentication ? { allowAuthentication: true } : {}),
-            ...(snap.saveCardForNextPurchase
+            ...(useSaveCard
               ? {
                   saveCardForNextPurchase: true,
                   userInfoReference: snap.userInfoReference.trim(),
-                  includeRecurringProcessingModel:
-                    snap.includeRecurringProcessingModel,
-                  ...(snap.includeRecurringProcessingModel
+                  includeRecurringProcessingModel: useRecurring,
+                  ...(useRecurring
                     ? {
-                        recurringProcessingModel:
-                          snap.recurringProcessingModel,
+                        recurringProcessingModel: recurringModel,
                       }
                     : {}),
                 }
@@ -1170,6 +1243,7 @@ function EvonetDropinTestPage() {
                       className="shrink-0"
                       checked={saveCardForNextPurchase}
                       onCheckedChange={setSaveCardForNextPurchase}
+                      disabled={freeTrial}
                       aria-label="Allow save card for next purchase interaction"
                     />
                   </div>
@@ -1190,7 +1264,7 @@ function EvonetDropinTestPage() {
                       className="shrink-0"
                       checked={includeRecurringProcessingModel}
                       onCheckedChange={setIncludeRecurringProcessingModel}
-                      disabled={!saveCardForNextPurchase}
+                      disabled={!saveCardForNextPurchase || freeTrial}
                     />
                   </div>
                   <div className="grid gap-4">
@@ -1220,7 +1294,11 @@ function EvonetDropinTestPage() {
                         onValueChange={(value) =>
                           setRecurringProcessingModel(value as EvonetRecurringProcessingModel)
                         }
-                        disabled={!saveCardForNextPurchase || !includeRecurringProcessingModel}
+                        disabled={
+                          !saveCardForNextPurchase ||
+                          !includeRecurringProcessingModel ||
+                          freeTrial
+                        }
                       >
                         <SelectTrigger className="w-full" aria-label="Recurring model">
                           <SelectValue />
@@ -1235,6 +1313,57 @@ function EvonetDropinTestPage() {
                       </Select>
                     </div>
                   </div>
+                  <div className="flex items-start justify-between gap-3 rounded-none border p-3">
+                    <div className="min-w-0 flex-1">
+                      <Label
+                        htmlFor="free-trial"
+                        className="min-w-0 items-start leading-snug break-words"
+                      >
+                        Free trial (0 subscription)
+                      </Label>
+                      <p className="mt-1 break-words text-xs text-muted-foreground">
+                        Sets amount to 0, requires save-card + Subscription, and
+                        sends uiOption.customDescription.
+                      </p>
+                    </div>
+                    <Switch
+                      id="free-trial"
+                      className="shrink-0"
+                      checked={freeTrial}
+                      onCheckedChange={handleFreeTrialChange}
+                      aria-label="Free trial 0 subscription"
+                    />
+                  </div>
+                  {freeTrial ? (
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div className="min-w-0 space-y-2">
+                        <Label htmlFor="free-trial-description">
+                          Free trial description
+                        </Label>
+                        <Input
+                          id="free-trial-description"
+                          value={freeTrialDescription}
+                          onChange={(event) =>
+                            setFreeTrialDescription(event.target.value)
+                          }
+                          placeholder="This is a 0 subscription test"
+                        />
+                      </div>
+                      <div className="min-w-0 space-y-2">
+                        <Label htmlFor="free-trial-btn-text">
+                          Free trial button text
+                        </Label>
+                        <Input
+                          id="free-trial-btn-text"
+                          value={freeTrialBtnText}
+                          onChange={(event) =>
+                            setFreeTrialBtnText(event.target.value)
+                          }
+                          placeholder="TEST"
+                        />
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
 
                 <div className="space-y-2">
@@ -1714,7 +1843,20 @@ function EvonetDropinTestPage() {
                         <div className="grid gap-4 sm:grid-cols-2">
                           <div className="space-y-2">
                             <Label htmlFor="amount">Amount</Label>
-                            <Input id="amount" type="number" min={0} step="0.01" value={amount} onChange={(event) => setAmount(event.target.value)} />
+                            <Input
+                              id="amount"
+                              type="number"
+                              min={0}
+                              step="0.01"
+                              value={amount}
+                              onChange={(event) => setAmount(event.target.value)}
+                              disabled={freeTrial}
+                            />
+                            {freeTrial ? (
+                              <p className="text-xs text-muted-foreground">
+                                Locked at 0 while free trial is on.
+                              </p>
+                            ) : null}
                           </div>
                           <div className="space-y-2">
                             <Label htmlFor="currency">Currency</Label>
