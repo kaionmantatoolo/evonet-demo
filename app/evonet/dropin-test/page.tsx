@@ -48,6 +48,7 @@ import {
   stripEvonetReturnQuery,
   type EvonetReturnParams,
 } from "../../../lib/evonetReturnParams";
+import { buildClientEvonetReturnUrl } from "../../../lib/evonetReturnUrl";
 import {
   buildTnCUiOption,
   isValidTnCUrl,
@@ -744,6 +745,7 @@ function EvonetDropinTestPage() {
       const enabledPaymentMethod = parseEnabledPaymentMethodInput(
         enabledPaymentMethodInput
       );
+      const returnURL = buildClientEvonetReturnUrl();
       const response = await fetch("/api/evonet/session", {
         method: "POST",
         headers: {
@@ -757,6 +759,7 @@ function EvonetDropinTestPage() {
           environment: envForSession,
           target: targetForSession,
           locale,
+          ...(returnURL ? { returnURL } : {}),
           ...(enabledPaymentMethod ? { enabledPaymentMethod } : {}),
           ...(allowAuthentication ? { allowAuthentication: true } : {}),
           ...(saveCardForNextPurchase
@@ -947,6 +950,7 @@ function EvonetDropinTestPage() {
         const enabledPaymentMethod = parseEnabledPaymentMethodInput(
           snap.enabledPaymentMethodInput
         );
+        const returnURL = buildClientEvonetReturnUrl();
         const response = await fetch("/api/evonet/session", {
           method: "POST",
           headers: {
@@ -960,6 +964,7 @@ function EvonetDropinTestPage() {
             environment: snap.environment,
             target: targetFromSdkEnvironment(snap.environment),
             locale: snap.locale,
+            ...(returnURL ? { returnURL } : {}),
             ...(enabledPaymentMethod ? { enabledPaymentMethod } : {}),
             ...(snap.allowAuthentication ? { allowAuthentication: true } : {}),
             ...(snap.saveCardForNextPurchase

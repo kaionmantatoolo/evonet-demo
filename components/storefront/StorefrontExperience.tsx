@@ -45,6 +45,7 @@ import {
   stripEvonetReturnQuery,
   type EvonetReturnParams,
 } from "../../lib/evonetReturnParams";
+import { buildClientEvonetReturnUrl } from "../../lib/evonetReturnUrl";
 import {
   appearanceToStorefrontCssVars,
   resolveStorefrontUnitPrice,
@@ -249,6 +250,7 @@ export function StorefrontExperience({
       setIsCreatingSession(true);
 
       try {
+        const returnURL = buildClientEvonetReturnUrl();
         const response = await fetch("/api/evonet/session", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -259,6 +261,7 @@ export function StorefrontExperience({
             description,
             environment: config.environment,
             locale: storefrontLocale,
+            ...(returnURL ? { returnURL } : {}),
             ...(config.enabledPaymentMethod?.length
               ? { enabledPaymentMethod: config.enabledPaymentMethod }
               : {}),

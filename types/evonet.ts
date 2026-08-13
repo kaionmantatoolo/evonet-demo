@@ -155,6 +155,11 @@ export interface EvonetInteractionRequest {
    * `*` = remaining methods in default order.
    */
   enabledPaymentMethod?: string[];
+  /**
+   * Absolute URL Evonet redirects to after wallet / Apple Pay / new-tab payments.
+   * When omitted, server uses `EVONET_RETURN_URL`.
+   */
+  returnURL?: string;
 }
 
 export interface EvonetInteractionResponse {

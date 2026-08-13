@@ -72,9 +72,14 @@ import {
 } from "../../../lib/evonetReturnParams";
 import {
   isFanClubStorefront,
+  readStorefrontSnapshot,
   resolveStorefrontUnitPrice,
   writeStorefrontSnapshot,
 } from "../../../lib/storefrontSnapshot";
+import {
+  buildClientEvonetReturnUrl,
+  consumeFanClubCheckoutPending,
+} from "../../../lib/evonetReturnUrl";
 import {
   buildTnCUiOption,
   isValidTnCUrl,
@@ -279,6 +284,19 @@ function DropinBuilderPage() {
         setSessionSpent(true);
       }
     }
+  }, [paymentReturnFromUrl]);
+
+  /** Wallet / Apple Pay reload lands on Builder — reopen Fan Club to show the result. */
+  useEffect(() => {
+    if (!paymentReturnFromUrl) return;
+    const pending = consumeFanClubCheckoutPending();
+    if (!pending) return;
+    const snapshot = readStorefrontSnapshot();
+    if (!snapshot || !isFanClubStorefront(snapshot)) return;
+    setStorefrontLaunchConfig(snapshot);
+    setBuilderWarped(true);
+    setStorefrontOpen(true);
+    setReturnDialogDismissed(true);
   }, [paymentReturnFromUrl]);
 
   useEffect(() => {
@@ -836,6 +854,7 @@ function DropinBuilderPage() {
       const enabledPaymentMethod = parseEnabledPaymentMethodInput(
         enabledPaymentMethodInput
       );
+      const returnURL = buildClientEvonetReturnUrl();
       const response = await fetch("/api/evonet/session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -847,6 +866,7 @@ function DropinBuilderPage() {
           environment: envForSession,
           target: targetForSession,
           locale: locale.trim() || "en-US",
+          ...(returnURL ? { returnURL } : {}),
           ...(enabledPaymentMethod ? { enabledPaymentMethod } : {}),
           ...(allowAuthentication ? { allowAuthentication: true } : {}),
           ...(saveCardForNextPurchase

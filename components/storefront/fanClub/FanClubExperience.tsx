@@ -48,6 +48,11 @@ import {
   stripEvonetReturnQuery,
   type EvonetReturnParams,
 } from "../../../lib/evonetReturnParams";
+import {
+  buildClientEvonetReturnUrl,
+  clearFanClubCheckoutPending,
+  markFanClubCheckoutPending,
+} from "../../../lib/evonetReturnUrl";
 import { detailDlGridSx } from "../../../lib/responsiveLayout";
 import { targetFromSdkEnvironment } from "../../../lib/evonetTarget";
 import type {
@@ -230,6 +235,7 @@ export function FanClubExperience({
 
   const applyPaymentResult = useCallback(
     (result: EvonetReturnParams) => {
+      clearFanClubCheckoutPending();
       setOrderResult(result);
       setCheckoutOpen(false);
       setView("result");
@@ -297,8 +303,10 @@ export function FanClubExperience({
     setCheckoutOpen(true);
     setIsCreatingSession(true);
     setSessionID(null);
+    markFanClubCheckoutPending(orderId);
 
     try {
+      const returnURL = buildClientEvonetReturnUrl();
       const response = await fetch("/api/evonet/session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -313,6 +321,7 @@ export function FanClubExperience({
           userInfoReference,
           includeRecurringProcessingModel: true,
           recurringProcessingModel: "Subscription",
+          ...(returnURL ? { returnURL } : {}),
           ...(config.enabledPaymentMethod?.length
             ? { enabledPaymentMethod: config.enabledPaymentMethod }
             : {}),
@@ -323,11 +332,13 @@ export function FanClubExperience({
         error?: string;
       };
       if (!response.ok || !data.sessionId) {
+        clearFanClubCheckoutPending();
         throw new Error(data.error ?? copy.sessionFailed);
       }
       setSessionID(data.sessionId);
       setSdkInitGeneration((value) => value + 1);
     } catch (error) {
+      clearFanClubCheckoutPending();
       setSessionError(
         error instanceof Error ? error.message : copy.sessionUnexpected
       );
@@ -523,14 +534,15 @@ export function FanClubExperience({
           backdropFilter: "blur(14px)",
         }}
       >
-        <Container maxWidth="lg" sx={{ py: 1.6 }}>
-          <Stack direction="row" alignItems="center" justifyContent="space-between">
-            <Stack direction="row" spacing={2} alignItems="baseline">
+        <Container maxWidth="lg" sx={{ py: { xs: 1.1, sm: 1.6 }, px: { xs: 1.75, sm: 3 } }}>
+          <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1}>
+            <Stack direction="row" spacing={{ xs: 1, sm: 2 }} alignItems="baseline" minWidth={0}>
               <Typography
                 sx={{
                   fontFamily: "var(--shop-font-display)",
-                  fontSize: "1.45rem",
+                  fontSize: { xs: "1.2rem", sm: "1.45rem" },
                   letterSpacing: "0.04em",
+                  whiteSpace: "nowrap",
                 }}
               >
                 {plan.brand}
@@ -547,7 +559,7 @@ export function FanClubExperience({
                 Fan Club · {copy.navTagline}
               </Typography>
             </Stack>
-            <Stack direction="row" spacing={0.5} alignItems="center">
+            <Stack direction="row" spacing={0.25} alignItems="center" flexShrink={0}>
               <ThemeToggle />
               {membership ? (
                 <Button
@@ -557,7 +569,13 @@ export function FanClubExperience({
                     setActionMessage(null);
                     setActionError(null);
                   }}
-                  sx={{ textTransform: "none", color: "var(--shop-muted)" }}
+                  sx={{
+                    textTransform: "none",
+                    color: "var(--shop-muted)",
+                    minWidth: 0,
+                    px: { xs: 0.75, sm: 1.5 },
+                    fontSize: { xs: "0.8rem", sm: "0.875rem" },
+                  }}
                 >
                   {copy.myMembership}
                 </Button>
@@ -570,6 +588,7 @@ export function FanClubExperience({
                   color: "var(--shop-muted)",
                   minWidth: 0,
                   px: { xs: 0.75, sm: 1.5 },
+                  fontSize: { xs: "0.8rem", sm: "0.875rem" },
                 }}
               >
                 <Box component="span" sx={{ display: { xs: "none", sm: "inline" } }}>
@@ -585,7 +604,7 @@ export function FanClubExperience({
       </Box>
 
       {view === "result" && orderResult ? (
-        <Container maxWidth="sm" sx={{ py: { xs: 4, md: 8 }, ...enterUp(0, 420) }}>
+        <Container maxWidth="sm" sx={{ py: { xs: 3, md: 8 }, px: { xs: 2, sm: 3 }, ...enterUp(0, 420) }}>
           <Typography
             variant="overline"
             sx={{ color: "var(--shop-muted)", letterSpacing: 1.5 }}
@@ -639,7 +658,7 @@ export function FanClubExperience({
       ) : null}
 
       {view === "membership" && membership ? (
-        <Container maxWidth="sm" sx={{ py: { xs: 4, md: 7 }, ...enterUp(0, 420) }}>
+        <Container maxWidth="sm" sx={{ py: { xs: 3, md: 7 }, px: { xs: 2, sm: 3 }, ...enterUp(0, 420) }}>
           <Typography
             sx={{
               fontFamily: "var(--shop-font-display)",
@@ -795,32 +814,46 @@ export function FanClubExperience({
 
       {view === "landing" ? (
         <Box key={shopViewKey} sx={enterUp(0, 420)}>
-          <Container maxWidth="lg" sx={{ py: { xs: 3, md: 6 }, pb: { xs: 12, md: 6 } }}>
+          <Container
+            maxWidth="lg"
+            sx={{
+              pt: { xs: 0, md: 6 },
+              pb: { xs: 12, md: 6 },
+              px: { xs: 2, sm: 3 },
+            }}
+          >
             <Box
               sx={{
                 display: "grid",
-                gap: { xs: 3.5, md: 6 },
-                gridTemplateColumns: { xs: "1fr", md: "minmax(0, 1.15fr) minmax(0, 0.9fr)" },
+                gap: { xs: 2.5, md: 6 },
+                gridTemplateColumns: {
+                  xs: "1fr",
+                  md: "minmax(0, 1.15fr) minmax(0, 0.9fr)",
+                },
                 alignItems: "center",
               }}
             >
               <FanClubHeroVisual />
 
-              <Box sx={{ ...enterUp(120, 560) }}>
+              <Box sx={{ ...enterUp(120, 560), px: { xs: 0.25, sm: 0 } }}>
                 <Typography
                   variant="overline"
-                  sx={{ color: "var(--shop-muted)", letterSpacing: 2 }}
+                  sx={{
+                    color: "var(--shop-muted)",
+                    letterSpacing: { xs: 1.4, md: 2 },
+                    fontSize: { xs: "0.65rem", md: "0.75rem" },
+                  }}
                 >
                   {plan.tagline}
                 </Typography>
                 <Typography
                   sx={{
                     fontFamily: "var(--shop-font-display)",
-                    fontSize: { xs: "2.4rem", md: "3.35rem" },
+                    fontSize: { xs: "2.05rem", sm: "2.4rem", md: "3.35rem" },
                     lineHeight: 0.95,
                     letterSpacing: "0.02em",
-                    mt: 1,
-                    mb: 2,
+                    mt: { xs: 0.75, md: 1 },
+                    mb: { xs: 1.25, md: 2 },
                   }}
                 >
                   {plan.brand}
@@ -830,7 +863,7 @@ export function FanClubExperience({
                       display: "block",
                       fontSize: "0.42em",
                       letterSpacing: "0.14em",
-                      mt: 1,
+                      mt: 0.75,
                       color: "var(--shop-primary)",
                     }}
                   >
@@ -840,31 +873,40 @@ export function FanClubExperience({
                 <Typography
                   sx={{
                     color: "var(--shop-muted)",
-                    lineHeight: 1.75,
+                    lineHeight: 1.65,
                     maxWidth: 480,
-                    mb: 3,
+                    mb: { xs: 2, md: 3 },
+                    fontSize: { xs: "0.92rem", md: "1rem" },
                   }}
                 >
                   {plan.description}
                 </Typography>
-                <Stack direction="row" alignItems="baseline" spacing={1} mb={1.25}>
+                <Stack direction="row" alignItems="baseline" spacing={1} mb={1}>
                   <Typography
                     sx={{
                       fontFamily: "var(--shop-font-display)",
-                      fontSize: "2.2rem",
+                      fontSize: { xs: "1.85rem", md: "2.2rem" },
                       lineHeight: 1,
                     }}
                   >
                     {currency} {priceLabel}
                   </Typography>
-                  <Typography sx={{ color: "var(--shop-muted)" }}>
+                  <Typography sx={{ color: "var(--shop-muted)", fontSize: { xs: "0.9rem", md: "1rem" } }}>
                     {copy.perMonth}
                   </Typography>
                 </Stack>
-                <Typography variant="body2" sx={{ color: "var(--shop-muted)", mb: 2.5 }}>
+                <Typography
+                  variant="body2"
+                  sx={{ color: "var(--shop-muted)", mb: { xs: 1.75, md: 2.5 } }}
+                >
                   {plan.billingNote}
                 </Typography>
-                <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5}>
+                {/* Desktop / tablet CTAs — mobile uses sticky bar */}
+                <Stack
+                  direction={{ xs: "column", sm: "row" }}
+                  spacing={1.5}
+                  sx={{ display: { xs: "none", sm: "flex" } }}
+                >
                   <Button
                     variant="contained"
                     onClick={handleJoin}
@@ -885,7 +927,7 @@ export function FanClubExperience({
                 <Typography
                   variant="caption"
                   sx={{
-                    display: "block",
+                    display: { xs: "none", sm: "block" },
                     mt: 2.25,
                     color: "var(--shop-muted)",
                     maxWidth: 440,
@@ -897,27 +939,27 @@ export function FanClubExperience({
               </Box>
             </Box>
 
-            <Box sx={{ mt: { xs: 4, md: 7 } }}>
+            <Box sx={{ mt: { xs: 3, md: 7 } }}>
               <FanClubModelStrip title={copy.lookbookTitle} />
             </Box>
 
             <Box
               sx={{
-                mt: { xs: 3.5, md: 5 },
-                borderRadius: 3,
+                mt: { xs: 2.75, md: 5 },
+                borderRadius: { xs: 2, md: 3 },
                 border: "1px solid var(--shop-border)",
                 bgcolor:
                   "color-mix(in srgb, var(--shop-surface, #fff) 78%, color-mix(in srgb, var(--shop-primary) 6%, transparent))",
-                p: { xs: 2.5, md: 3.25 },
+                p: { xs: 2, md: 3.25 },
                 maxWidth: 720,
                 ...enterUp(260, 640),
               }}
             >
-              <Typography sx={{ fontWeight: 700, mb: 2 }}>
+              <Typography sx={{ fontWeight: 700, mb: { xs: 1.5, md: 2 }, fontSize: { xs: "0.95rem", md: "1rem" } }}>
                 {copy.benefitsTitle}
               </Typography>
               <Stack
-                spacing={1.6}
+                spacing={{ xs: 1.25, md: 1.6 }}
                 component="ul"
                 sx={{ m: 0, pl: 0, listStyle: "none" }}
               >
@@ -941,7 +983,9 @@ export function FanClubExperience({
                         flexShrink: 0,
                       }}
                     />
-                    <Typography sx={{ lineHeight: 1.55 }}>{benefit}</Typography>
+                    <Typography sx={{ lineHeight: 1.5, fontSize: { xs: "0.92rem", md: "1rem" } }}>
+                      {benefit}
+                    </Typography>
                   </Box>
                 ))}
               </Stack>
@@ -952,29 +996,36 @@ export function FanClubExperience({
             component="footer"
             sx={{
               borderTop: "1px solid var(--shop-border)",
-              py: 3,
+              py: { xs: 2.25, md: 3 },
               pb: {
-                xs: "calc(28px + 76px + env(safe-area-inset-bottom, 0px))",
+                xs: "calc(20px + 88px + env(safe-area-inset-bottom, 0px))",
                 md: 3,
               },
             }}
           >
-            <Container maxWidth="lg">
+            <Container maxWidth="lg" sx={{ px: { xs: 2, sm: 3 } }}>
               <Stack
                 direction={{ xs: "column", sm: "row" }}
                 justifyContent="space-between"
-                spacing={1}
+                spacing={0.75}
               >
                 <Typography
                   sx={{
                     fontFamily: "var(--shop-font-display)",
-                    fontSize: "1.2rem",
+                    fontSize: { xs: "1.05rem", md: "1.2rem" },
                     letterSpacing: "0.04em",
                   }}
                 >
                   {plan.brand} FAN CLUB
                 </Typography>
-                <Typography variant="caption" sx={{ color: "var(--shop-muted)" }}>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: "var(--shop-muted)",
+                    wordBreak: "break-word",
+                    fontSize: { xs: "0.7rem", sm: "0.75rem" },
+                  }}
+                >
                   {copy.footerMeta} · {config.environment} · {storefrontLocale} ·{" "}
                   {checkoutMode}
                 </Typography>
@@ -984,7 +1035,7 @@ export function FanClubExperience({
 
           <Box
             sx={{
-              display: { xs: "block", md: "none" },
+              display: { xs: "block", sm: "none" },
               position: "fixed",
               left: 0,
               right: 0,
@@ -994,18 +1045,37 @@ export function FanClubExperience({
               bgcolor: "color-mix(in srgb, var(--shop-bg) 94%, transparent)",
               backdropFilter: "blur(12px)",
               px: 2,
-              pt: 1.5,
-              pb: "calc(12px + env(safe-area-inset-bottom, 0px))",
+              pt: 1.25,
+              pb: "calc(10px + env(safe-area-inset-bottom, 0px))",
             }}
           >
-            <Button
-              fullWidth
-              variant="contained"
-              onClick={handleJoin}
-              sx={shopPrimaryButtonSx}
-            >
-              {copy.joinShort(currency, priceLabel)}
-            </Button>
+            <Stack direction="row" alignItems="center" spacing={1.5}>
+              <Box sx={{ minWidth: 0, flex: "0 1 auto" }}>
+                <Typography
+                  sx={{
+                    fontFamily: "var(--shop-font-display)",
+                    fontSize: "1.15rem",
+                    lineHeight: 1,
+                  }}
+                >
+                  {currency} {priceLabel}
+                </Typography>
+                <Typography
+                  variant="caption"
+                  sx={{ color: "var(--shop-muted)", display: "block", mt: 0.25 }}
+                >
+                  {copy.perMonth}
+                </Typography>
+              </Box>
+              <Button
+                fullWidth
+                variant="contained"
+                onClick={handleJoin}
+                sx={{ ...shopPrimaryButtonSx, flex: 1, py: 1.35 }}
+              >
+                {copy.joinShort(currency, priceLabel)}
+              </Button>
+            </Stack>
           </Box>
         </Box>
       ) : null}

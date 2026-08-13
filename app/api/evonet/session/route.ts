@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
+import { sanitizeEvonetReturnUrl } from "../../../../lib/evonetReturnUrl";
 import { resolveEvonetServerConfig } from "../../../../lib/evonetTarget";
 import type {
   EvonetInteractionRequest,
@@ -43,6 +44,7 @@ export async function POST(req: NextRequest) {
     includeRecurringProcessingModel,
     recurringProcessingModel,
     enabledPaymentMethod,
+    returnURL: bodyReturnURL,
   } = body;
 
   const {
@@ -146,6 +148,8 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  const returnURL = sanitizeEvonetReturnUrl(bodyReturnURL, EVONET_RETURN_URL);
+
   const payload: Record<string, unknown> = {
     // Interaction API requires merchantOrderID; use orderId as the merchant order reference.
     merchantOrderID: orderId,
@@ -164,7 +168,7 @@ export async function POST(req: NextRequest) {
       currency,
       value: String(amount),
     },
-    returnURL: EVONET_RETURN_URL,
+    returnURL,
     webhook: EVONET_WEBHOOK_URL,
     captureAfterHours: "0",
     locale,
