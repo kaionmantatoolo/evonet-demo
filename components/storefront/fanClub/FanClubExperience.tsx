@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useTheme } from "next-themes";
 import { Bebas_Neue, Manrope } from "next/font/google";
@@ -10,6 +10,7 @@ import {
   Button,
   Container,
   Divider,
+  Portal,
   Stack,
   Typography,
 } from "@mui/material";
@@ -901,11 +902,11 @@ export function FanClubExperience({
                 >
                   {plan.billingNote}
                 </Typography>
-                {/* Desktop / tablet CTAs — mobile uses sticky bar */}
+                {/* Desktop CTAs — phones use the sticky bar at the bottom */}
                 <Stack
                   direction={{ xs: "column", sm: "row" }}
                   spacing={1.5}
-                  sx={{ display: { xs: "none", sm: "flex" } }}
+                  sx={{ display: { xs: "none", md: "flex" } }}
                 >
                   <Button
                     variant="contained"
@@ -927,7 +928,7 @@ export function FanClubExperience({
                 <Typography
                   variant="caption"
                   sx={{
-                    display: { xs: "none", sm: "block" },
+                    display: { xs: "none", md: "block" },
                     mt: 2.25,
                     color: "var(--shop-muted)",
                     maxWidth: 440,
@@ -1033,29 +1034,44 @@ export function FanClubExperience({
             </Container>
           </Box>
 
+        </Box>
+      ) : null}
+
+      {view === "landing" && !checkoutOpen ? (
+        <Portal>
           <Box
+            style={cssVars as CSSProperties}
             sx={{
-              display: { xs: "block", sm: "none" },
+              display: { xs: "block", md: "none" },
               position: "fixed",
               left: 0,
               right: 0,
               bottom: 0,
-              zIndex: 30,
-              borderTop: "1px solid var(--shop-border)",
-              bgcolor: "color-mix(in srgb, var(--shop-bg) 94%, transparent)",
-              backdropFilter: "blur(12px)",
-              px: 2,
-              pt: 1.25,
-              pb: "calc(10px + env(safe-area-inset-bottom, 0px))",
+              zIndex: (theme) => theme.zIndex.modal + 6,
+              px: 1.5,
+              pt: 1.1,
+              pb: "max(12px, env(safe-area-inset-bottom))",
+              bgcolor: "var(--shop-bg, #f5f5f5)",
+              borderTop: "1px solid var(--shop-border, #e7e2d9)",
+              boxShadow: "0 -8px 24px rgba(28, 25, 23, 0.08)",
             }}
           >
-            <Stack direction="row" alignItems="center" spacing={1.5}>
-              <Box sx={{ minWidth: 0, flex: "0 1 auto" }}>
+            <Stack direction="row" spacing={1} alignItems="stretch" sx={{ width: "100%" }}>
+              <Box
+                sx={{
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "center",
+                  minWidth: 0,
+                  pr: 0.5,
+                }}
+              >
                 <Typography
                   sx={{
                     fontFamily: "var(--shop-font-display)",
                     fontSize: "1.15rem",
                     lineHeight: 1,
+                    color: "var(--shop-text)",
                   }}
                 >
                   {currency} {priceLabel}
@@ -1068,16 +1084,26 @@ export function FanClubExperience({
                 </Typography>
               </Box>
               <Button
-                fullWidth
                 variant="contained"
                 onClick={handleJoin}
-                sx={{ ...shopPrimaryButtonSx, flex: 1, py: 1.35 }}
+                sx={{
+                  ...shopPrimaryButtonSx,
+                  flex: "1 1 auto",
+                  minWidth: 0,
+                  py: 1.35,
+                  px: 1.5,
+                  fontSize: "0.92rem",
+                  borderRadius: "12px",
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                }}
               >
                 {copy.joinShort(currency, priceLabel)}
               </Button>
             </Stack>
           </Box>
-        </Box>
+        </Portal>
       ) : null}
 
       {!isSdkOverlayMode ? (

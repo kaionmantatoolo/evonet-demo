@@ -16,10 +16,13 @@ export const metadata = {
   // Do not point icons at /evonet-logo.png — it is a wide wordmark and looks squashed in tabs.
 };
 
-/** iPhone notch / home indicator — required for env(safe-area-inset-*). */
+/** Fixed mobile scale — lock zoom so form focus (amount, etc.) cannot enlarge the page. */
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  minimumScale: 1,
+  maximumScale: 1,
+  userScalable: false,
   viewportFit: "cover",
   // Hint UA chrome; actual light/dark follows next-themes + .dark class.
   colorScheme: "light dark",
