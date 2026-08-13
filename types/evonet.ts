@@ -163,6 +163,27 @@ export interface EvonetInteractionResponse {
   [key: string]: unknown;
 }
 
+/** MIT subsequent charge via POST /payment (token + Subscription). */
+export interface EvonetTokenPaymentRequest {
+  amount: number;
+  currency: string;
+  orderId: string;
+  token: string;
+  environment?: EvonetEnvironment;
+  target?: "UAT" | "PROD" | string;
+  recurringProcessingModel?: EvonetRecurringProcessingModel;
+  description?: string;
+}
+
+export interface EvonetTokenPaymentResponse {
+  ok?: boolean;
+  orderId?: string;
+  resultCode?: string;
+  resultMessage?: string;
+  error?: string;
+  raw?: unknown;
+}
+
 export interface EvonetDropinSdkOptions {
   id: string;
   type: "payment";

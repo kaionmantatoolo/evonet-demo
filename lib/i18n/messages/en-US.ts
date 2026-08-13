@@ -301,7 +301,7 @@ export const EN_US: SiteMessages = {
     saveCardAccordion: "Save card for next purchase",
     allowSaveCard: "Allow save card for next purchase",
     allowSaveCardHint:
-      "Sends userInfo.reference and paymentMethod.recurringProcessingModel. Refresh the session after changing this.",
+      "Sends userInfo.reference and paymentMethod.recurringProcessingModel. With Subscription, Open as storefront launches the Fan Club membership demo. Refresh the session after changing this.",
     userReference: "User reference (userInfo.reference)",
     userReferenceHint: "Stable shopper ID used to associate stored tokens.",
     includeRecurringModel: "Include recurring processing model",
@@ -333,7 +333,8 @@ export const EN_US: SiteMessages = {
     dropinPreview: "Drop-in Preview",
     autoRefresh: "Auto refresh",
     openStorefrontCta: "Open as storefront",
-    openStorefrontHint: "Preview this theme in a full ecommerce checkout demo.",
+    openStorefrontHint:
+      "Apparel shop by default. Enable Save card + Subscription to open the ANON TOKYO Fan Club membership demo instead.",
     sessionSpentWarning:
       "This session was already used for a payment. Re-init alone will fail — refresh the session first (button below does both).",
     initializeReinit: "Initialize / Re-init",

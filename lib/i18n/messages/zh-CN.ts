@@ -100,7 +100,7 @@ export const ZH_CN: SiteMessages = {
     saveCardAccordion: "保存卡片供下次购买",
     allowSaveCard: "允许保存卡片供下次购买",
     allowSaveCardHint:
-      "会发送 userInfo.reference 与 paymentMethod.recurringProcessingModel。更改后请刷新 session。",
+      "会发送 userInfo.reference 与 paymentMethod.recurringProcessingModel。设为 Subscription 时，「Open as storefront」会打开 Fan Club 会员演示。更改后请刷新 session。",
     userReference: "用户参考值（userInfo.reference）",
     userReferenceHint: "用于关联已存 token 的稳定买家 ID。",
     includeRecurringModel: "一并发送循环处理模式",
@@ -131,7 +131,8 @@ export const ZH_CN: SiteMessages = {
     dropinPreview: "Drop-in 预览",
     autoRefresh: "自动刷新",
     openStorefrontCta: "以店面打开",
-    openStorefrontHint: "在完整电商结账演示中预览此主题。",
+    openStorefrontHint:
+      "默认为服饰店面。启用存卡 + Subscription 时改为打开 ANON TOKYO Fan Club 会员演示。",
     sessionSpentWarning:
       "此 session 已用于支付。仅 Re-init 会失败 — 请先刷新 session（下方按钮可一次完成）。",
     initializeReinit: "初始化 / 重新初始化",

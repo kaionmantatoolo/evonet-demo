@@ -1,6 +1,7 @@
 import type {
   BinRule,
   EvonetDropinMode,
+  EvonetRecurringProcessingModel,
   EvonetSdkAppearance,
   EvonetSdkUiOption,
 } from "../types/evonet";
@@ -24,7 +25,31 @@ export interface StorefrontSnapshot {
    * `merchantOrderInfo.enabledPaymentMethod` when storefront creates a session.
    */
   enabledPaymentMethod?: string[];
+  /** Save-card / recurring knobs from Builder (Fan Club when Subscription). */
+  saveCardForNextPurchase?: boolean;
+  userInfoReference?: string;
+  includeRecurringProcessingModel?: boolean;
+  recurringProcessingModel?: EvonetRecurringProcessingModel;
   savedAt: string;
+}
+
+/**
+ * Fan Club storefront opens only when Builder would send
+ * `paymentMethod.recurringProcessingModel: "Subscription"`.
+ */
+export function isFanClubStorefront(
+  snapshot: Pick<
+    StorefrontSnapshot,
+    | "saveCardForNextPurchase"
+    | "includeRecurringProcessingModel"
+    | "recurringProcessingModel"
+  >
+): boolean {
+  return (
+    snapshot.saveCardForNextPurchase === true &&
+    snapshot.includeRecurringProcessingModel !== false &&
+    snapshot.recurringProcessingModel === "Subscription"
+  );
 }
 
 export type StorefrontCssVars = Record<string, string>;

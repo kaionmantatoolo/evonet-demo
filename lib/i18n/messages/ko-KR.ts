@@ -103,7 +103,7 @@ export const KO_KR: SiteMessages = {
     saveCardAccordion: "다음 구매를 위해 카드 저장",
     allowSaveCard: "다음 구매용 카드 저장 허용",
     allowSaveCardHint:
-      "userInfo.reference와 paymentMethod.recurringProcessingModel을 보냅니다. 변경 후 세션을 새로고침하세요.",
+      "userInfo.reference와 paymentMethod.recurringProcessingModel을 보냅니다. Subscription이면 Open as storefront가 Fan Club 멤버십 데모를 엽니다. 변경 후 세션을 새로고침하세요.",
     userReference: "사용자 참조(userInfo.reference)",
     userReferenceHint: "저장된 토큰을 연결하는 안정적인 쇼퍼 ID입니다.",
     includeRecurringModel: "반복 처리 모델 포함",
@@ -135,7 +135,8 @@ export const KO_KR: SiteMessages = {
     dropinPreview: "Drop-in 미리보기",
     autoRefresh: "자동 새로고침",
     openStorefrontCta: "스토어프론트로 열기",
-    openStorefrontHint: "전체 커머스 체크아웃 데모에서 이 테마를 미리 봅니다.",
+    openStorefrontHint:
+      "기본은 의류 스토어입니다. Save card + Subscription이면 ANON TOKYO Fan Club 멤버십 데모를 엽니다.",
     sessionSpentWarning:
       "이 세션은 결제에 사용되었습니다. Re-init만으로는 실패합니다 — 먼저 세션을 새로고침하세요(아래 버튼으로 한 번에 가능).",
     initializeReinit: "초기화 / 재초기화",

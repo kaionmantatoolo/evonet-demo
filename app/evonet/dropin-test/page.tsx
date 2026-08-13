@@ -553,12 +553,6 @@ function EvonetDropinTestPage() {
     }
   }, [isSdkOverlayMode]);
 
-  useEffect(() => {
-    if (isSdkOverlayMode && sdkInitGeneration > 0) {
-      setModePreviewOpen(true);
-    }
-  }, [isSdkOverlayMode, sdkInitGeneration]);
-
   const handleInitialize = () => {
     if (sessionSpent) {
       void handleCreateSession({ initDropin: true });
@@ -1839,7 +1833,6 @@ function EvonetDropinTestPage() {
                         }
                         if (sdkInitGeneration < 1) {
                           handleInitialize();
-                          return;
                         }
                         setModePreviewOpen(true);
                       }}

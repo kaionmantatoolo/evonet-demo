@@ -103,7 +103,7 @@ export const JA_JP: SiteMessages = {
     saveCardAccordion: "次回購入用にカードを保存",
     allowSaveCard: "次回購入用のカード保存を許可",
     allowSaveCardHint:
-      "userInfo.reference と paymentMethod.recurringProcessingModel を送信します。変更後はセッションを更新してください。",
+      "userInfo.reference と paymentMethod.recurringProcessingModel を送信します。Subscription のとき Open as storefront は Fan Club メンバーシップデモを開きます。変更後はセッションを更新してください。",
     userReference: "ユーザー参照（userInfo.reference）",
     userReferenceHint: "保存トークンを紐付ける安定したショッパー ID。",
     includeRecurringModel: "定期処理モデルを含める",
@@ -135,7 +135,8 @@ export const JA_JP: SiteMessages = {
     dropinPreview: "Drop-in プレビュー",
     autoRefresh: "自動更新",
     openStorefrontCta: "ストアフロントで開く",
-    openStorefrontHint: "フル EC チェックアウトデモでこのテーマをプレビュー。",
+    openStorefrontHint:
+      "既定はアパレル店。Save card + Subscription で ANON TOKYO Fan Club メンバーシップデモを開きます。",
     sessionSpentWarning:
       "このセッションは決済に使用済みです。Re-init だけでは失敗します — 先にセッションを更新（下のボタンで両方実行）。",
     initializeReinit: "初期化 / 再初期化",

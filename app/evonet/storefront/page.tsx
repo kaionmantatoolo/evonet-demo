@@ -7,7 +7,9 @@ import {
   StorefrontEmptyState,
   StorefrontExperience,
 } from "../../../components/storefront/StorefrontExperience";
+import { FanClubExperience } from "../../../components/storefront/fanClub/FanClubExperience";
 import {
+  isFanClubStorefront,
   readStorefrontSnapshot,
   type StorefrontSnapshot,
 } from "../../../lib/storefrontSnapshot";
@@ -40,6 +42,10 @@ function StorefrontPage() {
 
   if (!snapshot) {
     return <StorefrontEmptyState />;
+  }
+
+  if (isFanClubStorefront(snapshot)) {
+    return <FanClubExperience config={snapshot} />;
   }
 
   return <StorefrontExperience config={snapshot} />;

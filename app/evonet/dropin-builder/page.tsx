@@ -71,6 +71,7 @@ import {
   type EvonetReturnParams,
 } from "../../../lib/evonetReturnParams";
 import {
+  isFanClubStorefront,
   resolveStorefrontUnitPrice,
   writeStorefrontSnapshot,
 } from "../../../lib/storefrontSnapshot";
@@ -84,6 +85,7 @@ import {
   StorefrontExperience,
   type StorefrontConfig,
 } from "../../../components/storefront/StorefrontExperience";
+import { FanClubExperience } from "../../../components/storefront/fanClub/FanClubExperience";
 import {
   StorefrontMorphOverlay,
   STOREFRONT_MORPH_MS,
@@ -261,6 +263,8 @@ function DropinBuilderPage() {
     "order"
   );
   const [storefrontOpen, setStorefrontOpen] = useState(false);
+  const [storefrontLaunchConfig, setStorefrontLaunchConfig] =
+    useState<StorefrontConfig | null>(null);
   const [builderWarped, setBuilderWarped] = useState(false);
 
   useEffect(() => {
@@ -679,12 +683,6 @@ function DropinBuilderPage() {
     }
   }, [isSdkOverlayMode]);
 
-  useEffect(() => {
-    if (isSdkOverlayMode && sdkInitGeneration > 0 && canRenderPreview) {
-      setModePreviewOpen(true);
-    }
-  }, [isSdkOverlayMode, sdkInitGeneration, canRenderPreview]);
-
   const showToast = useCallback((message: string) => {
     setToastMessage(message);
   }, []);
@@ -763,31 +761,57 @@ function DropinBuilderPage() {
       enabledPaymentMethod: parseEnabledPaymentMethodInput(
         enabledPaymentMethodInput
       ),
+      ...(saveCardForNextPurchase
+        ? {
+            saveCardForNextPurchase: true,
+            userInfoReference: userInfoReference.trim(),
+            includeRecurringProcessingModel,
+            ...(includeRecurringProcessingModel
+              ? { recurringProcessingModel }
+              : {}),
+          }
+        : {}),
     }),
     [
       binRules,
       enabledPaymentMethodInput,
       environment,
+      includeRecurringProcessingModel,
       locale,
       maxWaitTime,
       mode,
       orderAmount,
       orderCurrency,
+      recurringProcessingModel,
+      saveCardForNextPurchase,
       sdkAppearance,
       sdkUiOption,
+      userInfoReference,
       verifyPaymentBrand,
     ]
   );
 
   const openAsStorefront = useCallback(() => {
+    let config = storefrontConfig;
+    if (isFanClubStorefront(config) && !config.userInfoReference?.trim()) {
+      const suffix =
+        typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+          ? crypto.randomUUID().slice(0, 10)
+          : Math.random().toString(36).slice(2, 12);
+      const generated = `fan-${suffix}`;
+      setUserInfoReference(generated);
+      config = { ...config, userInfoReference: generated };
+    }
     // Keep a snapshot for the optional /evonet/storefront route; overlay keeps Builder state alive.
-    writeStorefrontSnapshot(storefrontConfig);
+    writeStorefrontSnapshot(config);
+    setStorefrontLaunchConfig(config);
     setBuilderWarped(true);
     setStorefrontOpen(true);
   }, [storefrontConfig]);
 
   const closeStorefront = useCallback(() => {
     setStorefrontOpen(false);
+    setStorefrontLaunchConfig(null);
     window.setTimeout(() => setBuilderWarped(false), STOREFRONT_MORPH_MS);
   }, []);
 
@@ -1951,7 +1975,8 @@ function DropinBuilderPage() {
                           : t.initializeReinit}
                     </Button>
                     <Button
-                      className="h-auto min-h-8 w-full whitespace-normal sm:w-auto"
+                      variant="outline"
+                      className="h-auto min-h-8 w-full whitespace-normal border-border bg-background text-foreground shadow-none sm:w-auto hover:bg-muted/60"
                       onClick={() => void handleCreateSession()}
                       disabled={isCreatingSession}
                     >
@@ -2001,7 +2026,6 @@ function DropinBuilderPage() {
                         onClick={() => {
                           if (sessionSpent || sdkInitGeneration < 1) {
                             handlePreviewInit();
-                            return;
                           }
                           setModePreviewOpen(true);
                         }}
@@ -2144,7 +2168,20 @@ function DropinBuilderPage() {
 
       <StorefrontMorphOverlay open={storefrontOpen}>
         <Suspense fallback={null}>
-          <StorefrontExperience config={storefrontConfig} onBackToBuilder={closeStorefront} />
+          {(() => {
+            const launch = storefrontLaunchConfig ?? storefrontConfig;
+            return isFanClubStorefront(launch) ? (
+              <FanClubExperience
+                config={launch}
+                onBackToBuilder={closeStorefront}
+              />
+            ) : (
+              <StorefrontExperience
+                config={launch}
+                onBackToBuilder={closeStorefront}
+              />
+            );
+          })()}
         </Suspense>
       </StorefrontMorphOverlay>
 

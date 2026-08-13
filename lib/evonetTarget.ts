@@ -32,6 +32,7 @@ export function writeStoredTargetOverride(target: EvonetTarget): void {
 export interface EvonetServerConfig {
   target: EvonetTarget;
   interactionUrl: string;
+  paymentUrl: string;
   signKey: string;
   keyId: string;
   storeId: string;
@@ -43,6 +44,11 @@ export interface EvonetServerConfig {
 const DEFAULT_INTERACTION_URLS: Record<EvonetTarget, string> = {
   UAT: "https://sandbox.evonetonline.com/interaction",
   PROD: "https://api.evonetonline.com/interaction",
+};
+
+const DEFAULT_PAYMENT_URLS: Record<EvonetTarget, string> = {
+  UAT: "https://sandbox.evonetonline.com/payment",
+  PROD: "https://api.evonetonline.com/payment",
 };
 
 const DEFAULT_SDK_ENVIRONMENT: Record<EvonetTarget, string> = {
@@ -133,6 +139,10 @@ export function resolveEvonetServerConfig(
     pickPrefixedOrLegacy(target, "INTERACTION_URL", "EVONET_INTERACTION_URL") ||
     DEFAULT_INTERACTION_URLS[target];
 
+  const paymentUrl =
+    pickPrefixedOrLegacy(target, "PAYMENT_URL", "EVONET_PAYMENT_URL") ||
+    DEFAULT_PAYMENT_URLS[target];
+
   const signKey = pickPrefixedOrLegacy(target, "SIGN_KEY", "EVONET_SIGN_KEY");
   const keyId = pickPrefixedOrLegacy(target, "KEY_ID", "EVONET_KEY_ID");
   const storeId = pickPrefixedOrLegacy(target, "STORE_ID", "EVONET_STORE_ID");
@@ -143,6 +153,7 @@ export function resolveEvonetServerConfig(
   return {
     target,
     interactionUrl,
+    paymentUrl,
     signKey,
     keyId,
     storeId,

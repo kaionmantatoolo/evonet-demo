@@ -23,8 +23,8 @@ import {
   type DemoProduct,
   productImagesForColor,
 } from "./demoProduct";
-import { EvonetDropinHost } from "../EvonetDropinHost";
 import { DropinModePreviewShell } from "../DropinModePreviewShell";
+import { StorefrontDropinOverlayStage } from "./StorefrontDropinOverlayStage";
 import { StorefrontBagDrawer } from "./StorefrontBagDrawer";
 import { StorefrontCheckoutDrawer } from "./StorefrontCheckoutDrawer";
 import {
@@ -32,7 +32,6 @@ import {
   type StorefrontCheckoutSummary,
 } from "./StorefrontOrderResult";
 import { StorefrontProductCard } from "./StorefrontProductCard";
-import { StorefrontDropinLoader } from "./StorefrontDropinLoader";
 import { bagBounce, enterUp } from "./storefrontMotion";
 import {
   cartLineCount,
@@ -55,7 +54,6 @@ import {
   getStorefrontCopy,
   storefrontHtmlLang,
 } from "../../lib/storefrontCopy";
-import { APPLE_PHONE_PREVIEW_WIDTH } from "../../lib/appleDesign";
 import type { EvonetDropinConfig, EvonetDropinEvent } from "../../types/evonet";
 
 const display = Bebas_Neue({
@@ -737,51 +735,14 @@ export function StorefrontExperience({
           onClose={closeCheckout}
           closeHint={copy.closeToStorefront}
         >
-          <Box
-            sx={{
-              minHeight: "100%",
-              width: "100%",
-              bgcolor: "var(--shop-bg, #fff)",
-              px: { xs: 2, sm: 3 },
-              py: 2,
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-            }}
-          >
-            {sessionError ? (
-              <Alert severity="error" sx={{ mb: 2, width: "100%", maxWidth: APPLE_PHONE_PREVIEW_WIDTH }}>
-                {sessionError}
-              </Alert>
-            ) : null}
-            {(isCreatingSession || !dropinConfig) && !sessionError ? (
-              <Box sx={{ width: "100%", maxWidth: APPLE_PHONE_PREVIEW_WIDTH }}>
-                <StorefrontDropinLoader />
-              </Box>
-            ) : null}
-            {dropinConfig ? (
-              <Box
-                sx={{
-                  width: "100%",
-                  maxWidth: APPLE_PHONE_PREVIEW_WIDTH,
-                  borderRadius: "20px",
-                  border: "1px solid color-mix(in srgb, var(--shop-border, #e7e5e4) 100%, transparent)",
-                  bgcolor: "#fff",
-                  p: 2.5,
-                  boxShadow: "0 8px 28px rgba(0,0,0,0.06)",
-                  boxSizing: "border-box",
-                }}
-              >
-                <EvonetDropinHost
-                  key={`storefront-overlay-${sdkInitGeneration}`}
-                  config={dropinConfig}
-                  initGeneration={sdkInitGeneration}
-                  onEvent={handleDropinEvent}
-                  compact
-                />
-              </Box>
-            ) : null}
-          </Box>
+          <StorefrontDropinOverlayStage
+            sessionError={sessionError}
+            isCreatingSession={isCreatingSession}
+            dropinConfig={dropinConfig}
+            sdkInitGeneration={sdkInitGeneration}
+            onEvent={handleDropinEvent}
+            loadingLabel={copy.loadingPayment}
+          />
         </DropinModePreviewShell>
       )}
 

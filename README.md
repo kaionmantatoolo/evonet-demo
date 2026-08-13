@@ -21,6 +21,12 @@ npm run dev
 
 Open `http://localhost:3000/evonet/dropin-test`.
 
+### Fan Club (Subscription storefront)
+
+On **Drop-in Builder**, enable **Save card for next purchase**, keep **Include recurring processing model** on, and set the model to **Subscription**. **Open as storefront** then launches the ANON TOKYO Fan Club membership demo (CIT join → My membership → Bill now MIT via `POST /payment`). Other settings keep the apparel Anon Tokyo shop.
+
+Optional payment URL overrides: `EVONET_UAT_PAYMENT_URL` / `EVONET_PROD_PAYMENT_URL` (defaults: `sandbox` / `api` `.evonetonline.com/payment`).
+
 ## UAT / PROD switch
 
 Store **both** credential sets once, then switch with one variable:
