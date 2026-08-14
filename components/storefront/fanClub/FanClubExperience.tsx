@@ -20,6 +20,7 @@ import { StorefrontDropinOverlayStage } from "../StorefrontDropinOverlayStage";
 import { FanClubCheckoutDrawer } from "./FanClubCheckoutDrawer";
 import { FanClubHeroVisual } from "./FanClubHeroVisual";
 import { FanClubModelStrip } from "./FanClubModelStrip";
+import { CopyableIdValue } from "../../CopyableIdValue";
 import {
   shopPrimaryButtonSx,
   shopSecondaryButtonSx,
@@ -723,17 +724,28 @@ export function FanClubExperience({
               <Typography component="dt" variant="caption" sx={{ color: "var(--shop-muted)" }}>
                 {copy.tokenLabel}
               </Typography>
-              <Typography component="dd" sx={{ m: 0, fontFamily: "ui-monospace, monospace" }}>
-                {membership.token
-                  ? maskPaymentToken(membership.token)
-                  : "—"}
-              </Typography>
+              <Box component="dd" sx={{ m: 0, minWidth: 0 }}>
+                {membership.token ? (
+                  <CopyableIdValue
+                    value={maskPaymentToken(membership.token)}
+                    copyValue={membership.token}
+                    label={copy.tokenLabel}
+                  />
+                ) : (
+                  <Typography component="span" sx={{ fontFamily: "ui-monospace, monospace" }}>
+                    —
+                  </Typography>
+                )}
+              </Box>
               <Typography component="dt" variant="caption" sx={{ color: "var(--shop-muted)" }}>
                 userInfo.reference
               </Typography>
-              <Typography component="dd" sx={{ m: 0, fontFamily: "ui-monospace, monospace" }}>
-                {membership.userInfoReference}
-              </Typography>
+              <Box component="dd" sx={{ m: 0, minWidth: 0 }}>
+                <CopyableIdValue
+                  value={membership.userInfoReference}
+                  label="userInfo.reference"
+                />
+              </Box>
             </Box>
           </Box>
 
@@ -787,9 +799,17 @@ export function FanClubExperience({
                   spacing={2}
                 >
                   <Box>
-                    <Typography sx={{ fontWeight: 600, fontSize: "0.95rem" }}>
-                      {charge.type.toUpperCase()} · {charge.orderId}
-                    </Typography>
+                    <Stack direction="row" alignItems="center" spacing={0.5}>
+                      <Typography sx={{ fontWeight: 600, fontSize: "0.95rem" }}>
+                        {charge.type.toUpperCase()}
+                      </Typography>
+                      <Typography sx={{ color: "var(--shop-muted)", fontSize: "0.95rem" }}>
+                        ·
+                      </Typography>
+                      <Box sx={{ minWidth: 0, flex: 1 }}>
+                        <CopyableIdValue value={charge.orderId} label="orderId" />
+                      </Box>
+                    </Stack>
                     <Typography variant="caption" sx={{ color: "var(--shop-muted)" }}>
                       {new Date(charge.at).toLocaleString()}
                       {charge.message ? ` · ${charge.message}` : ""}

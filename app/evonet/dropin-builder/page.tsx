@@ -81,6 +81,7 @@ import {
   consumeFanClubCheckoutPending,
 } from "../../../lib/evonetReturnUrl";
 import { ensureUserInfoReference } from "../../../lib/userInfoReference";
+import { CopyableIdInline } from "../../../components/CopyableIdValue";
 import {
   buildTnCUiOption,
   isValidTnCUrl,
@@ -1436,9 +1437,11 @@ function DropinBuilderPage() {
                     </div>
                     <div className="rounded-none border border-[#bedbff] bg-[#eff6ff] px-3 py-2 text-sm text-[#162456] dark:border-blue-400/40 dark:bg-blue-950/40 dark:text-blue-100">
                       <span className="font-medium">{t.currentSessionId}</span>{" "}
-                      <span className="break-all font-mono text-xs">
-                        {sessionID || "N/A"}
-                      </span>
+                      <CopyableIdInline
+                        value={sessionID || "N/A"}
+                        label="sessionID"
+                        className="align-middle text-[#162456] dark:text-blue-100"
+                      />
                       {sessionSpent ? (
                         <span className="mt-1 block text-xs text-amber-700 dark:text-amber-400">
                           {t.sessionSpentHint}

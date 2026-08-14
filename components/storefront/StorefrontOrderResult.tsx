@@ -20,6 +20,7 @@ import {
   cartLineCount,
   type StorefrontCartLine,
 } from "./cartTypes";
+import { CopyableIdValue, isCopyableIdLabel } from "../CopyableIdValue";
 import {
   enterFade,
   enterScale,
@@ -347,17 +348,22 @@ export function StorefrontOrderResult({
                   >
                     {row.label}
                   </Typography>
-                  <Typography
-                    component="dd"
-                    variant="caption"
-                    sx={{
-                      m: 0,
-                      fontFamily: "ui-monospace, monospace",
-                      wordBreak: "break-all",
-                    }}
-                  >
-                    {row.value}
-                  </Typography>
+                  <Box component="dd" sx={{ m: 0, minWidth: 0 }}>
+                    {isCopyableIdLabel(row.label) ? (
+                      <CopyableIdValue value={row.value} label={row.label} />
+                    ) : (
+                      <Typography
+                        component="span"
+                        variant="caption"
+                        sx={{
+                          fontFamily: "ui-monospace, monospace",
+                          wordBreak: "break-all",
+                        }}
+                      >
+                        {row.value}
+                      </Typography>
+                    )}
+                  </Box>
                 </Box>
               ))}
             </Box>

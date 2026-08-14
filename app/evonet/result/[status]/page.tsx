@@ -16,6 +16,7 @@ import {
   detailDlGridSx,
   VIEWPORT_HEIGHT,
 } from "../../../../lib/responsiveLayout";
+import { CopyableIdValue } from "../../../../components/CopyableIdValue";
 
 const STATUS_CONFIG: Record<
   string,
@@ -93,17 +94,9 @@ export default function EvonetResultPage() {
                     >
                       sessionID
                     </Typography>
-                    <Typography
-                      component="dd"
-                      variant="caption"
-                      sx={{
-                        m: 0,
-                        fontFamily: "monospace",
-                        wordBreak: "break-all",
-                      }}
-                    >
-                      {sessionID}
-                    </Typography>
+                    <Box component="dd" sx={{ m: 0, minWidth: 0 }}>
+                      <CopyableIdValue value={sessionID} label="sessionID" />
+                    </Box>
                   </>
                 ) : null}
 
@@ -116,17 +109,12 @@ export default function EvonetResultPage() {
                     >
                       merchantTransID
                     </Typography>
-                    <Typography
-                      component="dd"
-                      variant="caption"
-                      sx={{
-                        m: 0,
-                        fontFamily: "monospace",
-                        wordBreak: "break-all",
-                      }}
-                    >
-                      {merchantTransID}
-                    </Typography>
+                    <Box component="dd" sx={{ m: 0, minWidth: 0 }}>
+                      <CopyableIdValue
+                        value={merchantTransID}
+                        label="merchantTransID"
+                      />
+                    </Box>
                   </>
                 ) : null}
 
@@ -139,13 +127,9 @@ export default function EvonetResultPage() {
                     >
                       Code
                     </Typography>
-                    <Typography
-                      component="dd"
-                      variant="caption"
-                      sx={{ m: 0, fontFamily: "monospace" }}
-                    >
-                      {code}
-                    </Typography>
+                    <Box component="dd" sx={{ m: 0, minWidth: 0 }}>
+                      <CopyableIdValue value={code} label="code" />
+                    </Box>
                   </>
                 ) : null}
 

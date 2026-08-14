@@ -12,6 +12,7 @@ import {
 } from "@mui/material";
 import type { EvonetReturnParams } from "../lib/evonetReturnParams";
 import { getEvonetReturnDialogCopy } from "../lib/evonetReturnParams";
+import { CopyableIdValue, isCopyableIdLabel } from "./CopyableIdValue";
 
 interface EvonetPaymentReturnDialogProps {
   open: boolean;
@@ -81,6 +82,7 @@ export function EvonetPaymentReturnDialog({
               display: "grid",
               gridTemplateColumns: "140px 1fr",
               gap: 1,
+              alignItems: "start",
             }}
           >
             {rows.map((row) => (
@@ -88,13 +90,19 @@ export function EvonetPaymentReturnDialog({
                 <Typography component="dt" variant="caption" color="text.secondary">
                   {row.label}
                 </Typography>
-                <Typography
-                  component="dd"
-                  variant="caption"
-                  sx={{ m: 0, fontFamily: "monospace", wordBreak: "break-all" }}
-                >
-                  {row.value}
-                </Typography>
+                <Box component="dd" sx={{ m: 0, minWidth: 0 }}>
+                  {isCopyableIdLabel(row.label) ? (
+                    <CopyableIdValue value={row.value} label={row.label} />
+                  ) : (
+                    <Typography
+                      component="span"
+                      variant="caption"
+                      sx={{ fontFamily: "monospace", wordBreak: "break-all" }}
+                    >
+                      {row.value}
+                    </Typography>
+                  )}
+                </Box>
               </Box>
             ))}
           </Box>
