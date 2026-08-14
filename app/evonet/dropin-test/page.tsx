@@ -49,6 +49,7 @@ import {
   type EvonetReturnParams,
 } from "../../../lib/evonetReturnParams";
 import { buildClientEvonetReturnUrl } from "../../../lib/evonetReturnUrl";
+import { ensureUserInfoReference } from "../../../lib/userInfoReference";
 import {
   buildTnCUiOption,
   isValidTnCUrl,
@@ -419,12 +420,20 @@ function EvonetDropinTestPage() {
       amountBeforeFreeTrialRef.current = amount.trim() || "10.00";
       setAmount("0");
       setSaveCardForNextPurchase(true);
+      setUserInfoReference((prev) => ensureUserInfoReference(prev));
       setIncludeRecurringProcessingModel(true);
       setRecurringProcessingModel("Subscription");
       return;
     }
     const restored = amountBeforeFreeTrialRef.current.trim();
     setAmount(restored && restored !== "0" ? restored : "10.00");
+  };
+
+  const handleSaveCardChange = (enabled: boolean) => {
+    setSaveCardForNextPurchase(enabled);
+    if (enabled) {
+      setUserInfoReference((prev) => ensureUserInfoReference(prev));
+    }
   };
 
   const sdkAppearance: EvonetSdkAppearance = useMemo(() => {
@@ -876,15 +885,18 @@ function EvonetDropinTestPage() {
     const numericAmount = parseFloat(amount);
     if (Number.isNaN(numericAmount) || numericAmount < 0) return;
     if (!freeTrial && numericAmount <= 0) return;
-    if ((freeTrial || saveCardForNextPurchase) && !userInfoReference.trim()) {
-      return;
+    if (freeTrial || saveCardForNextPurchase) {
+      if (!userInfoReference.trim()) {
+        setUserInfoReference(ensureUserInfoReference());
+        return;
+      }
     }
     const timer = window.setTimeout(() => {
       void handleCreateSession({ initDropin: true });
     }, 650);
     return () => window.clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only recreate when money fields change
-  }, [amount, currency, freeTrial]);
+  }, [amount, currency, freeTrial, userInfoReference, saveCardForNextPurchase]);
 
   const handleEnvironmentChipTap = () => {
     if (envChipTapTimerRef.current) {
@@ -1242,7 +1254,7 @@ function EvonetDropinTestPage() {
                       id="save-card"
                       className="shrink-0"
                       checked={saveCardForNextPurchase}
-                      onCheckedChange={setSaveCardForNextPurchase}
+                      onCheckedChange={handleSaveCardChange}
                       disabled={freeTrial}
                       aria-label="Allow save card for next purchase interaction"
                     />

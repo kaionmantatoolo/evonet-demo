@@ -80,6 +80,7 @@ import {
   buildClientEvonetReturnUrl,
   consumeFanClubCheckoutPending,
 } from "../../../lib/evonetReturnUrl";
+import { ensureUserInfoReference } from "../../../lib/userInfoReference";
 import {
   buildTnCUiOption,
   isValidTnCUrl,
@@ -497,12 +498,20 @@ function DropinBuilderPage() {
       amountBeforeFreeTrialRef.current = orderAmount.trim() || "128.00";
       setOrderAmount("0");
       setSaveCardForNextPurchase(true);
+      setUserInfoReference((prev) => ensureUserInfoReference(prev));
       setIncludeRecurringProcessingModel(true);
       setRecurringProcessingModel("Subscription");
       return;
     }
     const restored = amountBeforeFreeTrialRef.current.trim();
     setOrderAmount(restored && restored !== "0" ? restored : "128.00");
+  };
+
+  const handleSaveCardChange = (enabled: boolean) => {
+    setSaveCardForNextPurchase(enabled);
+    if (enabled) {
+      setUserInfoReference((prev) => ensureUserInfoReference(prev));
+    }
   };
 
   const parsedBorderRadius = useMemo(() => {
@@ -766,6 +775,7 @@ function DropinBuilderPage() {
       amountBeforeFreeTrialRef.current = orderAmount.trim() || "128.00";
       setOrderAmount("0");
       setSaveCardForNextPurchase(true);
+      setUserInfoReference((prev) => ensureUserInfoReference(prev));
       setIncludeRecurringProcessingModel(true);
       setRecurringProcessingModel("Subscription");
     }
@@ -964,15 +974,18 @@ function DropinBuilderPage() {
     const parsed = Number.parseFloat(orderAmount);
     if (!Number.isFinite(parsed) || parsed < 0) return;
     if (!freeTrial && parsed <= 0) return;
-    if ((freeTrial || saveCardForNextPurchase) && !userInfoReference.trim()) {
-      return;
+    if (freeTrial || saveCardForNextPurchase) {
+      if (!userInfoReference.trim()) {
+        setUserInfoReference(ensureUserInfoReference());
+        return;
+      }
     }
     const timer = window.setTimeout(() => {
       void handleCreateSession();
     }, 650);
     return () => window.clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only recreate when money fields change
-  }, [orderAmount, orderCurrency, freeTrial]);
+  }, [orderAmount, orderCurrency, freeTrial, userInfoReference, saveCardForNextPurchase]);
 
   const markSessionSpentFromPayment = useCallback((result: EvonetReturnParams) => {
     setPaymentReturnPrompt(result);
@@ -1475,7 +1488,7 @@ function DropinBuilderPage() {
                             <Switch
                               id="save-card"
                               checked={saveCardForNextPurchase}
-                              onCheckedChange={setSaveCardForNextPurchase}
+                              onCheckedChange={handleSaveCardChange}
                               disabled={freeTrial}
                               aria-label={t.allowSaveCard}
                             />
