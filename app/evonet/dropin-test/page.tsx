@@ -263,9 +263,11 @@ function EvonetDropinTestPage() {
     useState<EvonetRecurringProcessingModel>("Subscription");
   const [freeTrial, setFreeTrial] = useState(false);
   const [freeTrialDescription, setFreeTrialDescription] = useState(
-    "This is a 0 subscription test"
+    "This is a $0 subscription test"
   );
-  const [freeTrialBtnText, setFreeTrialBtnText] = useState("TEST");
+  const [freeTrialBtnText, setFreeTrialBtnText] = useState(
+    "Subscribe for $0 now"
+  );
   const amountBeforeFreeTrialRef = useRef("10.00");
   const [enabledPaymentMethodInput, setEnabledPaymentMethodInput] = useState(
     DEFAULT_ENABLED_PAYMENT_METHOD
@@ -1359,7 +1361,7 @@ function EvonetDropinTestPage() {
                           onChange={(event) =>
                             setFreeTrialDescription(event.target.value)
                           }
-                          placeholder="This is a 0 subscription test"
+                          placeholder="This is a $0 subscription test"
                         />
                       </div>
                       <div className="min-w-0 space-y-2">
@@ -1372,7 +1374,7 @@ function EvonetDropinTestPage() {
                           onChange={(event) =>
                             setFreeTrialBtnText(event.target.value)
                           }
-                          placeholder="TEST"
+                          placeholder="Subscribe for $0 now"
                         />
                       </div>
                     </div>

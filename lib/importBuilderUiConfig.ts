@@ -201,8 +201,8 @@ function normalizeUiOption(
     tncMode: "click2accept" as TnCMode,
     tncUrl: "",
     freeTrial: false,
-    freeTrialDescription: "This is a 0 subscription test",
-    freeTrialBtnText: "TEST",
+    freeTrialDescription: "This is a $0 subscription test",
+    freeTrialBtnText: "Subscribe for $0 now",
   };
 
   if (!isRecord(uiOption)) return base;
