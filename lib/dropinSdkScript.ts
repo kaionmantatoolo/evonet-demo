@@ -1,6 +1,59 @@
-export const DROPIN_SCRIPT_SRC =
-  process.env.NEXT_PUBLIC_EVONET_DROPIN_SCRIPT_URL ??
-  "https://cdn.evonetonline.com/sdk/evonet-dropin.js";
+const DEFAULT_DROPIN_VERSION = "1.2.0";
+const VERSION_PATTERN = /^[A-Za-z0-9._-]+$/;
+
+export type DropinCdn = "jsdelivr" | "unpkg";
+
+/** Sanitized `cil-dropin-components` dist-tag or semver from env. */
+export function configuredDropinVersion(
+  raw: string | undefined = process.env.NEXT_PUBLIC_EVONET_DROPIN_VERSION
+): string {
+  const value = raw?.trim() ?? "";
+  if (!value || !VERSION_PATTERN.test(value)) {
+    return DEFAULT_DROPIN_VERSION;
+  }
+  return value;
+}
+
+export function configuredDropinCdn(
+  raw: string | undefined = process.env.NEXT_PUBLIC_EVONET_DROPIN_CDN
+): DropinCdn {
+  return raw?.trim().toLowerCase() === "unpkg" ? "unpkg" : "jsdelivr";
+}
+
+export function buildDropinScriptSrc(
+  version: string = configuredDropinVersion(),
+  cdn: DropinCdn = configuredDropinCdn()
+): string {
+  if (cdn === "unpkg") {
+    return `https://unpkg.com/cil-dropin-components@${version}/dist/index.min.js`;
+  }
+  return `https://cdn.jsdelivr.net/npm/cil-dropin-components@${version}/dist/index.min.js`;
+}
+
+/**
+ * Script the host injects.
+ * `NEXT_PUBLIC_EVONET_DROPIN_VERSION` is the Vercel control (plus optional CDN).
+ * A full `SCRIPT_URL` is honored only for a custom host — npm `@latest` URLs are
+ * ignored so leftover env on Vercel cannot override the pinned version.
+ */
+export function resolveDropinScriptSrc(
+  scriptUrl: string | undefined = process.env.NEXT_PUBLIC_EVONET_DROPIN_SCRIPT_URL,
+  version: string | undefined = process.env.NEXT_PUBLIC_EVONET_DROPIN_VERSION,
+  cdn: string | undefined = process.env.NEXT_PUBLIC_EVONET_DROPIN_CDN
+): string {
+  const versionRaw = version?.trim();
+  const explicit = scriptUrl?.trim();
+  const isNpmDropinUrl = Boolean(explicit && /cil-dropin-components@/i.test(explicit));
+  if (explicit && !isNpmDropinUrl && !versionRaw) {
+    return explicit;
+  }
+  return buildDropinScriptSrc(
+    configuredDropinVersion(versionRaw),
+    configuredDropinCdn(cdn)
+  );
+}
+
+export const DROPIN_SCRIPT_SRC = resolveDropinScriptSrc();
 
 const SEMVER = /^\d+\.\d+\.\d+(?:[-+][\w.-]+)?$/;
 

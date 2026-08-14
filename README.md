@@ -49,3 +49,17 @@ Optional URL overrides: `EVONET_UAT_INTERACTION_URL`, `EVONET_PROD_INTERACTION_U
 Legacy `EVONET_SIGN_KEY` / `EVONET_KEY_ID` / `EVONET_STORE_ID` / `EVONET_INTERACTION_URL` still work as fallback when the target-prefixed vars are unset.
 
 Optional: `NEXT_PUBLIC_EVONET_ENVIRONMENT` overrides the Drop-in environment string derived from the target.
+
+## Drop-in SDK version
+
+Pin `cil-dropin-components` with a public env var (baked in at **build** time):
+
+| Variable | Example | Role |
+|----------|---------|------|
+| `NEXT_PUBLIC_EVONET_DROPIN_VERSION` | `1.2.0` or `latest` | npm dist-tag / semver loaded from jsDelivr |
+| `NEXT_PUBLIC_EVONET_DROPIN_CDN` | `jsdelivr` (default) or `unpkg` | Which npm CDN serves `dist/index.min.js` |
+| `NEXT_PUBLIC_EVONET_DROPIN_SCRIPT_URL` | full `https://…` URL | Optional override; skips VERSION / CDN |
+
+On Vercel: **Settings → Environment Variables** → set `NEXT_PUBLIC_EVONET_DROPIN_VERSION` (Production / Preview / Development) → **Redeploy**. `NEXT_PUBLIC_*` is inlined at build time, so a new deployment is required.
+
+If the version var is unset, the build defaults to **1.2.0**. Legacy npm `SCRIPT_URL` values (`cil-dropin-components@…`) are ignored so they cannot override the pin; use `SCRIPT_URL` only for a custom non-npm host.
