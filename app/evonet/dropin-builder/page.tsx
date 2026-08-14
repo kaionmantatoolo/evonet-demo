@@ -38,6 +38,7 @@ import { DropinPreviewStage } from "@/components/dropin-builder/DropinPreviewSta
 import { UiConfigImportPanel } from "@/components/dropin-builder/UiConfigImportPanel";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { LocaleSwitcher } from "@/components/LocaleSwitcher";
+import { DropinSdkVersionBadge } from "@/components/DropinSdkVersionBadge";
 import { useSiteLocale } from "@/components/SiteLocaleProvider";
 import { parseBuilderUiConfigJson } from "@/lib/importBuilderUiConfig";
 import { copyTextToClipboard } from "@/lib/copyTextToClipboard";
@@ -1293,6 +1294,7 @@ function DropinBuilderPage() {
                       >
                         {envTarget}
                       </Badge>
+                      <DropinSdkVersionBadge />
                     </div>
                     <div className="flex shrink-0 items-center gap-2">
                       <LocaleSwitcher />

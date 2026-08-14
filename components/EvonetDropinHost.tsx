@@ -9,6 +9,7 @@ import type {
   EvonetDropinSdkOptions,
   EvonetWindow,
 } from "../types/evonet";
+import { DROPIN_SCRIPT_SRC } from "../lib/dropinSdkScript";
 import { buildDropinPulseCss } from "../lib/dropinPulseTargets";
 import { applyDropinAppearanceCss } from "../lib/applyDropinAppearanceCss";
 
@@ -25,9 +26,7 @@ function resolveContainerMinHeight(
   return compact ? 0 : 320;
 }
 
-const DEFAULT_SCRIPT_SRC =
-  process.env.NEXT_PUBLIC_EVONET_DROPIN_SCRIPT_URL ??
-  "https://cdn.evonetonline.com/sdk/evonet-dropin.js";
+const DEFAULT_SCRIPT_SRC = DROPIN_SCRIPT_SRC;
 
 /** Strip callbacks so developers can copy/paste the exact SDK init object shape. */
 function sdkOptionsToDebugPayload(

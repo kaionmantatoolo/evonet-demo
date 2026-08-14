@@ -23,6 +23,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { LocaleSwitcher } from "@/components/LocaleSwitcher";
+import { DropinSdkVersionBadge } from "@/components/DropinSdkVersionBadge";
 import {
   EvonetDropinHost,
   type SdkInitAppliedInfo,
@@ -1169,6 +1170,7 @@ function EvonetDropinTestPage() {
               >
                 {envTarget}
               </Badge>
+              <DropinSdkVersionBadge />
               <Badge variant="outline" className="font-mono">init #{sdkInitGeneration}</Badge>
               <Badge variant="outline" className="font-mono">mode: {mode}</Badge>
               <Badge variant="outline" className="font-mono">locale: {locale}</Badge>
