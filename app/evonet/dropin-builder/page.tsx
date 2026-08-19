@@ -84,9 +84,14 @@ import {
 import { ensureUserInfoReference } from "../../../lib/userInfoReference";
 import { CopyableIdInline } from "../../../components/CopyableIdValue";
 import {
+  amountDisplayChoice,
+  amountDisplayFromChoice,
+  buildCustomDescriptionUiOption,
   buildTnCUiOption,
   isValidTnCUrl,
+  isZeroOrderAmount,
   normalizeTnCUrl,
+  withoutCustomDescription,
 } from "../../../lib/evonetUiOption";
 import { applyDropinAppearanceCss } from "../../../lib/applyDropinAppearanceCss";
 import {
@@ -185,6 +190,7 @@ function createEmptyTypographyState(): TypographyState {
 /**
  * Structural / uiOption fingerprint only. Appearance is applied live via CSS
  * vars and must not trigger Drop-in remount (keeps pulses visible).
+ * `customDescription` is patched onto the live SDK store — omit it here.
  */
 function buildStructuralFingerprint(parts: {
   sessionID: string;
@@ -206,7 +212,7 @@ function buildStructuralFingerprint(parts: {
       ? { maxWaitTime: parts.maxWaitTime.trim() || "10" }
       : undefined,
     uiOption: {
-      ...parts.uiOption,
+      ...withoutCustomDescription(parts.uiOption),
       ...(parts.columnsLayout ? { columns: true } : {}),
     },
   });
@@ -333,6 +339,14 @@ function DropinBuilderPage() {
   const [freeTrialBtnText, setFreeTrialBtnText] = useState(
     "Subscribe for $0 now"
   );
+  const [payBtnText, setPayBtnText] = useState("");
+  const [hidePayAmount, setHidePayAmount] = useState<boolean | null>(null);
+  const [saveCardDescription, setSaveCardDescription] = useState("");
+  const [subscribeBtnText, setSubscribeBtnText] = useState("");
+  const [hideSubscribeAmount, setHideSubscribeAmount] = useState<boolean | null>(
+    null
+  );
+  const [subscribeDescription, setSubscribeDescription] = useState("");
   const amountBeforeFreeTrialRef = useRef("128.00");
   const [enabledPaymentMethodInput, setEnabledPaymentMethodInput] = useState(
     DEFAULT_ENABLED_PAYMENT_METHOD
@@ -461,6 +475,26 @@ function DropinBuilderPage() {
 
   const sdkUiOption: EvonetSdkUiOption = useMemo(() => {
     const tnc = buildTnCUiOption(showTnC, tncMode, tncUrl);
+    const includeSubscribe =
+      saveCardForNextPurchase &&
+      includeRecurringProcessingModel &&
+      recurringProcessingModel === "Subscription" &&
+      !isZeroOrderAmount(orderAmount) &&
+      !freeTrial;
+    const customDescription = buildCustomDescriptionUiOption({
+      includeFreeTrial: freeTrial,
+      includePayment: !freeTrial && !includeSubscribe,
+      includeSaveCard: saveCardForNextPurchase && !freeTrial,
+      includeSubscribe,
+      freeTrialDescription,
+      freeTrialBtnText,
+      payBtnText,
+      hidePayAmount,
+      saveCardDescription,
+      subscribeBtnText,
+      hideSubscribeAmount,
+      subscribeDescription,
+    });
     return {
       showSaveImage,
       ...(columnsLayout ? { columns: true } : {}),
@@ -471,14 +505,7 @@ function DropinBuilderPage() {
         ...(autoInvokeCardScanner ? { autoInvokeCardScanner: true } : {}),
       },
       ...(tnc ? { TnC: tnc } : {}),
-      ...(freeTrial
-        ? {
-            customDescription: {
-              freeTrialDescription: freeTrialDescription.trim() || undefined,
-              freeTrialBtnText: freeTrialBtnText.trim() || undefined,
-            },
-          }
-        : {}),
+      ...(customDescription ? { customDescription } : {}),
     };
   }, [
       autoInvokeCardScanner,
@@ -487,10 +514,20 @@ function DropinBuilderPage() {
       freeTrial,
       freeTrialBtnText,
       freeTrialDescription,
+      includeRecurringProcessingModel,
+      orderAmount,
+      hidePayAmount,
+      payBtnText,
+      recurringProcessingModel,
+      saveCardDescription,
+      saveCardForNextPurchase,
       showCardHolderName,
       showSaveImage,
       showScanCardButton,
       showTnC,
+      hideSubscribeAmount,
+      subscribeBtnText,
+      subscribeDescription,
       tncMode,
       tncUrl,
     ]
@@ -775,6 +812,12 @@ function DropinBuilderPage() {
     setFreeTrial(uiOption.freeTrial);
     setFreeTrialDescription(uiOption.freeTrialDescription);
     setFreeTrialBtnText(uiOption.freeTrialBtnText);
+    setPayBtnText(uiOption.payBtnText);
+    setHidePayAmount(uiOption.hidePayAmount);
+    setSaveCardDescription(uiOption.saveCardDescription);
+    setSubscribeBtnText(uiOption.subscribeBtnText);
+    setHideSubscribeAmount(uiOption.hideSubscribeAmount);
+    setSubscribeDescription(uiOption.subscribeDescription);
     if (uiOption.freeTrial) {
       amountBeforeFreeTrialRef.current = orderAmount.trim() || "128.00";
       setOrderAmount("0");
@@ -968,7 +1011,7 @@ function DropinBuilderPage() {
     }
   };
 
-  /** Amount/currency are baked into the Interaction session — recreate when they change. */
+  /** Amount, save-card, and recurring model are baked into the Interaction session. */
   const skipAmountAutoSessionRef = useRef(true);
   useEffect(() => {
     if (skipAmountAutoSessionRef.current) {
@@ -988,8 +1031,16 @@ function DropinBuilderPage() {
       void handleCreateSession();
     }, 650);
     return () => window.clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- only recreate when money fields change
-  }, [orderAmount, orderCurrency, freeTrial, userInfoReference, saveCardForNextPurchase]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- recreate when session-baked fields change
+  }, [
+    orderAmount,
+    orderCurrency,
+    freeTrial,
+    userInfoReference,
+    saveCardForNextPurchase,
+    includeRecurringProcessingModel,
+    recurringProcessingModel,
+  ]);
 
   const markSessionSpentFromPayment = useCallback((result: EvonetReturnParams) => {
     setPaymentReturnPrompt(result);
@@ -1252,6 +1303,17 @@ function DropinBuilderPage() {
   }, []);
 
   const envTarget = targetFromSdkEnvironment(environment);
+  const showSaveCardCopy =
+    saveCardForNextPurchase &&
+    !freeTrial &&
+    !includeRecurringProcessingModel;
+  const showPaidSubscriptionCopy =
+    saveCardForNextPurchase &&
+    !freeTrial &&
+    includeRecurringProcessingModel &&
+    recurringProcessingModel === "Subscription" &&
+    !isZeroOrderAmount(orderAmount);
+  const showPaymentCopy = !freeTrial && !showPaidSubscriptionCopy;
 
   return (
     <Box sx={{ minHeight: { md: VIEWPORT_HEIGHT }, overflowX: "hidden", ...pageEnter() }}>
@@ -1264,7 +1326,7 @@ function DropinBuilderPage() {
         >
           <div className="grid min-w-0 items-start gap-5 md:h-[calc(var(--builder-height)-2rem)] md:grid-cols-[minmax(280px,1fr)_minmax(360px,1.25fr)] md:items-stretch md:gap-6">
             <Box
-              className="min-h-0 min-w-0 space-y-5 pb-6 md:h-full md:overflow-y-auto md:overscroll-contain md:px-0.5 md:pr-2"
+              className="min-h-0 min-w-0 space-y-5 pb-6 md:h-full md:overflow-x-clip md:overflow-y-auto md:overscroll-contain md:px-2 md:pr-3"
               sx={{
                 ...sectionEnter(40),
                 WebkitOverflowScrolling: "touch",
@@ -1560,6 +1622,107 @@ function DropinBuilderPage() {
                               </Select>
                             </div>
                           </div>
+                          {showSaveCardCopy ? (
+                            <div className="space-y-2">
+                              <Label htmlFor="save-card-description">
+                                {t.saveCardDescription}
+                              </Label>
+                              <Input
+                                id="save-card-description"
+                                value={saveCardDescription}
+                                onChange={(event) =>
+                                  setSaveCardDescription(event.target.value)
+                                }
+                                placeholder={t.saveCardDescriptionPlaceholder}
+                              />
+                              <p className="break-words text-xs text-muted-foreground">
+                                {t.saveCardDescriptionHint}
+                              </p>
+                            </div>
+                          ) : null}
+                          {saveCardForNextPurchase &&
+                          !freeTrial &&
+                          includeRecurringProcessingModel ? (
+                            <p className="break-words text-xs text-muted-foreground">
+                              {t.saveCardCheckboxHiddenHint}
+                            </p>
+                          ) : null}
+                          {showPaidSubscriptionCopy ? (
+                            <div className="space-y-4 rounded-none border p-3">
+                              <p className="text-sm font-medium">
+                                {t.paidSubscriptionCopy}
+                              </p>
+                              <div className="space-y-4">
+                                <div className="min-w-0 space-y-2">
+                                  <Label htmlFor="subscribe-btn-text">
+                                    {t.subscribeBtnText}
+                                  </Label>
+                                  <Input
+                                    id="subscribe-btn-text"
+                                    value={subscribeBtnText}
+                                    onChange={(event) =>
+                                      setSubscribeBtnText(event.target.value)
+                                    }
+                                    placeholder="Subscribe"
+                                  />
+                                  <p className="break-words text-xs text-muted-foreground">
+                                    {t.subscribeBtnTextHint}
+                                  </p>
+                                </div>
+                                <div className="min-w-0 space-y-2">
+                                  <Label htmlFor="subscribe-description">
+                                    {t.subscribeDescription}
+                                  </Label>
+                                  <Input
+                                    id="subscribe-description"
+                                    value={subscribeDescription}
+                                    onChange={(event) =>
+                                      setSubscribeDescription(event.target.value)
+                                    }
+                                    placeholder="Subscribe and pay now"
+                                  />
+                                  <p className="break-words text-xs text-muted-foreground">
+                                    {t.subscribeDescriptionHint}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="subscribe-amount">
+                                  {t.subscribeAmount}
+                                </Label>
+                                <Select
+                                  value={amountDisplayChoice(hideSubscribeAmount)}
+                                  onValueChange={(value) =>
+                                    setHideSubscribeAmount(
+                                      amountDisplayFromChoice(value)
+                                    )
+                                  }
+                                >
+                                  <SelectTrigger
+                                    id="subscribe-amount"
+                                    className="w-full"
+                                    aria-label={t.subscribeAmount}
+                                  >
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="default">
+                                      {t.amountDisplayDefault}
+                                    </SelectItem>
+                                    <SelectItem value="show">
+                                      {t.amountDisplayShow}
+                                    </SelectItem>
+                                    <SelectItem value="hide">
+                                      {t.amountDisplayHide}
+                                    </SelectItem>
+                                  </SelectContent>
+                                </Select>
+                                <p className="text-xs text-muted-foreground">
+                                  {t.subscribeAmountHint}
+                                </p>
+                              </div>
+                            </div>
+                          ) : null}
                           <div className="flex items-start justify-between gap-4 rounded-none border p-3">
                             <div>
                               <Label htmlFor="free-trial" className="font-medium">
@@ -1964,6 +2127,66 @@ function DropinBuilderPage() {
                         </div>
                       ))}
                     </div>
+                    {showPaymentCopy ? (
+                      <Accordion
+                        type="single"
+                        collapsible
+                        className="rounded-none border border-border bg-card px-4 text-card-foreground"
+                      >
+                        <AccordionItem value="custom-payment-copy" className="border-0">
+                          <AccordionTrigger>
+                            {t.customPaymentCopyAccordion}
+                          </AccordionTrigger>
+                          <AccordionContent className="space-y-4 pt-2">
+                            <div className="space-y-2">
+                              <Label htmlFor="pay-btn-text">{t.payBtnText}</Label>
+                              <Input
+                                id="pay-btn-text"
+                                value={payBtnText}
+                                onChange={(event) =>
+                                  setPayBtnText(event.target.value)
+                                }
+                                placeholder={t.payBtnTextPlaceholder}
+                              />
+                              <p className="text-xs text-muted-foreground">
+                                {t.payBtnTextHint}
+                              </p>
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="pay-amount">{t.payAmount}</Label>
+                              <Select
+                                value={amountDisplayChoice(hidePayAmount)}
+                                onValueChange={(value) =>
+                                  setHidePayAmount(amountDisplayFromChoice(value))
+                                }
+                              >
+                                <SelectTrigger
+                                  id="pay-amount"
+                                  className="w-full"
+                                  aria-label={t.payAmount}
+                                >
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="default">
+                                    {t.amountDisplayDefault}
+                                  </SelectItem>
+                                  <SelectItem value="show">
+                                    {t.amountDisplayShow}
+                                  </SelectItem>
+                                  <SelectItem value="hide">
+                                    {t.amountDisplayHide}
+                                  </SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <p className="text-xs text-muted-foreground">
+                                {t.payAmountHint}
+                              </p>
+                            </div>
+                          </AccordionContent>
+                        </AccordionItem>
+                      </Accordion>
+                    ) : null}
                     <Accordion
                       type="single"
                       collapsible
@@ -2088,7 +2311,7 @@ function DropinBuilderPage() {
             </Box>
 
             <Box id="builder-preview" className="min-h-0 min-w-0 scroll-mt-4 md:h-full" sx={sectionEnter(80)}>
-              <Card className="min-w-0 gap-0 overflow-x-auto rounded-none border border-border py-0 md:flex md:h-full md:flex-col">
+              <Card className="min-w-0 gap-0 overflow-visible rounded-none border border-border py-0 md:flex md:h-full md:flex-col">
                 <CardHeader className="space-y-4 border-b bg-muted/40 px-4 py-4">
                   <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
                     <div className="flex min-w-0 flex-wrap items-center gap-2">
@@ -2119,7 +2342,7 @@ function DropinBuilderPage() {
                   </Button>
                   <p className="break-words text-xs text-muted-foreground">{t.openStorefrontHint}</p>
                 </CardHeader>
-                <CardContent className="min-w-0 space-y-4 p-4 md:min-h-0 md:flex-1 md:overflow-y-auto">
+                <CardContent className="min-w-0 space-y-4 overflow-x-clip overflow-y-auto p-4 md:min-h-0 md:flex-1">
                   {sessionSpent && !showReturnDialog ? (
                     <Alert severity="warning" variant="outlined">
                       {t.sessionSpentWarning}

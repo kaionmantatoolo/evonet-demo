@@ -52,6 +52,12 @@ export interface ImportedBuilderUiConfig {
     freeTrial: boolean;
     freeTrialDescription: string;
     freeTrialBtnText: string;
+    payBtnText: string;
+    hidePayAmount: boolean | null;
+    saveCardDescription: string;
+    subscribeBtnText: string;
+    hideSubscribeAmount: boolean | null;
+    subscribeDescription: string;
   };
   appearance: {
     colors: Record<ImportedColorKey, string>;
@@ -71,6 +77,20 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function asBoolean(value: unknown, fallback: boolean): boolean {
   return typeof value === "boolean" ? value : fallback;
+}
+
+/** Prefer SDK `hide*` keys; invert legacy `payAmount` / `subscribeAmount` (true = show). */
+function asHideAmountFlag(
+  hideValue: unknown,
+  legacyShowValue: unknown
+): boolean | null {
+  if (typeof hideValue === "boolean") return hideValue;
+  if (typeof legacyShowValue === "boolean") return !legacyShowValue;
+  return null;
+}
+
+function asOptionalString(value: unknown, fallback: string): string {
+  return typeof value === "string" ? value : fallback;
 }
 
 function normalizeHexColor(value: string): string {
@@ -203,6 +223,12 @@ function normalizeUiOption(
     freeTrial: false,
     freeTrialDescription: "This is a $0 subscription test",
     freeTrialBtnText: "Subscribe for $0 now",
+    payBtnText: "",
+    hidePayAmount: null as boolean | null,
+    saveCardDescription: "",
+    subscribeBtnText: "",
+    hideSubscribeAmount: null as boolean | null,
+    subscribeDescription: "",
   };
 
   if (!isRecord(uiOption)) return base;
@@ -255,6 +281,27 @@ function normalizeUiOption(
         base.freeTrial = true;
       }
     }
+    base.payBtnText = asOptionalString(customDescription.payBtnText, base.payBtnText);
+    base.hidePayAmount = asHideAmountFlag(
+      customDescription.hidePayAmount,
+      customDescription.payAmount
+    );
+    base.saveCardDescription = asOptionalString(
+      customDescription.saveCardDescription,
+      base.saveCardDescription
+    );
+    base.subscribeBtnText = asOptionalString(
+      customDescription.subscribeBtnText,
+      base.subscribeBtnText
+    );
+    base.hideSubscribeAmount = asHideAmountFlag(
+      customDescription.hideSubscribeAmount,
+      customDescription.subscribeAmount
+    );
+    base.subscribeDescription = asOptionalString(
+      customDescription.subscribeDescription,
+      base.subscribeDescription
+    );
   }
 
   return base;

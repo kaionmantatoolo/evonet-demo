@@ -30,7 +30,7 @@ export function DropinPreviewStage({
   return (
     <div
       className={cn(
-        "overflow-hidden rounded-none border border-border bg-card",
+        "overflow-visible rounded-none border border-border bg-card",
         className
       )}
     >

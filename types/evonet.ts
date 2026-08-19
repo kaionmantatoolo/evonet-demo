@@ -33,12 +33,21 @@ export interface EvonetSdkUiOption {
     url?: string;
   };
   /**
-   * Zero-amount subscription / free-trial copy shown by Drop-in
-   * when `transAmount.value` is `"0"` with Subscription.
+   * Checkout copy shown by Drop-in. Free-trial keys apply when
+   * `transAmount.value` is `"0"` with Subscription; the rest apply to
+   * one-off pay, save-card, and paid-subscription scenes.
    */
   customDescription?: {
     freeTrialDescription?: string;
     freeTrialBtnText?: string;
+    payBtnText?: string;
+    /** When true, Drop-in hides the amount on the pay CTA. Omitted/false keeps it. */
+    hidePayAmount?: boolean;
+    saveCardDescription?: string;
+    subscribeBtnText?: string;
+    /** When true, Drop-in hides the amount on the subscribe CTA. Omitted/false keeps it. */
+    hideSubscribeAmount?: boolean;
+    subscribeDescription?: string;
   };
   /**
    * Two-column web layout (method list + payment summary).

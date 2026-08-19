@@ -115,6 +115,33 @@ export const KO_KR: SiteMessages = {
       "금액을 0으로 설정하고 카드 저장 + Subscription이 필요합니다. Drop-in에 uiOption.customDescription을 보냅니다.",
     freeTrialDescription: "무료 체험 설명",
     freeTrialBtnText: "무료 체험 버튼 문구",
+    customPaymentCopyAccordion: "결제 문구 사용자 지정",
+    payBtnText: "결제 버튼 문구",
+    payBtnTextHint:
+      "비우면 SDK 기본값. uiOption.customDescription.payBtnText로 전송됩니다.",
+    payBtnTextPlaceholder: "Pay",
+    payAmount: "결제 버튼 금액",
+    payAmountHint:
+      "uiOption.customDescription.hidePayAmount. SDK 기본은 이 필드를 보내지 않습니다(금액 표시). 숨김은 true.",
+    amountDisplayDefault: "SDK 기본",
+    amountDisplayShow: "금액 표시",
+    amountDisplayHide: "금액 숨김",
+    saveCardDescription: "카드 저장 체크박스 문구",
+    saveCardDescriptionHint:
+      "카드 저장이 켜지고 반복 모델이 꺼져 있을 때만 Credit or Debit Card 폼에 표시됩니다. uiOption.customDescription.saveCardDescription.",
+    saveCardDescriptionPlaceholder: "Save this card for next purchase",
+    saveCardCheckboxHiddenHint:
+      "Subscription / Unscheduled가 켜져 있으면 저장 체크박스가 없습니다. 카드 폼에서는 구독 문구가 나옵니다. 체크박스가 필요하면 반복 처리 모델을 끄면 세션이 자동으로 다시 만들어집니다.",
+    paidSubscriptionCopy: "유료 구독 문구",
+    subscribeBtnText: "구독 버튼 문구",
+    subscribeBtnTextHint:
+      "uiOption.customDescription.subscribeBtnText — 0원이 아닌 결제+구독 CTA.",
+    subscribeAmount: "구독 버튼 금액",
+    subscribeAmountHint:
+      "uiOption.customDescription.hideSubscribeAmount. SDK 기본은 이 필드를 보내지 않습니다(금액 표시). 숨김은 true.",
+    subscribeDescription: "구독 설명",
+    subscribeDescriptionHint:
+      "uiOption.customDescription.subscribeDescription — 0원이 아닌 결제+구독 본문.",
     refreshSessionId: "Session ID 새로고침",
     refreshSessionIdRequired: "Session ID 새로고침(필수)",
     creatingSession: "세션 생성 중...",

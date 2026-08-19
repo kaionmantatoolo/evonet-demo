@@ -53,9 +53,14 @@ import { buildClientEvonetReturnUrl } from "../../../lib/evonetReturnUrl";
 import { ensureUserInfoReference } from "../../../lib/userInfoReference";
 import { CopyableIdInline } from "../../../components/CopyableIdValue";
 import {
+  amountDisplayChoice,
+  amountDisplayFromChoice,
+  buildCustomDescriptionUiOption,
   buildTnCUiOption,
   isValidTnCUrl,
+  isZeroOrderAmount,
   normalizeTnCUrl,
+  withoutCustomDescription,
 } from "../../../lib/evonetUiOption";
 import type {
   BinRule,
@@ -106,7 +111,7 @@ function buildDropinSdkFingerprint(parts: {
     isVerifyPaymentBrand: parts.verifyPaymentBrand,
     verifyOption: verifyOpt,
     uiOption: {
-      ...parts.sdkUiOption,
+      ...withoutCustomDescription(parts.sdkUiOption),
       ...(parts.columnsLayout ? { columns: true } : {}),
     },
     appearance: parts.sdkAppearance,
@@ -269,6 +274,14 @@ function EvonetDropinTestPage() {
   const [freeTrialBtnText, setFreeTrialBtnText] = useState(
     "Subscribe for $0 now"
   );
+  const [payBtnText, setPayBtnText] = useState("");
+  const [hidePayAmount, setHidePayAmount] = useState<boolean | null>(null);
+  const [saveCardDescription, setSaveCardDescription] = useState("");
+  const [subscribeBtnText, setSubscribeBtnText] = useState("");
+  const [hideSubscribeAmount, setHideSubscribeAmount] = useState<boolean | null>(
+    null
+  );
+  const [subscribeDescription, setSubscribeDescription] = useState("");
   const amountBeforeFreeTrialRef = useRef("10.00");
   const [enabledPaymentMethodInput, setEnabledPaymentMethodInput] = useState(
     DEFAULT_ENABLED_PAYMENT_METHOD
@@ -381,6 +394,26 @@ function EvonetDropinTestPage() {
 
   const sdkUiOption: EvonetSdkUiOption = useMemo(() => {
     const tnc = buildTnCUiOption(showTnC, tncMode, tncUrl);
+    const includeSubscribe =
+      saveCardForNextPurchase &&
+      includeRecurringProcessingModel &&
+      recurringProcessingModel === "Subscription" &&
+      !isZeroOrderAmount(amount) &&
+      !freeTrial;
+    const customDescription = buildCustomDescriptionUiOption({
+      includeFreeTrial: freeTrial,
+      includePayment: !freeTrial && !includeSubscribe,
+      includeSaveCard: saveCardForNextPurchase && !freeTrial,
+      includeSubscribe,
+      freeTrialDescription,
+      freeTrialBtnText,
+      payBtnText,
+      hidePayAmount,
+      saveCardDescription,
+      subscribeBtnText,
+      hideSubscribeAmount,
+      subscribeDescription,
+    });
     return {
       showSaveImage,
       ...(columnsLayout ? { columns: true } : {}),
@@ -393,26 +426,29 @@ function EvonetDropinTestPage() {
         ...(autoInvokeCardScanner ? { autoInvokeCardScanner: true } : {}),
       },
       ...(tnc ? { TnC: tnc } : {}),
-      ...(freeTrial
-        ? {
-            customDescription: {
-              freeTrialDescription: freeTrialDescription.trim() || undefined,
-              freeTrialBtnText: freeTrialBtnText.trim() || undefined,
-            },
-          }
-        : {}),
+      ...(customDescription ? { customDescription } : {}),
     };
   }, [
+      amount,
       autoInvokeCardScanner,
       columnsLayout,
       cvvForSavedCard,
       freeTrial,
       freeTrialBtnText,
       freeTrialDescription,
+      includeRecurringProcessingModel,
+      hidePayAmount,
+      payBtnText,
+      recurringProcessingModel,
+      saveCardDescription,
+      saveCardForNextPurchase,
       showCardHolderName,
       showSaveImage,
       showScanCardButton,
       showTnC,
+      hideSubscribeAmount,
+      subscribeBtnText,
+      subscribeDescription,
       tncMode,
       tncUrl,
     ]
@@ -879,7 +915,7 @@ function EvonetDropinTestPage() {
     }
   };
 
-  /** Amount/currency live in the Interaction session — recreate when they change. */
+  /** Amount, save-card, and recurring model live in the Interaction session. */
   const skipAmountAutoSessionRef = useRef(true);
   useEffect(() => {
     if (skipAmountAutoSessionRef.current) {
@@ -899,8 +935,16 @@ function EvonetDropinTestPage() {
       void handleCreateSession({ initDropin: true });
     }, 650);
     return () => window.clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- only recreate when money fields change
-  }, [amount, currency, freeTrial, userInfoReference, saveCardForNextPurchase]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- recreate when session-baked fields change
+  }, [
+    amount,
+    currency,
+    freeTrial,
+    userInfoReference,
+    saveCardForNextPurchase,
+    includeRecurringProcessingModel,
+    recurringProcessingModel,
+  ]);
 
   const handleEnvironmentChipTap = () => {
     if (envChipTapTimerRef.current) {
@@ -1141,6 +1185,17 @@ function EvonetDropinTestPage() {
   }, []);
 
   const envTarget = targetFromSdkEnvironment(environment);
+  const showSaveCardCopy =
+    saveCardForNextPurchase &&
+    !freeTrial &&
+    !includeRecurringProcessingModel;
+  const showPaidSubscriptionCopy =
+    saveCardForNextPurchase &&
+    !freeTrial &&
+    includeRecurringProcessingModel &&
+    recurringProcessingModel === "Subscription" &&
+    !isZeroOrderAmount(amount);
+  const showPaymentCopy = !freeTrial && !showPaidSubscriptionCopy;
 
   return (
     <main
@@ -1243,6 +1298,48 @@ function EvonetDropinTestPage() {
                       aria-label="Allow authentication on interaction"
                     />
                   </div>
+                  {showPaymentCopy ? (
+                    <>
+                      <div className="min-w-0 space-y-2">
+                        <Label htmlFor="pay-btn-text">Pay button text</Label>
+                        <Input
+                          id="pay-btn-text"
+                          value={payBtnText}
+                          onChange={(event) => setPayBtnText(event.target.value)}
+                          placeholder="Pay"
+                        />
+                        <p className="break-words text-xs text-muted-foreground">
+                          uiOption.customDescription.payBtnText
+                        </p>
+                      </div>
+                      <div className="min-w-0 space-y-2">
+                        <Label htmlFor="pay-amount">Pay button amount</Label>
+                        <Select
+                          value={amountDisplayChoice(hidePayAmount)}
+                          onValueChange={(value) =>
+                            setHidePayAmount(amountDisplayFromChoice(value))
+                          }
+                        >
+                          <SelectTrigger
+                            id="pay-amount"
+                            className="w-full"
+                            aria-label="Pay button amount"
+                          >
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="default">SDK default</SelectItem>
+                            <SelectItem value="show">Show amount</SelectItem>
+                            <SelectItem value="hide">Hide amount</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <p className="break-words text-xs text-muted-foreground">
+                          uiOption.customDescription.hidePayAmount. SDK default
+                          omits the field (amount shown). Hide sends true.
+                        </p>
+                      </div>
+                    </>
+                  ) : null}
                   <div className="flex items-start justify-between gap-3 rounded-none border p-3">
                     <div className="min-w-0 flex-1">
                       <Label
@@ -1330,6 +1427,103 @@ function EvonetDropinTestPage() {
                       </Select>
                     </div>
                   </div>
+                  {showSaveCardCopy ? (
+                    <div className="min-w-0 space-y-2">
+                      <Label htmlFor="save-card-description">
+                        Save-card checkbox text
+                      </Label>
+                      <Input
+                        id="save-card-description"
+                        value={saveCardDescription}
+                        onChange={(event) =>
+                          setSaveCardDescription(event.target.value)
+                        }
+                        placeholder="Save this card for next purchase"
+                      />
+                      <p className="break-words text-xs text-muted-foreground">
+                        Shown on the Credit or Debit Card form when recurring
+                        model is off. uiOption.customDescription.saveCardDescription
+                      </p>
+                    </div>
+                  ) : null}
+                  {saveCardForNextPurchase &&
+                  !freeTrial &&
+                  includeRecurringProcessingModel ? (
+                    <p className="break-words text-xs text-muted-foreground">
+                      Drop-in does not show a save-card checkbox while
+                      Subscription / Unscheduled is on. Open Credit or Debit Card
+                      to see subscription copy instead. Turn off Include
+                      recurring processing model — the session refreshes
+                      automatically and the checkbox appears on the card form.
+                    </p>
+                  ) : null}
+                  {showPaidSubscriptionCopy ? (
+                    <div className="space-y-3 rounded-none border p-3">
+                      <p className="text-sm font-medium">Paid subscription copy</p>
+                      <div className="space-y-4">
+                        <div className="min-w-0 space-y-2">
+                          <Label htmlFor="subscribe-btn-text">
+                            Subscribe button text
+                          </Label>
+                          <Input
+                            id="subscribe-btn-text"
+                            value={subscribeBtnText}
+                            onChange={(event) =>
+                              setSubscribeBtnText(event.target.value)
+                            }
+                            placeholder="Subscribe"
+                          />
+                          <p className="break-words text-xs text-muted-foreground">
+                            uiOption.customDescription.subscribeBtnText
+                          </p>
+                        </div>
+                        <div className="min-w-0 space-y-2">
+                          <Label htmlFor="subscribe-description">
+                            Subscribe description
+                          </Label>
+                          <Input
+                            id="subscribe-description"
+                            value={subscribeDescription}
+                            onChange={(event) =>
+                              setSubscribeDescription(event.target.value)
+                            }
+                            placeholder="Subscribe and pay now"
+                          />
+                          <p className="break-words text-xs text-muted-foreground">
+                            uiOption.customDescription.subscribeDescription
+                          </p>
+                        </div>
+                      </div>
+                      <div className="min-w-0 space-y-2">
+                        <Label htmlFor="subscribe-amount">
+                          Subscribe button amount
+                        </Label>
+                        <Select
+                          value={amountDisplayChoice(hideSubscribeAmount)}
+                          onValueChange={(value) =>
+                            setHideSubscribeAmount(amountDisplayFromChoice(value))
+                          }
+                        >
+                          <SelectTrigger
+                            id="subscribe-amount"
+                            className="w-full"
+                            aria-label="Subscribe button amount"
+                          >
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="default">SDK default</SelectItem>
+                            <SelectItem value="show">Show amount</SelectItem>
+                            <SelectItem value="hide">Hide amount</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <p className="break-words text-xs text-muted-foreground">
+                          uiOption.customDescription.hideSubscribeAmount. SDK
+                          default omits the field (amount shown). Hide sends true.
+                        </p>
+                      </div>
+                    </div>
+                  ) : null}
                   <div className="flex items-start justify-between gap-3 rounded-none border p-3">
                     <div className="min-w-0 flex-1">
                       <Label
@@ -1964,7 +2158,7 @@ function EvonetDropinTestPage() {
           </section>
 
           <section className="order-1 min-w-0 space-y-4 lg:order-2 lg:col-span-2">
-            <Card id="dropin-test-preview" className="min-w-0 gap-0 overflow-x-auto rounded-none border border-border py-0">
+            <Card id="dropin-test-preview" className="min-w-0 gap-0 overflow-visible rounded-none border border-border py-0">
               <CardHeader className="border-b bg-muted/40 px-4 py-3">
                 <CardTitle className="text-base">Drop-in preview</CardTitle>
               </CardHeader>

@@ -7,6 +7,7 @@ import type {
   EvonetDropinEvent,
   EvonetDropinMode,
   EvonetDropinSdkOptions,
+  EvonetSdkUiOption,
   EvonetWindow,
 } from "../types/evonet";
 import { DROPIN_SCRIPT_SRC } from "../lib/dropinSdkScript";
@@ -134,6 +135,61 @@ function clearDropInContainer(containerId: string): void {
   if (el) {
     el.innerHTML = "";
   }
+}
+
+function unwrapDropinSdkInstance(
+  instance: unknown
+): {
+  options?: Record<string, unknown>;
+  store?: { state?: { options?: Record<string, unknown> } };
+} | null {
+  if (instance == null || typeof instance !== "object") {
+    return null;
+  }
+  const root = instance as Record<string, unknown>;
+  const wrapped = root.value;
+  const target =
+    wrapped != null && typeof wrapped === "object"
+      ? (wrapped as Record<string, unknown>)
+      : root;
+  return target as {
+    options?: Record<string, unknown>;
+    store?: { state?: { options?: Record<string, unknown> } };
+  };
+}
+
+/**
+ * Patch `uiOption.customDescription` on the live Vuex store. Do not call
+ * `setOptions` — that rewrites appearance CSS vars and would undo Builder live
+ * color/font tweaks. Replace `state.options` so Vue computeds invalidate.
+ */
+function hotPatchDropinCustomDescription(
+  instance: unknown,
+  customDescription: EvonetSdkUiOption["customDescription"] | undefined
+): boolean {
+  const inst = unwrapDropinSdkInstance(instance);
+  const stateOptions = inst?.store?.state?.options;
+  if (!inst || !stateOptions || typeof stateOptions !== "object") {
+    return false;
+  }
+  const nextCopy: Record<string, unknown> =
+    customDescription && Object.keys(customDescription).length > 0
+      ? { ...customDescription }
+      : {};
+  const prevUi =
+    stateOptions.uiOption && typeof stateOptions.uiOption === "object"
+      ? (stateOptions.uiOption as Record<string, unknown>)
+      : {};
+  const nextOptions = {
+    ...stateOptions,
+    uiOption: {
+      ...prevUi,
+      customDescription: nextCopy,
+    },
+  };
+  inst.store!.state!.options = nextOptions;
+  inst.options = nextOptions;
+  return true;
 }
 
 const APPEARANCE_FONT_GROUP_KEYS = [
@@ -918,6 +974,20 @@ export function EvonetDropinHost({
     };
   }, [initGeneration, scriptLoaded]);
 
+  const customDescriptionJson = JSON.stringify(
+    config.uiOption?.customDescription ?? null
+  );
+
+  useEffect(() => {
+    if (initGeneration < 1 || !scriptLoaded) {
+      return;
+    }
+    hotPatchDropinCustomDescription(
+      dropInInstanceRef.current,
+      config.uiOption?.customDescription
+    );
+  }, [customDescriptionJson, initGeneration, scriptLoaded]);
+
   return (
     <Box sx={{ width: "100%", maxWidth: "100%", minWidth: 0 }}>
       {!scriptLoaded && (
@@ -962,12 +1032,15 @@ export function EvonetDropinHost({
         #${containerId} > * {
           max-width: 100% !important;
           box-sizing: border-box !important;
+          overflow: visible !important;
         }
         /* Payment chrome must not clip the checked-channel ring. */
         #${containerId} .cil-dropIn-container,
         #${containerId} .cil-payment-method-conatiner,
-        #${containerId} .cil-channel-wrap {
+        #${containerId} .cil-channel-wrap,
+        #${containerId} .cil-channel-title {
           overflow: visible !important;
+          outline: none;
         }
         /*
           SDK hardcodes .cil-dropIn-container { color: #212121 }, so payment
@@ -993,6 +1066,14 @@ export function EvonetDropinHost({
         #${containerId} .cil-channel-title::after {
           left: -17px !important;
           right: -17px !important;
+        }
+        /* Keep card PAN/expiry/CVC 1px borders inside the padded stage. */
+        #${containerId} .card-form-container,
+        #${containerId} .van-cell,
+        #${containerId} .van-field {
+          overflow: visible !important;
+          box-sizing: border-box !important;
+          max-width: 100%;
         }
         /*
           Google Pay CTA is Google's official button (not colorAction).

@@ -115,6 +115,33 @@ export const JA_JP: SiteMessages = {
       "金額を 0 にし、セーブカード + Subscription が必要。Drop-in に uiOption.customDescription を送ります。",
     freeTrialDescription: "無料トライアル説明",
     freeTrialBtnText: "無料トライアルボタン文言",
+    customPaymentCopyAccordion: "支払い文言のカスタム",
+    payBtnText: "支払いボタン文言",
+    payBtnTextHint:
+      "空欄なら SDK 既定。uiOption.customDescription.payBtnText として送信。",
+    payBtnTextPlaceholder: "Pay",
+    payAmount: "支払いボタンの金額",
+    payAmountHint:
+      "uiOption.customDescription.hidePayAmount。SDK 既定では未送信（金額表示）。非表示は true。",
+    amountDisplayDefault: "SDK 既定",
+    amountDisplayShow: "金額を表示",
+    amountDisplayHide: "金額を隠す",
+    saveCardDescription: "カード保存チェックボックス文言",
+    saveCardDescriptionHint:
+      "セーブカード ON かつ定期課金モデル OFF のとき、Credit or Debit Card フォームに出ます。uiOption.customDescription.saveCardDescription。",
+    saveCardDescriptionPlaceholder: "Save this card for next purchase",
+    saveCardCheckboxHiddenHint:
+      "Subscription / Unscheduled のときはチェックボックスは出ません。カードフォームでは購読コピーになります。チェックボックスが必要なら定期課金モデルをオフにすると、セッションが自動で作り直されます。",
+    paidSubscriptionCopy: "有料サブスク文言",
+    subscribeBtnText: "購読ボタン文言",
+    subscribeBtnTextHint:
+      "uiOption.customDescription.subscribeBtnText — 0円以外の支払い＋購読 CTA。",
+    subscribeAmount: "購読ボタンの金額",
+    subscribeAmountHint:
+      "uiOption.customDescription.hideSubscribeAmount。SDK 既定では未送信（金額表示）。非表示は true。",
+    subscribeDescription: "購読の説明",
+    subscribeDescriptionHint:
+      "uiOption.customDescription.subscribeDescription — 0円以外の支払い＋購読の本文。",
     refreshSessionId: "Session ID を更新",
     refreshSessionIdRequired: "Session ID を更新（必須）",
     creatingSession: "セッション作成中...",

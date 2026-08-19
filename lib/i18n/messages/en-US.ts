@@ -98,6 +98,26 @@ export interface SiteMessages {
     freeTrialHint: string;
     freeTrialDescription: string;
     freeTrialBtnText: string;
+    customPaymentCopyAccordion: string;
+    payBtnText: string;
+    payBtnTextHint: string;
+    payBtnTextPlaceholder: string;
+    payAmount: string;
+    payAmountHint: string;
+    amountDisplayDefault: string;
+    amountDisplayShow: string;
+    amountDisplayHide: string;
+    saveCardDescription: string;
+    saveCardDescriptionHint: string;
+    saveCardDescriptionPlaceholder: string;
+    saveCardCheckboxHiddenHint: string;
+    paidSubscriptionCopy: string;
+    subscribeBtnText: string;
+    subscribeBtnTextHint: string;
+    subscribeAmount: string;
+    subscribeAmountHint: string;
+    subscribeDescription: string;
+    subscribeDescriptionHint: string;
     refreshSessionId: string;
     refreshSessionIdRequired: string;
     creatingSession: string;
@@ -317,6 +337,33 @@ export const EN_US: SiteMessages = {
       "Sets amount to 0, requires save-card + Subscription, and sends uiOption.customDescription for Drop-in free-trial copy.",
     freeTrialDescription: "Free trial description",
     freeTrialBtnText: "Free trial button text",
+    customPaymentCopyAccordion: "Custom payment copy",
+    payBtnText: "Pay button text",
+    payBtnTextHint:
+      "Leave empty to keep the SDK default. Sent as uiOption.customDescription.payBtnText.",
+    payBtnTextPlaceholder: "Pay",
+    payAmount: "Pay button amount",
+    payAmountHint:
+      "uiOption.customDescription.hidePayAmount. SDK default omits the field (amount shown). Hide sends true.",
+    amountDisplayDefault: "SDK default",
+    amountDisplayShow: "Show amount",
+    amountDisplayHide: "Hide amount",
+    saveCardDescription: "Save-card checkbox text",
+    saveCardDescriptionHint:
+      "Shown on the Credit or Debit Card form when save-card is on and recurring model is off. uiOption.customDescription.saveCardDescription.",
+    saveCardDescriptionPlaceholder: "Save this card for next purchase",
+    saveCardCheckboxHiddenHint:
+      "Drop-in does not show a save-card checkbox while Subscription / Unscheduled is on. Open Credit or Debit Card to see subscription copy instead. Turn off “Include recurring processing model” — the session refreshes automatically and the checkbox appears on the card form.",
+    paidSubscriptionCopy: "Paid subscription copy",
+    subscribeBtnText: "Subscribe button text",
+    subscribeBtnTextHint:
+      "uiOption.customDescription.subscribeBtnText — CTA for a non-zero pay-and-subscribe checkout.",
+    subscribeAmount: "Subscribe button amount",
+    subscribeAmountHint:
+      "uiOption.customDescription.hideSubscribeAmount. SDK default omits the field (amount shown). Hide sends true.",
+    subscribeDescription: "Subscribe description",
+    subscribeDescriptionHint:
+      "uiOption.customDescription.subscribeDescription — body copy for a non-zero pay-and-subscribe checkout.",
     refreshSessionId: "Refresh Session ID",
     refreshSessionIdRequired: "Refresh Session ID (required)",
     creatingSession: "Creating Session...",

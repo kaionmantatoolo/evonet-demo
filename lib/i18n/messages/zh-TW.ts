@@ -112,6 +112,33 @@ export const ZH_TW: SiteMessages = {
       "金額設為 0，需開啟存卡 + Subscription，並向 Drop-in 傳送 uiOption.customDescription 試用文案。",
     freeTrialDescription: "免費試用說明",
     freeTrialBtnText: "免費試用按鈕文案",
+    customPaymentCopyAccordion: "自訂付款文案",
+    payBtnText: "付款按鈕文案",
+    payBtnTextHint:
+      "留空則沿用 SDK 預設。會以 uiOption.customDescription.payBtnText 傳送。",
+    payBtnTextPlaceholder: "Pay",
+    payAmount: "付款按鈕金額",
+    payAmountHint:
+      "uiOption.customDescription.hidePayAmount。SDK 預設不送此欄（顯示金額）。隱藏則送 true。",
+    amountDisplayDefault: "SDK 預設",
+    amountDisplayShow: "顯示金額",
+    amountDisplayHide: "隱藏金額",
+    saveCardDescription: "存卡勾選框文案",
+    saveCardDescriptionHint:
+      "僅在開啟存卡且關閉循環模式時，出現在 Credit or Debit Card 表單。uiOption.customDescription.saveCardDescription。",
+    saveCardDescriptionPlaceholder: "Save this card for next purchase",
+    saveCardCheckboxHiddenHint:
+      "開啟 Subscription／Unscheduled 時，Drop-in 不會顯示存卡勾選框。請在預覽展開 Credit or Debit Card，會看到訂閱文案。若要勾選框，關掉「一併傳送循環處理模式」即可，session 會自動重開。",
+    paidSubscriptionCopy: "付費訂閱文案",
+    subscribeBtnText: "訂閱按鈕文案",
+    subscribeBtnTextHint:
+      "uiOption.customDescription.subscribeBtnText — 非 0 元付款並訂閱的 CTA。",
+    subscribeAmount: "訂閱按鈕金額",
+    subscribeAmountHint:
+      "uiOption.customDescription.hideSubscribeAmount。SDK 預設不送此欄（顯示金額）。隱藏則送 true。",
+    subscribeDescription: "訂閱說明",
+    subscribeDescriptionHint:
+      "uiOption.customDescription.subscribeDescription — 非 0 元付款並訂閱的說明文字。",
     refreshSessionId: "重新整理 Session ID",
     refreshSessionIdRequired: "重新整理 Session ID（必要）",
     creatingSession: "正在建立 Session...",
