@@ -117,9 +117,9 @@ export const ZH_TW: SiteMessages = {
     payBtnTextHint:
       "留空則沿用 SDK 預設。會以 uiOption.customDescription.payBtnText 傳送。",
     payBtnTextPlaceholder: "Pay",
-    payAmount: "付款按鈕金額",
+    payAmount: "付款金額",
     payAmountHint:
-      "uiOption.customDescription.hidePayAmount。SDK 預設不送此欄（顯示金額）。隱藏則送 true。",
+      "控制付款 CTA 旁的金額顯示，與按鈕文案無關。uiOption.customDescription.hidePayAmount。SDK 預設不送此欄（顯示金額）。隱藏則送 true。",
     amountDisplayDefault: "SDK 預設",
     amountDisplayShow: "顯示金額",
     amountDisplayHide: "隱藏金額",
@@ -133,9 +133,9 @@ export const ZH_TW: SiteMessages = {
     subscribeBtnText: "訂閱按鈕文案",
     subscribeBtnTextHint:
       "uiOption.customDescription.subscribeBtnText — 非 0 元付款並訂閱的 CTA。",
-    subscribeAmount: "訂閱按鈕金額",
+    subscribeAmount: "訂閱金額",
     subscribeAmountHint:
-      "uiOption.customDescription.hideSubscribeAmount。SDK 預設不送此欄（顯示金額）。隱藏則送 true。",
+      "控制訂閱 CTA 旁的金額顯示，與按鈕文案無關。uiOption.customDescription.hideSubscribeAmount。SDK 預設不送此欄（顯示金額）。隱藏則送 true。",
     subscribeDescription: "訂閱說明",
     subscribeDescriptionHint:
       "uiOption.customDescription.subscribeDescription — 非 0 元付款並訂閱的說明文字。",

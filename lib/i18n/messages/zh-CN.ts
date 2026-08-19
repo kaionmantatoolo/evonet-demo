@@ -117,9 +117,9 @@ export const ZH_CN: SiteMessages = {
     payBtnTextHint:
       "留空则沿用 SDK 默认。会以 uiOption.customDescription.payBtnText 发送。",
     payBtnTextPlaceholder: "Pay",
-    payAmount: "支付按钮金额",
+    payAmount: "支付金额",
     payAmountHint:
-      "uiOption.customDescription.hidePayAmount。SDK 默认不发送此字段（显示金额）。隐藏则发送 true。",
+      "控制支付 CTA 旁的金额显示，与按钮文案无关。uiOption.customDescription.hidePayAmount。SDK 默认不发送此字段（显示金额）。隐藏则发送 true。",
     amountDisplayDefault: "SDK 默认",
     amountDisplayShow: "显示金额",
     amountDisplayHide: "隐藏金额",
@@ -133,9 +133,9 @@ export const ZH_CN: SiteMessages = {
     subscribeBtnText: "订阅按钮文案",
     subscribeBtnTextHint:
       "uiOption.customDescription.subscribeBtnText — 非 0 元支付并订阅的 CTA。",
-    subscribeAmount: "订阅按钮金额",
+    subscribeAmount: "订阅金额",
     subscribeAmountHint:
-      "uiOption.customDescription.hideSubscribeAmount。SDK 默认不发送此字段（显示金额）。隐藏则发送 true。",
+      "控制订阅 CTA 旁的金额显示，与按钮文案无关。uiOption.customDescription.hideSubscribeAmount。SDK 默认不发送此字段（显示金额）。隐藏则发送 true。",
     subscribeDescription: "订阅说明",
     subscribeDescriptionHint:
       "uiOption.customDescription.subscribeDescription — 非 0 元支付并订阅的说明文字。",

@@ -342,9 +342,9 @@ export const EN_US: SiteMessages = {
     payBtnTextHint:
       "Leave empty to keep the SDK default. Sent as uiOption.customDescription.payBtnText.",
     payBtnTextPlaceholder: "Pay",
-    payAmount: "Pay button amount",
+    payAmount: "Pay amount",
     payAmountHint:
-      "uiOption.customDescription.hidePayAmount. SDK default omits the field (amount shown). Hide sends true.",
+      "Shows or hides the amount next to the pay CTA — not the button label. uiOption.customDescription.hidePayAmount. SDK default omits the field (amount shown). Hide sends true.",
     amountDisplayDefault: "SDK default",
     amountDisplayShow: "Show amount",
     amountDisplayHide: "Hide amount",
@@ -358,9 +358,9 @@ export const EN_US: SiteMessages = {
     subscribeBtnText: "Subscribe button text",
     subscribeBtnTextHint:
       "uiOption.customDescription.subscribeBtnText — CTA for a non-zero pay-and-subscribe checkout.",
-    subscribeAmount: "Subscribe button amount",
+    subscribeAmount: "Subscribe amount",
     subscribeAmountHint:
-      "uiOption.customDescription.hideSubscribeAmount. SDK default omits the field (amount shown). Hide sends true.",
+      "Shows or hides the amount next to the subscribe CTA — not the button label. uiOption.customDescription.hideSubscribeAmount. SDK default omits the field (amount shown). Hide sends true.",
     subscribeDescription: "Subscribe description",
     subscribeDescriptionHint:
       "uiOption.customDescription.subscribeDescription — body copy for a non-zero pay-and-subscribe checkout.",

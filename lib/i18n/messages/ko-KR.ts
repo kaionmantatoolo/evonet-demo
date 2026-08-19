@@ -120,9 +120,9 @@ export const KO_KR: SiteMessages = {
     payBtnTextHint:
       "비우면 SDK 기본값. uiOption.customDescription.payBtnText로 전송됩니다.",
     payBtnTextPlaceholder: "Pay",
-    payAmount: "결제 버튼 금액",
+    payAmount: "결제 금액",
     payAmountHint:
-      "uiOption.customDescription.hidePayAmount. SDK 기본은 이 필드를 보내지 않습니다(금액 표시). 숨김은 true.",
+      "결제 CTA 옆 금액 표시(버튼 문구와 별개). uiOption.customDescription.hidePayAmount. SDK 기본은 이 필드를 보내지 않습니다(금액 표시). 숨김은 true.",
     amountDisplayDefault: "SDK 기본",
     amountDisplayShow: "금액 표시",
     amountDisplayHide: "금액 숨김",
@@ -136,9 +136,9 @@ export const KO_KR: SiteMessages = {
     subscribeBtnText: "구독 버튼 문구",
     subscribeBtnTextHint:
       "uiOption.customDescription.subscribeBtnText — 0원이 아닌 결제+구독 CTA.",
-    subscribeAmount: "구독 버튼 금액",
+    subscribeAmount: "구독 금액",
     subscribeAmountHint:
-      "uiOption.customDescription.hideSubscribeAmount. SDK 기본은 이 필드를 보내지 않습니다(금액 표시). 숨김은 true.",
+      "구독 CTA 옆 금액 표시(버튼 문구와 별개). uiOption.customDescription.hideSubscribeAmount. SDK 기본은 이 필드를 보내지 않습니다(금액 표시). 숨김은 true.",
     subscribeDescription: "구독 설명",
     subscribeDescriptionHint:
       "uiOption.customDescription.subscribeDescription — 0원이 아닌 결제+구독 본문.",

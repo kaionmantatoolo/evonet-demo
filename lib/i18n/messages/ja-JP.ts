@@ -120,9 +120,9 @@ export const JA_JP: SiteMessages = {
     payBtnTextHint:
       "空欄なら SDK 既定。uiOption.customDescription.payBtnText として送信。",
     payBtnTextPlaceholder: "Pay",
-    payAmount: "支払いボタンの金額",
+    payAmount: "支払い金額",
     payAmountHint:
-      "uiOption.customDescription.hidePayAmount。SDK 既定では未送信（金額表示）。非表示は true。",
+      "支払い CTA 横の金額表示（ボタン文言とは別）。uiOption.customDescription.hidePayAmount。SDK 既定では未送信（金額表示）。非表示は true。",
     amountDisplayDefault: "SDK 既定",
     amountDisplayShow: "金額を表示",
     amountDisplayHide: "金額を隠す",
@@ -136,9 +136,9 @@ export const JA_JP: SiteMessages = {
     subscribeBtnText: "購読ボタン文言",
     subscribeBtnTextHint:
       "uiOption.customDescription.subscribeBtnText — 0円以外の支払い＋購読 CTA。",
-    subscribeAmount: "購読ボタンの金額",
+    subscribeAmount: "購読金額",
     subscribeAmountHint:
-      "uiOption.customDescription.hideSubscribeAmount。SDK 既定では未送信（金額表示）。非表示は true。",
+      "購読 CTA 横の金額表示（ボタン文言とは別）。uiOption.customDescription.hideSubscribeAmount。SDK 既定では未送信（金額表示）。非表示は true。",
     subscribeDescription: "購読の説明",
     subscribeDescriptionHint:
       "uiOption.customDescription.subscribeDescription — 0円以外の支払い＋購読の本文。",

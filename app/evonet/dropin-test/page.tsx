@@ -1313,7 +1313,7 @@ function EvonetDropinTestPage() {
                         </p>
                       </div>
                       <div className="min-w-0 space-y-2">
-                        <Label htmlFor="pay-amount">Pay button amount</Label>
+                        <Label htmlFor="pay-amount">Pay amount</Label>
                         <Select
                           value={amountDisplayChoice(hidePayAmount)}
                           onValueChange={(value) =>
@@ -1323,7 +1323,7 @@ function EvonetDropinTestPage() {
                           <SelectTrigger
                             id="pay-amount"
                             className="w-full"
-                            aria-label="Pay button amount"
+                            aria-label="Pay amount"
                           >
                             <SelectValue />
                           </SelectTrigger>
@@ -1334,6 +1334,7 @@ function EvonetDropinTestPage() {
                           </SelectContent>
                         </Select>
                         <p className="break-words text-xs text-muted-foreground">
+                          Amount next to the pay CTA, not the button label.
                           uiOption.customDescription.hidePayAmount. SDK default
                           omits the field (amount shown). Hide sends true.
                         </p>
@@ -1496,7 +1497,7 @@ function EvonetDropinTestPage() {
                       </div>
                       <div className="min-w-0 space-y-2">
                         <Label htmlFor="subscribe-amount">
-                          Subscribe button amount
+                          Subscribe amount
                         </Label>
                         <Select
                           value={amountDisplayChoice(hideSubscribeAmount)}
@@ -1507,7 +1508,7 @@ function EvonetDropinTestPage() {
                           <SelectTrigger
                             id="subscribe-amount"
                             className="w-full"
-                            aria-label="Subscribe button amount"
+                            aria-label="Subscribe amount"
                           >
                             <SelectValue />
                           </SelectTrigger>
@@ -1518,8 +1519,10 @@ function EvonetDropinTestPage() {
                           </SelectContent>
                         </Select>
                         <p className="break-words text-xs text-muted-foreground">
-                          uiOption.customDescription.hideSubscribeAmount. SDK
-                          default omits the field (amount shown). Hide sends true.
+                          Amount next to the subscribe CTA, not the button
+                          label. uiOption.customDescription.hideSubscribeAmount.
+                          SDK default omits the field (amount shown). Hide sends
+                          true.
                         </p>
                       </div>
                     </div>
