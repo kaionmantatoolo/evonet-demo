@@ -51,6 +51,7 @@ import {
 import { DropinModePreviewShell } from "../../../components/DropinModePreviewShell";
 import { DemoTransactionWarning } from "../../../components/DemoTransactionWarning";
 import { EvonetPaymentReturnDialog } from "../../../components/EvonetPaymentReturnDialog";
+import { TokenMitChargePanel } from "../../../components/TokenMitChargePanel";
 import {
   CODE_PANEL_PRE_SX,
   DEV_CONSOLE_SECTION_TITLE_SX,
@@ -348,6 +349,8 @@ function DropinBuilderPage() {
   );
   const [subscribeDescription, setSubscribeDescription] = useState("");
   const amountBeforeFreeTrialRef = useRef("128.00");
+  /** CIT order id used to auto-fetch pmt_ token for MIT panel. */
+  const [mitCitOrderId, setMitCitOrderId] = useState<string | null>(null);
   const [enabledPaymentMethodInput, setEnabledPaymentMethodInput] = useState(
     DEFAULT_ENABLED_PAYMENT_METHOD
   );
@@ -1052,7 +1055,25 @@ function DropinBuilderPage() {
     ) {
       setSessionSpent(true);
     }
+    if (result.status === "success") {
+      const orderId =
+        result.merchantOrderID?.trim() ||
+        result.merchantTransID?.trim() ||
+        null;
+      if (orderId) setMitCitOrderId(orderId);
+    }
   }, []);
+
+  useEffect(() => {
+    if (!paymentReturnFromUrl || paymentReturnFromUrl.status !== "success") {
+      return;
+    }
+    const orderId =
+      paymentReturnFromUrl.merchantOrderID?.trim() ||
+      paymentReturnFromUrl.merchantTransID?.trim() ||
+      null;
+    if (orderId) setMitCitOrderId(orderId);
+  }, [paymentReturnFromUrl]);
 
   const handleDropinPreviewEvent = useCallback(
     (event: EvonetDropinEvent) => {
@@ -1772,6 +1793,17 @@ function DropinBuilderPage() {
                         </AccordionContent>
                       </AccordionItem>
                     </Accordion>
+                    {saveCardForNextPurchase || freeTrial ? (
+                      <TokenMitChargePanel
+                        environment={environment}
+                        currency={orderCurrency}
+                        recurringProcessingModel={recurringProcessingModel}
+                        defaultAmount={orderAmount}
+                        fallbackAmount={amountBeforeFreeTrialRef.current}
+                        citOrderId={mitCitOrderId}
+                        idPrefix="builder-mit"
+                      />
+                    ) : null}
                     <Accordion
                       type="single"
                       collapsible

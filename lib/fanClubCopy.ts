@@ -38,6 +38,8 @@ export interface FanClubCopy {
   planLabel: string;
   nextBill: string;
   tokenLabel: string;
+  recurringRefLabel: string;
+  recurringModelLabel: string;
   chargeHistory: string;
   billNow: string;
   billing: string;
@@ -95,6 +97,8 @@ const EN: FanClubCopy = {
   planLabel: "Plan",
   nextBill: "Next bill",
   tokenLabel: "Saved token",
+  recurringRefLabel: "recurringReference",
+  recurringModelLabel: "Recurring model",
   chargeHistory: "Charge history",
   billNow: "Bill now",
   billing: "Billing…",

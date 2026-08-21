@@ -32,6 +32,7 @@ import { DropinModePreviewShell } from "../../../components/DropinModePreviewShe
 import { VIEWPORT_HEIGHT } from "../../../lib/responsiveLayout";
 import { DemoTransactionWarning } from "../../../components/DemoTransactionWarning";
 import { EvonetPaymentReturnDialog } from "../../../components/EvonetPaymentReturnDialog";
+import { TokenMitChargePanel } from "../../../components/TokenMitChargePanel";
 import {
   getEvonetEnvironment,
   isEvonetProductionEnvironment,
@@ -249,6 +250,13 @@ function EvonetDropinTestPage() {
       ) {
         setSessionSpent(true);
       }
+      if (paymentReturnFromUrl.status === "success") {
+        const citId =
+          paymentReturnFromUrl.merchantOrderID?.trim() ||
+          paymentReturnFromUrl.merchantTransID?.trim() ||
+          null;
+        if (citId) setMitCitOrderId(citId);
+      }
     }
   }, [paymentReturnFromUrl]);
 
@@ -283,6 +291,7 @@ function EvonetDropinTestPage() {
   );
   const [subscribeDescription, setSubscribeDescription] = useState("");
   const amountBeforeFreeTrialRef = useRef("10.00");
+  const [mitCitOrderId, setMitCitOrderId] = useState<string | null>(null);
   const [enabledPaymentMethodInput, setEnabledPaymentMethodInput] = useState(
     DEFAULT_ENABLED_PAYMENT_METHOD
   );
@@ -765,6 +774,13 @@ function EvonetDropinTestPage() {
         setPaymentReturnPrompt(fromSdk);
         setReturnDialogDismissed(false);
         setSessionSpent(true);
+        if (fromSdk.status === "success") {
+          const citId =
+            fromSdk.merchantOrderID?.trim() ||
+            fromSdk.merchantTransID?.trim() ||
+            null;
+          if (citId) setMitCitOrderId(citId);
+        }
       }
     }
   }, [binRules]);
@@ -1579,6 +1595,18 @@ function EvonetDropinTestPage() {
                     </div>
                   ) : null}
                 </div>
+
+                {saveCardForNextPurchase || freeTrial ? (
+                  <TokenMitChargePanel
+                    environment={environment}
+                    currency={currency}
+                    recurringProcessingModel={recurringProcessingModel}
+                    defaultAmount={amount}
+                    fallbackAmount={amountBeforeFreeTrialRef.current}
+                    citOrderId={mitCitOrderId}
+                    idPrefix="test-mit"
+                  />
+                ) : null}
 
                 <div className="space-y-2">
                   <Label htmlFor="session-id">sessionID</Label>

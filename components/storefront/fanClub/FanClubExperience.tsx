@@ -45,6 +45,12 @@ import {
   type FanClubMembership,
 } from "../../../lib/fanClubMembership";
 import {
+  chargeWithToken,
+  fetchInteractionToken,
+  generateMitOrderId,
+  normalizeRecurringProcessingModel,
+} from "../../../lib/evonetTokenPayment";
+import {
   parseEvonetReturnParams,
   parseEvonetSdkPaymentEvent,
   stripEvonetReturnQuery,
@@ -56,7 +62,6 @@ import {
   markFanClubCheckoutPending,
 } from "../../../lib/evonetReturnUrl";
 import { detailDlGridSx } from "../../../lib/responsiveLayout";
-import { targetFromSdkEnvironment } from "../../../lib/evonetTarget";
 import type {
   EvonetDropinConfig,
   EvonetDropinEvent,
@@ -79,11 +84,7 @@ const sans = Manrope({
 export type FanClubStorefrontConfig = Omit<StorefrontSnapshot, "savedAt">;
 
 function generateFanOrderId(): string {
-  const suffix =
-    typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
-      ? crypto.randomUUID().slice(0, 8)
-      : Math.random().toString(36).slice(2, 10);
-  return `FAN-${Date.now()}-${suffix}`;
+  return generateMitOrderId("FAN");
 }
 
 function ensureUserReference(existing?: string): string {
@@ -129,6 +130,9 @@ export function FanClubExperience({
   );
   const currency = config.currency?.trim() || "HKD";
   const unitPrice = resolveStorefrontUnitPrice(config.amount, 48);
+  const recurringProcessingModel = normalizeRecurringProcessingModel(
+    config.recurringProcessingModel
+  );
   const plan = useMemo(
     () => getLocalizedFanClubPlan(storefrontLocale, unitPrice),
     [storefrontLocale, unitPrice]
@@ -189,24 +193,7 @@ export function FanClubExperience({
       setTokenBusy(true);
       setTokenHint(copy.tokenPending);
       try {
-        const target = targetFromSdkEnvironment(config.environment);
-        const qs = new URLSearchParams({
-          target,
-          environment: config.environment,
-        });
-        const response = await fetch(
-          `/api/evonet/interaction/${encodeURIComponent(orderId)}?${qs}`
-        );
-        const data = (await response.json()) as {
-          token?: string | null;
-          recurringReference?: string | null;
-          error?: string;
-        };
-        if (!response.ok) {
-          setTokenHint(data.error ?? copy.tokenMissing);
-          persistMembership(base);
-          return;
-        }
+        const data = await fetchInteractionToken(orderId, config.environment);
         if (!data.token) {
           setTokenHint(copy.tokenMissing);
           persistMembership(base);
@@ -424,26 +411,17 @@ export function FanClubExperience({
     setActionMessage(null);
     const orderId = generateFanOrderId();
     try {
-      const response = await fetch("/api/evonet/payment", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          amount: membership.amount,
-          currency: membership.currency,
-          orderId,
-          token: membership.token,
-          environment: config.environment,
-          recurringProcessingModel: "Subscription",
-          description: `${plan.brand} Fan Club renewal`,
-        }),
+      const data = await chargeWithToken({
+        amount: membership.amount,
+        currency: membership.currency,
+        orderId,
+        token: membership.token,
+        environment: config.environment,
+        recurringProcessingModel,
+        description: `${plan.brand} Fan Club renewal`,
       });
-      const data = (await response.json()) as {
-        ok?: boolean;
-        error?: string;
-        resultMessage?: string;
-      };
       const at = new Date().toISOString();
-      if (!response.ok || !data.ok) {
+      if (!data.httpOk || !data.ok) {
         const failed: FanClubMembership = {
           ...membership,
           charges: [
@@ -455,13 +433,13 @@ export function FanClubExperience({
               currency: membership.currency,
               at,
               status: "failed",
-              message: data.error ?? copy.billFailed,
+              message: data.error ?? data.resultMessage ?? copy.billFailed,
             },
             ...membership.charges,
           ],
         };
         persistMembership(failed);
-        setActionError(data.error ?? copy.billFailed);
+        setActionError(data.error ?? data.resultMessage ?? copy.billFailed);
         return;
       }
       const next: FanClubMembership = {
@@ -471,7 +449,7 @@ export function FanClubExperience({
           {
             id: `mit-${orderId}`,
             type: "mit",
-            orderId,
+            orderId: data.orderId ?? orderId,
             amount: membership.amount,
             currency: membership.currency,
             at,
@@ -482,7 +460,11 @@ export function FanClubExperience({
         ],
       };
       persistMembership(next);
-      setActionMessage(copy.billSuccess);
+      setActionMessage(
+        data.resultMessage
+          ? `${copy.billSuccess} (${data.resultMessage})`
+          : copy.billSuccess
+      );
     } catch (error) {
       setActionError(
         error instanceof Error ? error.message : copy.billFailed
@@ -738,6 +720,25 @@ export function FanClubExperience({
                 )}
               </Box>
               <Typography component="dt" variant="caption" sx={{ color: "var(--shop-muted)" }}>
+                {copy.recurringModelLabel}
+              </Typography>
+              <Typography component="dd" sx={{ m: 0, fontFamily: "ui-monospace, monospace" }}>
+                {recurringProcessingModel}
+              </Typography>
+              {membership.recurringReference ? (
+                <>
+                  <Typography component="dt" variant="caption" sx={{ color: "var(--shop-muted)" }}>
+                    {copy.recurringRefLabel}
+                  </Typography>
+                  <Box component="dd" sx={{ m: 0, minWidth: 0 }}>
+                    <CopyableIdValue
+                      value={membership.recurringReference}
+                      label={copy.recurringRefLabel}
+                    />
+                  </Box>
+                </>
+              ) : null}
+              <Typography component="dt" variant="caption" sx={{ color: "var(--shop-muted)" }}>
                 userInfo.reference
               </Typography>
               <Box component="dd" sx={{ m: 0, minWidth: 0 }}>
@@ -811,6 +812,8 @@ export function FanClubExperience({
                       </Box>
                     </Stack>
                     <Typography variant="caption" sx={{ color: "var(--shop-muted)" }}>
+                      {charge.status === "success" ? "OK" : "Failed"}
+                      {" · "}
                       {new Date(charge.at).toLocaleString()}
                       {charge.message ? ` · ${charge.message}` : ""}
                     </Typography>
