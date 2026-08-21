@@ -19,6 +19,27 @@ export function generateMitOrderId(prefix = "MIT"): string {
   return `${prefix}-${Date.now()}-${suffix}`;
 }
 
+/**
+ * Interaction GET must use merchantOrderID (e.g. EVB-… / FAN-…), not Drop-in's
+ * generated merchantTransID (pay_…). Prefer order id, then the session order id
+ * we minted when creating the Interaction.
+ */
+export function resolveInteractionQueryId(options: {
+  merchantOrderID?: string | null;
+  merchantTransID?: string | null;
+  sessionOrderId?: string | null;
+}): string | null {
+  const isPayTransId = (value: string) => value.startsWith("pay_");
+  const order = options.merchantOrderID?.trim() || "";
+  if (order && !isPayTransId(order)) return order;
+  const session = options.sessionOrderId?.trim() || "";
+  if (session) return session;
+  if (order) return order;
+  const trans = options.merchantTransID?.trim() || "";
+  if (trans && !isPayTransId(trans)) return trans;
+  return null;
+}
+
 /** Resolve a >0 MIT amount when CIT may have been free-trial (0). */
 export function resolveMitAmount(
   currentAmount: string,

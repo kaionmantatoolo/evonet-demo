@@ -23,8 +23,8 @@ export interface TokenMitChargePanelProps {
   /** Amount before free trial (or other >0 fallback). */
   fallbackAmount?: string;
   /**
-   * After CIT success, set to merchantOrderID / merchantTransID to auto-fetch
-   * the saved `pmt_…` token.
+   * After CIT success, set to Interaction merchantOrderID (EVB-… / FAN-…),
+   * not Drop-in’s pay_… merchantTransID.
    */
   citOrderId: string | null;
   idPrefix?: string;
@@ -41,6 +41,7 @@ export function TokenMitChargePanel({
   idPrefix = "mit",
   className,
 }: TokenMitChargePanelProps) {
+  const [queryOrderId, setQueryOrderId] = useState(citOrderId?.trim() ?? "");
   const [token, setToken] = useState("");
   const [recurringReference, setRecurringReference] = useState<string | null>(
     null
@@ -65,13 +66,32 @@ export function TokenMitChargePanel({
     setAmount(resolveMitAmount(defaultAmount, fallbackAmount));
   }, [defaultAmount, fallbackAmount]);
 
+  useEffect(() => {
+    const next = citOrderId?.trim() ?? "";
+    if (!next) return;
+    setQueryOrderId(next);
+  }, [citOrderId]);
+
   const loadToken = useCallback(
     async (orderId: string) => {
+      const trimmed = orderId.trim();
+      if (!trimmed) {
+        setTokenHint(
+          "Enter the Interaction merchantOrderID (EVB-… / FAN-…), not pay_…."
+        );
+        return;
+      }
+      if (trimmed.startsWith("pay_")) {
+        setTokenHint(
+          "That ID is Drop-in’s merchantTransID (pay_…). Token lookup needs the Interaction merchantOrderID from session create (EVB-… / FAN-…)."
+        );
+        return;
+      }
       setTokenBusy(true);
       setTokenHint("Fetching token from interaction…");
       setError(null);
       try {
-        const result = await fetchInteractionToken(orderId, environment);
+        const result = await fetchInteractionToken(trimmed, environment);
         if (!result.token) {
           setTokenHint(
             "No pmt_ token on this interaction yet. Paste a token manually or retry."
@@ -82,8 +102,12 @@ export function TokenMitChargePanel({
         setRecurringReference(result.recurringReference);
         setTokenHint(null);
       } catch (err) {
+        const message =
+          err instanceof Error ? err.message : "Failed to fetch token.";
         setTokenHint(
-          err instanceof Error ? err.message : "Failed to fetch token."
+          /not found/i.test(message)
+            ? `${message} — use merchantOrderID (EVB-…), not pay_….`
+            : message
         );
       } finally {
         setTokenBusy(false);
@@ -157,16 +181,24 @@ export function TokenMitChargePanel({
       <div>
         <p className="text-sm font-medium">Charge with token (MIT)</p>
         <p className="mt-1 break-words text-xs text-muted-foreground">
-          After a save-card CIT succeeds, token loads from the interaction.
-          Charge uses the current recurring model:{" "}
+          After a save-card CIT in Builder preview, token loads via Interaction
+          merchantOrderID (not storefront). Charge uses recurring model:{" "}
           <span className="font-mono">{recurringProcessingModel}</span>.
         </p>
       </div>
 
-      {citOrderId ? (
-        <div className="space-y-1">
-          <p className="text-xs text-muted-foreground">CIT order</p>
-          <CopyableIdValue value={citOrderId} label="CIT orderId" />
+      <div className="space-y-2">
+        <Label htmlFor={`${idPrefix}-cit-order`}>
+          CIT merchantOrderID
+        </Label>
+        <Input
+          id={`${idPrefix}-cit-order`}
+          value={queryOrderId}
+          onChange={(event) => setQueryOrderId(event.target.value)}
+          placeholder="EVB-… or FAN-… (not pay_…)"
+          className="font-mono"
+        />
+        <div className="flex flex-wrap gap-2">
           <Button
             type="button"
             variant="outline"
@@ -174,13 +206,13 @@ export function TokenMitChargePanel({
             disabled={tokenBusy}
             onClick={() => {
               fetchedForOrderRef.current = null;
-              void loadToken(citOrderId);
+              void loadToken(queryOrderId);
             }}
           >
-            {tokenBusy ? "Fetching…" : "Refresh token"}
+            {tokenBusy ? "Fetching…" : "Fetch token"}
           </Button>
         </div>
-      ) : null}
+      </div>
 
       {tokenHint ? (
         <Alert severity={tokenBusy ? "info" : "warning"} variant="outlined">

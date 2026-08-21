@@ -13,6 +13,7 @@ import type {
 import { DROPIN_SCRIPT_SRC } from "../lib/dropinSdkScript";
 import { buildDropinPulseCss } from "../lib/dropinPulseTargets";
 import { applyDropinAppearanceCss } from "../lib/applyDropinAppearanceCss";
+import { dismissDropinQrOverlays } from "../lib/dismissDropinQrOverlay";
 
 function resolveContainerMinHeight(
   mode: EvonetDropinMode,
@@ -45,7 +46,7 @@ function sdkOptionsToDebugPayload(
   return {
     ...rest,
     _note:
-      "payment_method_select, payment_method_selected, payment_completed, payment_failed, payment_not_preformed, payment_cancelled are registered but omitted from JSON.",
+      "payment_method_select, payment_method_selected, payment_completed, payment_failed, payment_not_preformed, payment_cancelled, order_created are registered but omitted from JSON.",
   };
 }
 
@@ -760,12 +761,15 @@ export function EvonetDropinHost({
         payment_method_select: handlePaymentMethodSelected,
         payment_method_selected: handlePaymentMethodSelected,
         payment_completed: (payload: unknown) => {
+          // SDK inquiry Success does not close the in-page QR van-popup.
+          dismissDropinQrOverlays();
           onEventRef.current?.({
             type: "payment_success",
             payload,
           });
         },
         payment_failed: (payload: unknown) => {
+          dismissDropinQrOverlays();
           onEventRef.current?.({
             type: "payment_fail",
             payload,
@@ -778,8 +782,17 @@ export function EvonetDropinHost({
           });
         },
         payment_cancelled: (payload: unknown) => {
+          dismissDropinQrOverlays();
           onEventRef.current?.({
             type: "payment_cancelled",
+            payload,
+          });
+        },
+        order_created: (payload: unknown) => {
+          // QR "Completed" only signals user intent — merchant must confirm status.
+          dismissDropinQrOverlays();
+          onEventRef.current?.({
+            type: "order_created",
             payload,
           });
         },

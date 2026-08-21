@@ -33,6 +33,7 @@ import { VIEWPORT_HEIGHT } from "../../../lib/responsiveLayout";
 import { DemoTransactionWarning } from "../../../components/DemoTransactionWarning";
 import { EvonetPaymentReturnDialog } from "../../../components/EvonetPaymentReturnDialog";
 import { TokenMitChargePanel } from "../../../components/TokenMitChargePanel";
+import { resolveInteractionQueryId } from "../../../lib/evonetTokenPayment";
 import {
   getEvonetEnvironment,
   isEvonetProductionEnvironment,
@@ -50,6 +51,7 @@ import {
   stripEvonetReturnQuery,
   type EvonetReturnParams,
 } from "../../../lib/evonetReturnParams";
+import { digInteractionPaymentStatus } from "../../../lib/digInteractionPaymentStatus";
 import { buildClientEvonetReturnUrl } from "../../../lib/evonetReturnUrl";
 import { ensureUserInfoReference } from "../../../lib/userInfoReference";
 import { CopyableIdInline } from "../../../components/CopyableIdValue";
@@ -249,13 +251,6 @@ function EvonetDropinTestPage() {
         paymentReturnFromUrl.status === "cancelled"
       ) {
         setSessionSpent(true);
-      }
-      if (paymentReturnFromUrl.status === "success") {
-        const citId =
-          paymentReturnFromUrl.merchantOrderID?.trim() ||
-          paymentReturnFromUrl.merchantTransID?.trim() ||
-          null;
-        if (citId) setMitCitOrderId(citId);
       }
     }
   }, [paymentReturnFromUrl]);
@@ -775,15 +770,109 @@ function EvonetDropinTestPage() {
         setReturnDialogDismissed(false);
         setSessionSpent(true);
         if (fromSdk.status === "success") {
-          const citId =
-            fromSdk.merchantOrderID?.trim() ||
-            fromSdk.merchantTransID?.trim() ||
-            null;
+          const citId = resolveInteractionQueryId({
+            merchantOrderID: fromSdk.merchantOrderID,
+            merchantTransID: fromSdk.merchantTransID,
+            sessionOrderId: orderId,
+          });
           if (citId) setMitCitOrderId(citId);
         }
       }
     }
-  }, [binRules]);
+
+    if (event.type === "order_created") {
+      // QR "Completed" — reopen/confirm UI; poll Interaction when still pending.
+      setReturnDialogDismissed(false);
+      setPaymentReturnPrompt((prev) => {
+        if (prev?.status === "success" || prev?.status === "failed") {
+          return prev;
+        }
+        return (
+          parseEvonetSdkPaymentEvent("payment_pending", {
+            ...(payload && typeof payload === "object" ? payload : {}),
+            merchantOrderID: orderId || undefined,
+            message:
+              "Confirming QR payment. If you already paid, this updates when Evonet reports Success.",
+          }) ?? prev
+        );
+      });
+
+      const orderToQuery = orderId.trim();
+      if (orderToQuery) {
+        void (async () => {
+          try {
+            const qs = new URLSearchParams({ environment });
+            const res = await fetch(
+              `/api/evonet/interaction/${encodeURIComponent(orderToQuery)}?${qs.toString()}`
+            );
+            const data = (await res.json()) as { raw?: unknown };
+            const dug = digInteractionPaymentStatus(data.raw ?? data);
+            if (!dug || dug.status === "pending") return;
+            const mapped = parseEvonetSdkPaymentEvent(
+              dug.status === "success"
+                ? "payment_success"
+                : dug.status === "cancelled"
+                  ? "payment_cancelled"
+                  : dug.status === "failed"
+                    ? "payment_fail"
+                    : "payment_pending",
+              {
+                merchantOrderID: dug.merchantOrderID || orderToQuery,
+                merchantTransID: dug.merchantTransID,
+                code: dug.code,
+                message: dug.message,
+                sessionID:
+                  payload && typeof payload === "object"
+                    ? (payload as { sessionID?: string }).sessionID
+                    : undefined,
+              }
+            );
+            if (!mapped) return;
+            setPaymentReturnPrompt(mapped);
+            setReturnDialogDismissed(false);
+            if (
+              mapped.status === "success" ||
+              mapped.status === "failed" ||
+              mapped.status === "cancelled"
+            ) {
+              setSessionSpent(true);
+              setLastResult({
+                type:
+                  mapped.status === "success"
+                    ? "payment_success"
+                    : mapped.status === "cancelled"
+                      ? "payment_cancelled"
+                      : "payment_fail",
+                payload: mapped,
+              });
+              if (mapped.status === "success") {
+                const citId = resolveInteractionQueryId({
+                  merchantOrderID: mapped.merchantOrderID,
+                  merchantTransID: mapped.merchantTransID,
+                  sessionOrderId: orderToQuery,
+                });
+                if (citId) setMitCitOrderId(citId);
+              }
+            }
+          } catch {
+            /* keep pending dialog */
+          }
+        })();
+      }
+    }
+  }, [binRules, environment, orderId]);
+
+  useEffect(() => {
+    if (!paymentReturnFromUrl || paymentReturnFromUrl.status !== "success") {
+      return;
+    }
+    const citId = resolveInteractionQueryId({
+      merchantOrderID: paymentReturnFromUrl.merchantOrderID,
+      merchantTransID: paymentReturnFromUrl.merchantTransID,
+      sessionOrderId: orderId,
+    });
+    if (citId) setMitCitOrderId(citId);
+  }, [paymentReturnFromUrl, orderId]);
 
   useEffect(() => {
     if (typeof navigator !== "undefined") {

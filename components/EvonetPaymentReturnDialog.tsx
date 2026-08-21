@@ -59,7 +59,18 @@ export function EvonetPaymentReturnDialog({
   }
 
   return (
-    <Dialog open={open} onClose={onDismiss} maxWidth="sm" fullWidth>
+    <Dialog
+      open={open}
+      onClose={onDismiss}
+      maxWidth="sm"
+      fullWidth
+      /*
+        Stack the whole Modal (backdrop + paper) above Drop-in / mode-preview
+        portals. Do NOT raise BackdropProps.zIndex alone — that puts the dim
+        layer above the dialog paper inside the same stacking context.
+      */
+      sx={{ zIndex: (theme) => theme.zIndex.modal + 10000 }}
+    >
       <DialogTitle>{copy.title}</DialogTitle>
       <DialogContent>
         <Alert severity={copy.severity} variant="outlined" sx={{ mb: 2 }}>

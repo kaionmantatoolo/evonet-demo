@@ -227,6 +227,8 @@ export interface EvonetDropinSdkOptions {
   payment_failed?: (event: unknown) => void;
   payment_not_preformed?: (event: unknown) => void;
   payment_cancelled?: (event: unknown) => void;
+  /** Fired when user taps Completed on the QR popup (does not mean paid). */
+  order_created?: (event: unknown) => void;
   [key: string]: unknown;
 }
 
@@ -241,6 +243,7 @@ export type EvonetDropinEventType =
   | "payment_fail"
   | "payment_pending"
   | "payment_cancelled"
+  | "order_created"
   | "payment_method_selected"
   | "sdk_message"
   | "error"

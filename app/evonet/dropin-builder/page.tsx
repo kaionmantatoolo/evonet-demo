@@ -52,6 +52,7 @@ import { DropinModePreviewShell } from "../../../components/DropinModePreviewShe
 import { DemoTransactionWarning } from "../../../components/DemoTransactionWarning";
 import { EvonetPaymentReturnDialog } from "../../../components/EvonetPaymentReturnDialog";
 import { TokenMitChargePanel } from "../../../components/TokenMitChargePanel";
+import { resolveInteractionQueryId } from "../../../lib/evonetTokenPayment";
 import {
   CODE_PANEL_PRE_SX,
   DEV_CONSOLE_SECTION_TITLE_SX,
@@ -72,6 +73,7 @@ import {
   stripEvonetReturnQuery,
   type EvonetReturnParams,
 } from "../../../lib/evonetReturnParams";
+import { digInteractionPaymentStatus } from "../../../lib/digInteractionPaymentStatus";
 import {
   isFanClubStorefront,
   readStorefrontSnapshot,
@@ -349,8 +351,14 @@ function DropinBuilderPage() {
   );
   const [subscribeDescription, setSubscribeDescription] = useState("");
   const amountBeforeFreeTrialRef = useRef("128.00");
+  /** Last Interaction merchantOrderID (for QR Completed → status confirm). */
+  const lastOrderIdRef = useRef("");
   /** CIT order id used to auto-fetch pmt_ token for MIT panel. */
   const [mitCitOrderId, setMitCitOrderId] = useState<string | null>(null);
+  /** merchantOrderID minted for the current Interaction session (EVB-…). */
+  const [lastSessionOrderId, setLastSessionOrderId] = useState<string | null>(
+    null
+  );
   const [enabledPaymentMethodInput, setEnabledPaymentMethodInput] = useState(
     DEFAULT_ENABLED_PAYMENT_METHOD
   );
@@ -966,13 +974,15 @@ function DropinBuilderPage() {
       const recurringModel = freeTrial
         ? "Subscription"
         : recurringProcessingModel;
+      const newOrderId = generateOrderId();
+      lastOrderIdRef.current = newOrderId;
       const response = await fetch("/api/evonet/session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           amount: amountForSession,
           currency: orderCurrency.trim() || "HKD",
-          orderId: generateOrderId(),
+          orderId: newOrderId,
           description: orderDescription.trim() || "Drop-in Builder Session",
           environment: envForSession,
           target: targetForSession,
@@ -1000,6 +1010,7 @@ function DropinBuilderPage() {
         );
       }
       setSessionID(data.sessionId);
+      setLastSessionOrderId(newOrderId);
       setSessionSpent(false);
       prevStructuralFingerprintRef.current = "";
       setPreviewFallbackBadge(null);
@@ -1056,24 +1067,26 @@ function DropinBuilderPage() {
       setSessionSpent(true);
     }
     if (result.status === "success") {
-      const orderId =
-        result.merchantOrderID?.trim() ||
-        result.merchantTransID?.trim() ||
-        null;
+      const orderId = resolveInteractionQueryId({
+        merchantOrderID: result.merchantOrderID,
+        merchantTransID: result.merchantTransID,
+        sessionOrderId: lastOrderIdRef.current || lastSessionOrderId,
+      });
       if (orderId) setMitCitOrderId(orderId);
     }
-  }, []);
+  }, [lastSessionOrderId]);
 
   useEffect(() => {
     if (!paymentReturnFromUrl || paymentReturnFromUrl.status !== "success") {
       return;
     }
-    const orderId =
-      paymentReturnFromUrl.merchantOrderID?.trim() ||
-      paymentReturnFromUrl.merchantTransID?.trim() ||
-      null;
+    const orderId = resolveInteractionQueryId({
+      merchantOrderID: paymentReturnFromUrl.merchantOrderID,
+      merchantTransID: paymentReturnFromUrl.merchantTransID,
+      sessionOrderId: lastOrderIdRef.current || lastSessionOrderId,
+    });
     if (orderId) setMitCitOrderId(orderId);
-  }, [paymentReturnFromUrl]);
+  }, [paymentReturnFromUrl, lastSessionOrderId]);
 
   const handleDropinPreviewEvent = useCallback(
     (event: EvonetDropinEvent) => {
@@ -1168,9 +1181,61 @@ function DropinBuilderPage() {
         const fromSdk = parseEvonetSdkPaymentEvent(event.type, event.payload);
         if (fromSdk) markSessionSpentFromPayment(fromSdk);
       }
+
+      if (event.type === "order_created") {
+        setReturnDialogDismissed(false);
+        setPaymentReturnPrompt((prev) => {
+          if (prev?.status === "success" || prev?.status === "failed") {
+            return prev;
+          }
+          return (
+            parseEvonetSdkPaymentEvent("payment_pending", {
+              ...(event.payload && typeof event.payload === "object"
+                ? event.payload
+                : {}),
+              merchantOrderID: lastOrderIdRef.current || undefined,
+              message:
+                "Confirming QR payment. If you already paid, this updates when Evonet reports Success.",
+            }) ?? prev
+          );
+        });
+
+        const orderToQuery = lastOrderIdRef.current.trim();
+        if (orderToQuery) {
+          void (async () => {
+            try {
+              const qs = new URLSearchParams({ environment });
+              const res = await fetch(
+                `/api/evonet/interaction/${encodeURIComponent(orderToQuery)}?${qs.toString()}`
+              );
+              const data = (await res.json()) as { raw?: unknown };
+              const dug = digInteractionPaymentStatus(data.raw ?? data);
+              if (!dug || dug.status === "pending") return;
+              const mapped = parseEvonetSdkPaymentEvent(
+                dug.status === "success"
+                  ? "payment_success"
+                  : dug.status === "cancelled"
+                    ? "payment_cancelled"
+                    : dug.status === "failed"
+                      ? "payment_fail"
+                      : "payment_pending",
+                {
+                  merchantOrderID: dug.merchantOrderID || orderToQuery,
+                  merchantTransID: dug.merchantTransID,
+                  code: dug.code,
+                  message: dug.message,
+                }
+              );
+              if (mapped) markSessionSpentFromPayment(mapped);
+            } catch {
+              /* keep pending */
+            }
+          })();
+        }
+      }
       setPreviewEvents((previous) => [event, ...previous].slice(0, 20));
     },
-    [binRules, markSessionSpentFromPayment, t.rejectMessagePlaceholder]
+    [binRules, environment, markSessionSpentFromPayment, t.rejectMessagePlaceholder]
   );
 
   /** Re-init alone cannot revive a spent session — mint a new one first. */
