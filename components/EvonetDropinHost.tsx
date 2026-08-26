@@ -14,6 +14,10 @@ import { DROPIN_SCRIPT_SRC } from "../lib/dropinSdkScript";
 import { buildDropinPulseCss } from "../lib/dropinPulseTargets";
 import { applyDropinAppearanceCss } from "../lib/applyDropinAppearanceCss";
 import { dismissDropinQrOverlays } from "../lib/dismissDropinQrOverlay";
+import {
+  installGooglePayProbeGlobal,
+  runGooglePayProbeAfterInit,
+} from "../lib/googlePayProbe";
 
 function resolveContainerMinHeight(
   mode: EvonetDropinMode,
@@ -319,6 +323,11 @@ export function EvonetDropinHost({
       styleEl?.remove();
     };
   }, [containerId]);
+
+  /** Console helper: `window.__evonetProbeGooglePay()` — no UI. */
+  useEffect(() => {
+    installGooglePayProbeGlobal();
+  }, []);
 
   /**
    * Apply / restart `data-pulse` after Auto refresh remounts Drop-in children
@@ -830,6 +839,7 @@ export function EvonetDropinHost({
         });
         // Keep :root vars aligned with Builder live appearance (same helper as Auto refresh).
         applyDropinAppearanceCss(appearance);
+        runGooglePayProbeAfterInit(sdkEnvironment);
       } catch (error) {
         const hasBorderRadius =
           Array.isArray(options.appearance?.borderRadius) &&
@@ -871,6 +881,7 @@ export function EvonetDropinHost({
             });
 
             applyDropinAppearanceCss(appearance);
+            runGooglePayProbeAfterInit(sdkEnvironment);
             return;
           } catch {
             // Fall through to normal error reporting.
@@ -913,6 +924,7 @@ export function EvonetDropinHost({
               },
             });
             applyDropinAppearanceCss(appearanceWithoutFontWeight);
+            runGooglePayProbeAfterInit(sdkEnvironment);
             return;
           } catch {
             // Fall through to normal error reporting.
