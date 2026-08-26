@@ -1103,8 +1103,9 @@ export function EvonetDropinHost({
         /*
           Google Pay CTA is Google's official button (not colorAction).
           Tailwind preflight sets button { background-color: transparent;
-          background-image: none }, which washes the GPay button to an empty
-          white slot. Restore Google's default black fill; keep white variant.
+          background-image: none }, which can wash the GPay mark away.
+          Restore a black fill WITHOUT forcing background-image:none — classic
+          GPay buttons put the logo in background-image; !important none kills it.
         */
         #${containerId} .google-pay-btn {
           width: 100%;
@@ -1113,10 +1114,9 @@ export function EvonetDropinHost({
         #${containerId} .google-pay-btn > button,
         #${containerId} .google-pay-btn button.gpay-button,
         #${containerId} .google-pay-btn .gpay-button {
-          /* Solid fill beats Tailwind preflight transparent + background-image:none.
-             Modern GPay buttons put "Pay with" / mark in child nodes, not bg-image. */
           background-color: #000 !important;
-          background-image: none !important;
+          /* Let Google's stylesheet own background-image / logo mark. */
+          background-image: revert-layer !important;
           opacity: 1 !important;
           visibility: visible !important;
           border: 0 !important;
@@ -1131,6 +1131,12 @@ export function EvonetDropinHost({
           background-color: #fff !important;
           color: #3c4043 !important;
           outline: 1px solid #dadce0;
+        }
+        /* Prefer SVG / text children Google injects for the mark. */
+        #${containerId} .google-pay-btn button.gpay-button > *,
+        #${containerId} .google-pay-btn .gpay-button > * {
+          opacity: 1 !important;
+          visibility: visible !important;
         }
         #${containerId} .loading-button.google-loading-btn {
           background: #000 !important;
