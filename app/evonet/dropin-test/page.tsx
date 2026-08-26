@@ -843,7 +843,12 @@ function EvonetDropinTestPage() {
                     : mapped.status === "cancelled"
                       ? "payment_cancelled"
                       : "payment_fail",
-                payload: mapped,
+                payload: {
+                  merchantTransID: mapped.merchantTransID ?? undefined,
+                  sessionID: mapped.sessionID ?? undefined,
+                  code: mapped.code ?? undefined,
+                  message: mapped.message ?? undefined,
+                },
               });
               if (mapped.status === "success") {
                 const citId = resolveInteractionQueryId({
