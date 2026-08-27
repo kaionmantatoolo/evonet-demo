@@ -1101,11 +1101,11 @@ export function EvonetDropinHost({
           max-width: 100%;
         }
         /*
-          Google Pay CTA is Google's official button (not colorAction).
-          Tailwind preflight sets button { background-color: transparent;
-          background-image: none }, which can wash the GPay mark away.
-          Restore a black fill WITHOUT forcing background-image:none — classic
-          GPay buttons put the logo in background-image; !important none kills it.
+          Google Pay CTA comes from paymentsClient.createButton() into
+          .google-pay-btn. Do NOT restyle the injected button — Tailwind
+          preflight + our earlier background-image/color !important rules
+          strip the G Pay mark. Only size the host; reset the button to
+          let Google's stylesheet win.
         */
         #${containerId} .google-pay-btn {
           width: 100%;
@@ -1114,29 +1114,11 @@ export function EvonetDropinHost({
         #${containerId} .google-pay-btn > button,
         #${containerId} .google-pay-btn button.gpay-button,
         #${containerId} .google-pay-btn .gpay-button {
-          background-color: #000 !important;
-          /* Let Google's stylesheet own background-image / logo mark. */
-          background-image: revert-layer !important;
-          opacity: 1 !important;
-          visibility: visible !important;
-          border: 0 !important;
-          min-height: 40px !important;
-          width: 100% !important;
-          cursor: pointer !important;
-          color: #fff !important;
-        }
-        #${containerId} .google-pay-btn > button.white,
-        #${containerId} .google-pay-btn button.gpay-button.white,
-        #${containerId} .google-pay-btn .gpay-button.white {
-          background-color: #fff !important;
-          color: #3c4043 !important;
-          outline: 1px solid #dadce0;
-        }
-        /* Prefer SVG / text children Google injects for the mark. */
-        #${containerId} .google-pay-btn button.gpay-button > *,
-        #${containerId} .google-pay-btn .gpay-button > * {
-          opacity: 1 !important;
-          visibility: visible !important;
+          all: revert;
+          display: block;
+          width: 100%;
+          min-height: 40px;
+          cursor: pointer;
         }
         #${containerId} .loading-button.google-loading-btn {
           background: #000 !important;

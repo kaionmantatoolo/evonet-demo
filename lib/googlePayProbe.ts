@@ -126,6 +126,7 @@ export async function probeGooglePayIsReadyToPay(
         `${LOG_PREFIX} isReadyToPay: false — browser/env or no usable payment method (PaymentsClient env=${gpayEnv}, Evonet env=${environment})`
       );
     }
+    scheduleGooglePayDomDump();
     return ready;
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
@@ -133,8 +134,40 @@ export async function probeGooglePayIsReadyToPay(
       `${LOG_PREFIX} failed: ${message} (PaymentsClient env=${gpayEnv}, Evonet env=${environment}). Check adblock / pay.js Network, not only play.google.com/log.`,
       error
     );
+    scheduleGooglePayDomDump();
     return null;
   }
+}
+
+/** After Drop-in mounts createButton(), dump .google-pay-btn structure (console only). */
+function scheduleGooglePayDomDump(): void {
+  if (typeof window === "undefined" || typeof document === "undefined") return;
+  window.setTimeout(() => {
+    const hosts = Array.from(
+      document.querySelectorAll<HTMLElement>(".google-pay-btn")
+    );
+    if (hosts.length === 0) {
+      console.warn(
+        `${LOG_PREFIX} DOM: no .google-pay-btn yet (select Google Pay in Drop-in, or SDK did not mount the host)`
+      );
+      return;
+    }
+    for (const host of hosts) {
+      const button = host.querySelector("button");
+      const iframe = host.querySelector("iframe");
+      const bgImage = button
+        ? window.getComputedStyle(button).backgroundImage
+        : null;
+      console.log(`${LOG_PREFIX} DOM dump`, {
+        childElementCount: host.childElementCount,
+        hasButton: Boolean(button),
+        hasIframe: Boolean(iframe),
+        buttonClass: button?.className ?? null,
+        backgroundImage: bgImage,
+        innerHTMLPreview: host.innerHTML.slice(0, 240),
+      });
+    }
+  }, 2500);
 }
 
 /** Fire-and-forget after Drop-in init; never throws to callers. */
