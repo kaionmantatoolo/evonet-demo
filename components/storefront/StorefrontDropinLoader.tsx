@@ -55,7 +55,7 @@ export function StorefrontDropinLoader({
         minHeight: 200,
         px: { xs: 2, sm: 3 },
         py: { xs: 2, sm: 2.5 },
-        bgcolor: "#ffffff",
+        bgcolor: "var(--cil-dropIn-color-background, #ffffff)",
       }}
     >
       <Stack spacing={2}>

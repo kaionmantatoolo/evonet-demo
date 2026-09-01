@@ -250,9 +250,10 @@ export function resolveStorefrontUnitPrice(
 
 /**
  * Map Drop-in appearance tokens onto shop CSS custom properties.
- * When `colorMode` is dark and the merchant background is light, shell
- * surfaces darken but stay tinted by action/primary so the storefront still
- * reads as the Builder theme. Brand CTAs are kept and only lifted for contrast.
+ * Dark shell when:
+ * - site theme is dark and merchant background is light (tint the shell), or
+ * - merchant `colorBackground` is already dark (use it as the shell — don't
+ *   keep LIGHT_SHELL white surfaces that fight light primary text).
  * Drop-in payment chrome still uses the snapshot `appearance` as-is.
  */
 export function appearanceToStorefrontCssVars(
@@ -261,6 +262,10 @@ export function appearanceToStorefrontCssVars(
 ): StorefrontCssVars {
   const action = asHex(appearance?.colorAction, "#111827");
   const background = asHex(appearance?.colorBackground, "#ffffff");
+  const formBackground = asHex(
+    appearance?.colorFormBackground,
+    background
+  );
   const primary = asHex(appearance?.colorPrimary, action);
   const secondary = asHex(appearance?.colorSecondary, "#6b7280");
   const inverse = asHex(appearance?.colorInverse, "#ffffff");
@@ -279,7 +284,8 @@ export function appearanceToStorefrontCssVars(
             : firstRadius.trim()
         : "12px";
 
-  const useDarkShell = colorMode === "dark" && isLightHex(background);
+  const merchantDarkBg = !isLightHex(background);
+  const useTintedDarkShell = colorMode === "dark" && isLightHex(background);
   const tintSeed =
     !isLightHex(action) &&
     action.toLowerCase() !== DEFAULT_ACTION &&
@@ -288,7 +294,29 @@ export function appearanceToStorefrontCssVars(
       : !isLightHex(primary) && !isNearBlackNeutral(primary)
         ? primary
         : EVONET_CTA_BLUE;
-  const darkShell = useDarkShell ? themeTintedDarkShell(tintSeed) : null;
+  const tintedShell = useTintedDarkShell
+    ? themeTintedDarkShell(tintSeed)
+    : null;
+  const merchantDarkShell = merchantDarkBg
+    ? {
+        bg: background,
+        surface: !isLightHex(formBackground)
+          ? formBackground
+          : mixHex(background, "#ffffff", 0.08),
+        mutedSurface: mixHex(background, "#ffffff", 0.12),
+        text: isLightHex(primary)
+          ? primary
+          : ensureContrastOnBg(primary, background, 3),
+        muted: isLightHex(secondary)
+          ? secondary
+          : ensureContrastOnBg(secondary, background, 2.5),
+        border: asHex(
+          appearance?.colorBoxStroke,
+          mixHex(background, "#ffffff", 0.16)
+        ),
+      }
+    : null;
+  const darkShell = tintedShell ?? merchantDarkShell;
 
   const shopBg = darkShell ? darkShell.bg : background;
   const shopSurface = darkShell ? darkShell.surface : LIGHT_SHELL.surface;
@@ -301,7 +329,7 @@ export function appearanceToStorefrontCssVars(
       ? LIGHT_SHELL.textFallback
       : primary;
   const shopMuted = darkShell
-    ? isLightHex(secondary)
+    ? useTintedDarkShell && isLightHex(secondary)
       ? mixHex(darkShell.muted, secondary, 0.35)
       : darkShell.muted
     : secondary === action
@@ -323,7 +351,7 @@ export function appearanceToStorefrontCssVars(
 
   const shopPrimary = darkShell
     ? ensureContrastOnBg(
-        isLightHex(primary) ? mixHex(primary, darkShell.text, 0.55) : primary,
+        isLightHex(primary) ? primary : mixHex(primary, darkShell.text, 0.55),
         shopBg,
         3
       )

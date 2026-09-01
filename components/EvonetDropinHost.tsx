@@ -1044,6 +1044,17 @@ export function EvonetDropinHost({
           /* Do not use overflow-x:auto here — CSS forces the other axis to clip too,
              which cuts the left/right of .cil-channel-title::after selection rings. */
           overflow: visible !important;
+          /* Vant cell-group defaults to white; map to form / panel background. */
+          --van-background-2: var(
+            --cil-dropIn-color-form-background,
+            var(--cil-dropIn-color-background, #ffffff)
+          );
+          --van-background-3: var(
+            --cil-dropIn-color-form-background,
+            var(--cil-dropIn-color-background, #ffffff)
+          );
+          --van-cell-group-background: var(--van-background-2);
+          --van-cell-background: var(--van-background-2);
         }
         /* 3DS / payment iframes only — do not restyle wallet button internals. */
         #${containerId} iframe:not(.google-pay-btn iframe) {
@@ -1099,6 +1110,33 @@ export function EvonetDropinHost({
           overflow: visible !important;
           box-sizing: border-box !important;
           max-width: 100%;
+        }
+        /*
+          Card expand panel white flash: Vant cell-group + SDK
+          .sub-payment-method-card { background: #fff }. Paint wrappers with
+          colorFormBackground so dark themes stay consistent.
+        */
+        #${containerId} .extra-form-box,
+        #${containerId} .mobile-card-form-wrap,
+        #${containerId} .van-cell-group,
+        #${containerId} .sub-payment-method-card {
+          background: var(
+            --cil-dropIn-color-form-background,
+            var(--cil-dropIn-color-background, #ffffff)
+          ) !important;
+        }
+        #${containerId} .extra-form-box::before {
+          background-color: var(
+            --cil-dropIn-color-form-background,
+            var(--cil-dropIn-color-background, #ffffff)
+          ) !important;
+        }
+        /* SDK hardcodes Total amount to #212121 / #646464. */
+        #${containerId} .footer-summary-wrap .amount-label-field {
+          color: var(--cil-dropIn-color-secondary, #757575) !important;
+        }
+        #${containerId} .footer-summary-wrap .amount-value-field {
+          color: var(--cil-dropIn-color-primary, #212121) !important;
         }
         /*
           Google Pay CTA is Google's official button (not colorAction).
@@ -1163,7 +1201,7 @@ export function EvonetDropinHost({
           margin-top: 8px !important;
           padding-top: 8px !important;
           padding-bottom: max(8px, env(safe-area-inset-bottom, 0px)) !important;
-          background: #fff !important;
+          background: var(--cil-dropIn-color-background, #ffffff) !important;
           box-shadow: none !important;
         }
         #${containerId} .mixin-payment-info-wrap:not(.has-fixed-footer) {
