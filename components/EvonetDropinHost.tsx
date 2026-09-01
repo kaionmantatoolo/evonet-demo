@@ -1044,7 +1044,15 @@ export function EvonetDropinHost({
           /* Do not use overflow-x:auto here — CSS forces the other axis to clip too,
              which cuts the left/right of .cil-channel-title::after selection rings. */
           overflow: visible !important;
-          /* Vant cell-group defaults to white; map to form / panel background. */
+          /*
+            Vant field chrome defaults to --van-background (#f7f8fa) and
+            cell-group to --van-background-2 (white). Map both to form /
+            panel tokens so dark colorFormBackground reaches the inputs.
+          */
+          --van-background: var(
+            --cil-dropIn-color-form-background,
+            var(--cil-dropIn-color-background, #ffffff)
+          );
           --van-background-2: var(
             --cil-dropIn-color-form-background,
             var(--cil-dropIn-color-background, #ffffff)
@@ -1130,6 +1138,20 @@ export function EvonetDropinHost({
             --cil-dropIn-color-form-background,
             var(--cil-dropIn-color-background, #ffffff)
           ) !important;
+        }
+        /* van-field__body uses --van-background; pin inputs explicitly too. */
+        #${containerId} .van-field__body,
+        #${containerId} input.custom-input,
+        #${containerId} textarea.custom-input,
+        #${containerId} .select-wrapper,
+        #${containerId} .select-input,
+        #${containerId} .phone-input-wrapper,
+        #${containerId} .phone-input {
+          background-color: var(
+            --cil-dropIn-color-form-background,
+            var(--cil-dropIn-color-background, #ffffff)
+          ) !important;
+          color: var(--cil-dropIn-color-primary, inherit) !important;
         }
         /* SDK hardcodes Total amount to #212121 / #646464. */
         #${containerId} .footer-summary-wrap .amount-label-field {
