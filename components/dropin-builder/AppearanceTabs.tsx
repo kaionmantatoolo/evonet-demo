@@ -204,7 +204,7 @@ export function AppearanceTabs({
           />
           <AppearanceColorRow
             label="colorBackground"
-            caption="Drop-in page / panel background"
+            caption="Drop-in page / panel background (also our merchant outer frame)"
             value={colors.colorBackground}
             placeholder="#ffffff"
             onChange={(value) => onColorChange("colorBackground", value)}

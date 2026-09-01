@@ -38,7 +38,7 @@ export function StorefrontDropinOverlayStage({
         flex: 1,
         display: "flex",
         flexDirection: "column",
-        bgcolor: "#fff",
+        bgcolor: "var(--cil-dropIn-color-background, #ffffff)",
       }}
     >
       {sessionError ? (

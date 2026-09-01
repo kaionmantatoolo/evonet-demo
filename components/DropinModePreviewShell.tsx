@@ -76,7 +76,12 @@ export function DropinModePreviewShell({
         </IconButton>
       </div>
       {/* Full remaining viewport width — Columns layout needs a wide stage */}
-      <div className="relative z-[1] min-h-0 w-full flex-1 overflow-auto bg-white">
+      <div
+        className="relative z-[1] min-h-0 w-full flex-1 overflow-auto"
+        style={{
+          backgroundColor: "var(--cil-dropIn-color-background, #ffffff)",
+        }}
+      >
         <div className="h-full w-full min-w-0">{children}</div>
       </div>
     </div>,

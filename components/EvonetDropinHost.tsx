@@ -1029,8 +1029,8 @@ export function EvonetDropinHost({
           maxWidth: "100%",
           minWidth: 0,
           boxSizing: "border-box",
-          /* Drop-in stays light; don't inherit dark theme paper. */
-          bgcolor: "#ffffff",
+          /* Merchant/SDK panel fill — tracks Appearance colorBackground. */
+          bgcolor: "var(--cil-dropIn-color-background, #ffffff)",
           /* Stage card already provides Figma’s 20px inset — keep host chrome tight. */
           px: compact ? 0 : { xs: 0.75, sm: 2 },
           py: compact ? 0 : { xs: 1, sm: 2 },

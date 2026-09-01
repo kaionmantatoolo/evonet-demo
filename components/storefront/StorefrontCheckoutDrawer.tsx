@@ -416,8 +416,8 @@ export function StorefrontCheckoutDrawer({
             borderRadius: "20px",
             overflow: { xs: "visible", sm: "auto" },
             WebkitOverflowScrolling: "touch",
-            // Drop-in keeps merchant/default light appearance for readability.
-            bgcolor: "#fff",
+            // Drop-in panel fill tracks Appearance colorBackground.
+            bgcolor: "var(--cil-dropIn-color-background, #ffffff)",
             overscrollBehavior: "contain",
             boxSizing: "border-box",
             boxShadow: "0 8px 28px rgba(0,0,0,0.06)",

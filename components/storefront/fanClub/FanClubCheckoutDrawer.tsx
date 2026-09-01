@@ -402,7 +402,7 @@ export function FanClubCheckoutDrawer({
             borderRadius: "20px",
             overflow: { xs: "visible", sm: "auto" },
             WebkitOverflowScrolling: "touch",
-            bgcolor: "#fff",
+            bgcolor: "var(--cil-dropIn-color-background, #ffffff)",
             overscrollBehavior: "contain",
             boxSizing: "border-box",
             boxShadow: "0 8px 28px rgba(0,0,0,0.06)",

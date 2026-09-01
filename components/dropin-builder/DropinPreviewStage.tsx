@@ -54,8 +54,13 @@ export function DropinPreviewStage({
       </div>
       <div className="bg-[#F5F5F5] px-4 pb-8 pt-[30px] dark:bg-muted/50">
         <div
-          className="mx-auto w-full overflow-visible rounded-[20px] border border-black/[0.06] bg-white p-5 shadow-[0_8px_28px_rgba(0,0,0,0.08)]"
-          style={{ maxWidth: APPLE_PHONE_PREVIEW_WIDTH }}
+          className="mx-auto w-full overflow-visible rounded-[20px] border border-black/[0.06] p-5 shadow-[0_8px_28px_rgba(0,0,0,0.08)]"
+          style={{
+            maxWidth: APPLE_PHONE_PREVIEW_WIDTH,
+            /* Merchant frame we draw — tracks Appearance colorBackground. */
+            backgroundColor:
+              "var(--cil-dropIn-color-background, #ffffff)",
+          }}
         >
           {children}
         </div>

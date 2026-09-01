@@ -2332,7 +2332,13 @@ function EvonetDropinTestPage() {
                     </Button>
                   </div>
                 ) : (
-                  <div className="mx-auto w-full max-w-lg overflow-visible rounded-none border border-border bg-white p-5 sm:p-6">
+                  <div
+                    className="mx-auto w-full max-w-lg overflow-visible rounded-none border border-border p-5 sm:p-6"
+                    style={{
+                      backgroundColor:
+                        "var(--cil-dropIn-color-background, #ffffff)",
+                    }}
+                  >
                     <EvonetDropinHost
                       config={config}
                       initGeneration={sdkInitGeneration}
