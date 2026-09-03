@@ -1098,18 +1098,22 @@ export function EvonetDropinHost({
           color: var(--cil-dropIn-color-primary) !important;
         }
         /*
-          SDK design: list has padding 0 16px; selected row paints a ring via
-          .cil-channel-title::after { left/right: -17px } so it sits flush with
-          the list border. Do not inflate padding — that separates the ring
-          from the list stroke (especially on the first row).
+          SDK: list padding 0 16px; selected ring uses ::after left/right -17px
+          so it sits flush with the list's 1px colorBoxStroke (#EEEEEE). That
+          flush overlap makes the left/right action border look covered by
+          white/light gray. Keep padding 16px, but inset the ring 1px (-16px)
+          so the blue stroke stays fully inside the outer list border.
         */
         #${containerId} .cil-payment-method-conatiner {
           padding: 0 16px !important;
           box-sizing: border-box !important;
         }
         #${containerId} .cil-channel-title::after {
-          left: -17px !important;
-          right: -17px !important;
+          left: -16px !important;
+          right: -16px !important;
+        }
+        #${containerId} .cil-channel-title.channel-checked::after {
+          z-index: 1;
         }
         /* Keep card PAN/expiry/CVC 1px borders inside the padded stage. */
         #${containerId} .card-form-container,
