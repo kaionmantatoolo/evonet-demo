@@ -10,6 +10,16 @@ const nextConfig = {
   experimental: {
     useWasmBinary: true,
   },
+  async headers() {
+    return [
+      {
+        source: "/.well-known/apple-app-site-association",
+        headers: [
+          { key: "Content-Type", value: "application/json" },
+        ],
+      },
+    ];
+  },
   env: {
     NEXT_PUBLIC_EVONET_DROPIN_VERSION:
       process.env.NEXT_PUBLIC_EVONET_DROPIN_VERSION?.trim() || "1.2.0",
