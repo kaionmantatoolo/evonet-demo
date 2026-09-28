@@ -28,10 +28,43 @@ export const viewport: Viewport = {
   colorScheme: "light dark",
 };
 
+/**
+ * AlipayHK WAP finishes by loading this https return URL in Safari.
+ * Universal Links do not run on that redirect. Hand the same query to the app scheme.
+ */
+const iosWalletReturnHandoff = `
+(function () {
+  try {
+    var ua = navigator.userAgent || "";
+    var ios = /iPhone|iPad|iPod/i.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    if (!ios) return;
+    var params = new URLSearchParams(location.search);
+    var hit = false;
+    params.forEach(function (_, key) {
+      var name = String(key).toLowerCase();
+      if (name === "returnfrompsp" || name === "trade_status" || name === "out_trade_no") hit = true;
+    });
+    if (!hit) return;
+    var scheme = "evonetdemo://evonet/return" + location.search;
+    var link = document.createElement("a");
+    link.href = scheme;
+    link.textContent = "返回 Evonet Demo App";
+    link.setAttribute("style", "position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;padding:24px;background:#0a0b19;color:#fff;font:600 17px/1.4 -apple-system,BlinkMacSystemFont,sans-serif;text-align:center;text-decoration:none;");
+    function mount() {
+      if (document.body && !link.isConnected) document.body.appendChild(link);
+    }
+    if (document.body) mount();
+    else document.addEventListener("DOMContentLoaded", mount);
+    window.location.href = scheme;
+  } catch (e) {}
+})();
+`;
+
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" className={cn("font-sans", geist.variable)} suppressHydrationWarning>
       <body className="bg-background text-foreground antialiased">
+        <script dangerouslySetInnerHTML={{ __html: iosWalletReturnHandoff }} />
         <AppThemeProvider>
           <ThemeRegistry>
             <SiteLocaleProvider>{children}</SiteLocaleProvider>
