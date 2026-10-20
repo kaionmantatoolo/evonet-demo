@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import type { Viewport } from "next";
+import { OpenInAppBanner } from "../components/OpenInAppBanner";
 import ThemeRegistry from "../components/ThemeRegistry";
 import { AppThemeProvider } from "../components/AppThemeProvider";
 import { SiteLocaleProvider } from "../components/SiteLocaleProvider";
@@ -67,7 +68,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <script dangerouslySetInnerHTML={{ __html: iosWalletReturnHandoff }} />
         <AppThemeProvider>
           <ThemeRegistry>
-            <SiteLocaleProvider>{children}</SiteLocaleProvider>
+            <SiteLocaleProvider>
+              <OpenInAppBanner />
+              {children}
+            </SiteLocaleProvider>
           </ThemeRegistry>
         </AppThemeProvider>
       </body>

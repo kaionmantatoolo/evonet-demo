@@ -3,12 +3,64 @@
     "apps": [],
     "details": [
       {
+        "appIDs": [
+          "C473B8U7JN.com.evonetglobal.ios.dropindemo"
+        ],
         "appID": "C473B8U7JN.com.evonetglobal.ios.dropindemo",
+        "components": [
+          {
+            "/": "/evonet/return",
+            "comment": "Wallet return URL. Opens the iOS app."
+          },
+          {
+            "/": "/evonet/return/*",
+            "comment": "Wallet return URL with trailing segments."
+          },
+          {
+            "/": "/evonet/dropin-builder",
+            "comment": "Legacy Drop-in Builder return page."
+          },
+          {
+            "/": "/evonet/dropin-builder/*",
+            "comment": "Drop-in Builder return with trailing segments."
+          },
+          {
+            "/": "/",
+            "?": {
+              "returnFromPsp": "?*"
+            },
+            "comment": "PSP root callback with returnFromPsp."
+          },
+          {
+            "/": "/",
+            "?": {
+              "merchantOrderID": "?*"
+            },
+            "comment": "PSP root callback with merchantOrderID."
+          },
+          {
+            "/": "/",
+            "?": {
+              "result": "?*"
+            },
+            "comment": "PSP root callback with result."
+          },
+          {
+            "/": "/*",
+            "exclude": true,
+            "comment": "Keep the rest of the demo site in Safari."
+          },
+          {
+            "/": "/",
+            "exclude": true,
+            "comment": "Keep the site root in Safari."
+          }
+        ],
         "paths": [
-          "NOT /.well-known/*",
-          "NOT /api/*",
-          "NOT /_next/*",
-          "*"
+          "/evonet/return",
+          "/evonet/return/*",
+          "/evonet/dropin-builder",
+          "/evonet/dropin-builder/*"
         ]
       }
     ]

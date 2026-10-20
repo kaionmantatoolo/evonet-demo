@@ -35,8 +35,8 @@ export default function HomePage() {
           return {
             position: "fixed",
             top: {
-              xs: "max(10px, env(safe-area-inset-top, 0px))",
-              sm: 16,
+              xs: "calc(max(10px, env(safe-area-inset-top, 0px)) + var(--evonet-open-banner, 0px))",
+              sm: "calc(16px + var(--evonet-open-banner, 0px))",
             },
             right: { xs: 12, sm: 20 },
             zIndex: 20,
