@@ -16,7 +16,7 @@ const SDK_COLOR_DEFAULTS = {
   colorBoxFillingOutline: "#94B4FF",
   colorDisabled: "#C3C3C3",
   colorInverse: "#FFFFFF",
-  colorPlaceholder: "rgba(195, 195, 195, 0.8)",
+  colorPlaceholder: "#757575",
   colorError: "#C90E14",
   colorPrimary: "#000000",
   colorSecondary: "#212121",

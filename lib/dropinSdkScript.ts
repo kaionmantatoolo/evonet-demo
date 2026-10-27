@@ -33,8 +33,9 @@ export function buildDropinScriptSrc(
 /**
  * Script the host injects.
  * `NEXT_PUBLIC_EVONET_DROPIN_VERSION` is the Vercel control (plus optional CDN).
- * A full `SCRIPT_URL` is honored only for a custom host — npm `@latest` URLs are
- * ignored so leftover env on Vercel cannot override the pinned version.
+ * A custom `SCRIPT_URL` (local `/vendor/...` path or non-npm host) overrides that pin.
+ * npm `cil-dropin-components@…` URLs are ignored so a leftover `@latest` env
+ * cannot override the pinned version.
  */
 export function resolveDropinScriptSrc(
   scriptUrl: string | undefined = process.env.NEXT_PUBLIC_EVONET_DROPIN_SCRIPT_URL,
@@ -44,7 +45,7 @@ export function resolveDropinScriptSrc(
   const versionRaw = version?.trim();
   const explicit = scriptUrl?.trim();
   const isNpmDropinUrl = Boolean(explicit && /cil-dropin-components@/i.test(explicit));
-  if (explicit && !isNpmDropinUrl && !versionRaw) {
+  if (explicit && !isNpmDropinUrl) {
     return explicit;
   }
   return buildDropinScriptSrc(
@@ -79,19 +80,21 @@ export function npmTagFromScriptSrc(src: string = DROPIN_SCRIPT_SRC): string | n
 
 function packageJsonUrlFromScriptSrc(src: string): string | null {
   try {
-    const url = new URL(src);
+    const absolute = /^https?:\/\//i.test(src);
+    const url = new URL(src, "http://localhost");
     url.search = "";
     url.hash = "";
     const distIdx = url.pathname.lastIndexOf("/dist/");
     if (distIdx !== -1) {
       url.pathname = `${url.pathname.slice(0, distIdx)}/package.json`;
-      return url.toString();
-    }
-    if (/cil-dropin-components@[^/]+\/?$/i.test(url.pathname)) {
+    } else if (/cil-dropin-components@[^/]+\/?$/i.test(url.pathname)) {
       url.pathname = `${url.pathname.replace(/\/?$/, "")}/package.json`;
-      return url.toString();
+    } else if (/\/index(?:\.min)?\.js$/i.test(url.pathname)) {
+      url.pathname = url.pathname.replace(/index(?:\.min)?\.js$/i, "package.json");
+    } else {
+      return null;
     }
-    return null;
+    return absolute ? url.toString() : url.pathname;
   } catch {
     return null;
   }

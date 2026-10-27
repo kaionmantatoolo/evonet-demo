@@ -15,3 +15,6 @@ pnpm-debug.log*
 
 *.tsbuildinfo
 
+# Local cil-dropin-components drop used by NEXT_PUBLIC_EVONET_DROPIN_SCRIPT_URL.
+public/vendor/
+

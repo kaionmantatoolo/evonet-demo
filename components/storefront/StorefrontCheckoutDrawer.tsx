@@ -455,9 +455,6 @@ export function StorefrontCheckoutDrawer({
                 p: 2.5,
                 maxWidth: "100%",
                 boxSizing: "border-box",
-                "& iframe": {
-                  maxWidth: "100%",
-                },
               }}
             >
               <EvonetDropinHost
@@ -466,7 +463,6 @@ export function StorefrontCheckoutDrawer({
                 onEvent={onEvent}
                 onSdkInitApplied={() => setSdkConstructed(true)}
                 compact
-                stickyPayButton
               />
             </Box>
           ) : !isCreatingSession && !sessionError ? (

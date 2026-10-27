@@ -264,12 +264,6 @@ interface EvonetDropinHostProps {
    */
   compact?: boolean;
   /**
-   * Keep the Drop-in pay CTA visible inside a short scroll parent (storefront
-   * drawer). SDK only position:fixed-s the footer for fullPage/bottomUp; embedded
-   * leaves it at content end where a constrained drawer can hide it.
-   */
-  stickyPayButton?: boolean;
-  /**
    * Builder “Highlight UI Controls”: appearance parameter key whose mapped Drop-in
    * regions receive a cyan outline pulse. Null/undefined clears the highlight.
    */
@@ -282,7 +276,6 @@ export function EvonetDropinHost({
   onEvent,
   onSdkInitApplied,
   compact = false,
-  stickyPayButton = false,
   pulseKey = null,
 }: EvonetDropinHostProps) {
   // Unique per host — Builder + storefront checkout can both mount Drop-in;
@@ -1034,213 +1027,9 @@ export function EvonetDropinHost({
           /* Stage card already provides Figma’s 20px inset — keep host chrome tight. */
           px: compact ? 0 : { xs: 0.75, sm: 2 },
           py: compact ? 0 : { xs: 1, sm: 2 },
-          // Keep overflow visible so SDK selection rings are not clipped.
           overflow: "visible",
         }}
       />
-      <style jsx global>{`
-        #${containerId} {
-          max-width: 100% !important;
-          /* Do not use overflow-x:auto here — CSS forces the other axis to clip too,
-             which cuts the left/right of .cil-channel-title::after selection rings. */
-          overflow: visible !important;
-          /*
-            Vant field chrome defaults to --van-background (#f7f8fa) and
-            cell-group to --van-background-2 (white). Map both to form /
-            panel tokens so dark colorFormBackground reaches the inputs.
-          */
-          --van-background: var(
-            --cil-dropIn-color-form-background,
-            var(--cil-dropIn-color-background, #ffffff)
-          );
-          --van-background-2: var(
-            --cil-dropIn-color-form-background,
-            var(--cil-dropIn-color-background, #ffffff)
-          );
-          --van-background-3: var(
-            --cil-dropIn-color-form-background,
-            var(--cil-dropIn-color-background, #ffffff)
-          );
-          --van-cell-group-background: var(--van-background-2);
-          --van-cell-background: var(--van-background-2);
-        }
-        /* 3DS / payment iframes only — do not restyle wallet button internals. */
-        #${containerId} iframe:not(.google-pay-btn iframe) {
-          display: block;
-          width: 100% !important;
-          max-width: 100% !important;
-          border: 0 !important;
-          /* Let Evonet set height; never clip payment UI on iOS. */
-          min-height: 0;
-        }
-        #${containerId} > * {
-          max-width: 100% !important;
-          box-sizing: border-box !important;
-          overflow: visible !important;
-        }
-        /* Payment chrome must not clip the checked-channel ring. */
-        #${containerId} .cil-dropIn-container,
-        #${containerId} .cil-payment-method-conatiner,
-        #${containerId} .cil-channel-wrap,
-        #${containerId} .cil-channel-title {
-          overflow: visible !important;
-          outline: none;
-        }
-        /*
-          SDK hardcodes .cil-dropIn-container { color: #212121 }, so payment
-          method names ignore appearance.colorPrimary. Wire them to the token
-          so Colors → Text → colorPrimary actually controls list labels.
-        */
-        #${containerId} .cil-dropIn-container {
-          color: var(--cil-dropIn-color-primary) !important;
-        }
-        #${containerId} .cil-payment-method-name {
-          color: var(--cil-dropIn-color-primary) !important;
-        }
-        /*
-          SDK: list padding 0 16px; selected ring uses ::after left/right -17px
-          so it sits flush with the list's 1px colorBoxStroke (#EEEEEE). That
-          flush overlap makes the left/right action border look covered by
-          white/light gray. Keep padding 16px, but inset the ring 1px (-16px)
-          so the blue stroke stays fully inside the outer list border.
-        */
-        #${containerId} .cil-payment-method-conatiner {
-          padding: 0 16px !important;
-          box-sizing: border-box !important;
-        }
-        #${containerId} .cil-channel-title::after {
-          left: -16px !important;
-          right: -16px !important;
-        }
-        #${containerId} .cil-channel-title.channel-checked::after {
-          z-index: 1;
-        }
-        /* Keep card PAN/expiry/CVC 1px borders inside the padded stage. */
-        #${containerId} .card-form-container,
-        #${containerId} .van-cell,
-        #${containerId} .van-field {
-          overflow: visible !important;
-          box-sizing: border-box !important;
-          max-width: 100%;
-        }
-        /*
-          Card expand panel white flash: Vant cell-group + SDK
-          .sub-payment-method-card { background: #fff }. Paint wrappers with
-          colorFormBackground so dark themes stay consistent.
-        */
-        #${containerId} .extra-form-box,
-        #${containerId} .mobile-card-form-wrap,
-        #${containerId} .van-cell-group,
-        #${containerId} .sub-payment-method-card {
-          background: var(
-            --cil-dropIn-color-form-background,
-            var(--cil-dropIn-color-background, #ffffff)
-          ) !important;
-        }
-        #${containerId} .extra-form-box::before {
-          background-color: var(
-            --cil-dropIn-color-form-background,
-            var(--cil-dropIn-color-background, #ffffff)
-          ) !important;
-        }
-        /* van-field__body uses --van-background; pin inputs explicitly too. */
-        #${containerId} .van-field__body,
-        #${containerId} input.custom-input,
-        #${containerId} textarea.custom-input,
-        #${containerId} .select-wrapper,
-        #${containerId} .select-input,
-        #${containerId} .phone-input-wrapper,
-        #${containerId} .phone-input {
-          background-color: var(
-            --cil-dropIn-color-form-background,
-            var(--cil-dropIn-color-background, #ffffff)
-          ) !important;
-          color: var(--cil-dropIn-color-primary, inherit) !important;
-        }
-        /* SDK hardcodes Total amount to #212121 / #646464. */
-        #${containerId} .footer-summary-wrap .amount-label-field {
-          color: var(--cil-dropIn-color-secondary, #757575) !important;
-        }
-        #${containerId} .footer-summary-wrap .amount-value-field {
-          color: var(--cil-dropIn-color-primary, #212121) !important;
-        }
-        /*
-          Google Pay CTA is Google's official button (not colorAction).
-          Tailwind preflight sets button { background-color: transparent;
-          background-image: none }, which can wash the GPay mark away.
-          Restore a black fill WITHOUT forcing background-image:none — classic
-          GPay buttons put the logo in background-image; !important none kills it.
-        */
-        #${containerId} .google-pay-btn {
-          width: 100%;
-          min-height: 46px;
-        }
-        #${containerId} .google-pay-btn > button,
-        #${containerId} .google-pay-btn button.gpay-button,
-        #${containerId} .google-pay-btn .gpay-button {
-          background-color: #000 !important;
-          /* Let Google's stylesheet own background-image / logo mark. */
-          background-image: revert-layer !important;
-          opacity: 1 !important;
-          visibility: visible !important;
-          border: 0 !important;
-          min-height: 40px !important;
-          width: 100% !important;
-          cursor: pointer !important;
-          color: #fff !important;
-        }
-        #${containerId} .google-pay-btn > button.white,
-        #${containerId} .google-pay-btn button.gpay-button.white,
-        #${containerId} .google-pay-btn .gpay-button.white {
-          background-color: #fff !important;
-          color: #3c4043 !important;
-          outline: 1px solid #dadce0;
-        }
-        /* Prefer SVG / text children Google injects for the mark. */
-        #${containerId} .google-pay-btn button.gpay-button > *,
-        #${containerId} .google-pay-btn .gpay-button > * {
-          opacity: 1 !important;
-          visibility: visible !important;
-        }
-        #${containerId} .loading-button.google-loading-btn {
-          background: #000 !important;
-          min-height: 46px;
-        }
-        /* Checked radio: keep the inner dot visible (SDK uses #fff on action fill). */
-        #${containerId} .cil-custom-radio.checked .radio-inner {
-          background: #fff !important;
-          width: 6px !important;
-          height: 6px !important;
-          border-radius: 50% !important;
-          display: block !important;
-          opacity: 1 !important;
-        }
-        ${
-          stickyPayButton
-            ? `
-        /* Embedded mode: pin pay CTA to the bottom of the nearest scrollport.
-           Skip when SDK already uses .fixed-footer (fullPage / bottomUp). */
-        #${containerId} .cil-payment-method-footer:not(.fixed-footer) {
-          position: sticky !important;
-          bottom: 0 !important;
-          z-index: 5 !important;
-          margin-top: 8px !important;
-          padding-top: 8px !important;
-          padding-bottom: max(8px, env(safe-area-inset-bottom, 0px)) !important;
-          background: var(--cil-dropIn-color-background, #ffffff) !important;
-          box-shadow: none !important;
-        }
-        #${containerId} .mixin-payment-info-wrap:not(.has-fixed-footer) {
-          padding-bottom: 0 !important;
-        }
-        #${containerId} .cil-payment-method-conatiner {
-          /* Avoid SDK default bottom padding stacking with sticky footer. */
-          margin-bottom: 0 !important;
-        }
-        `
-            : ""
-        }
-      `}</style>
     </Box>
   );
 }

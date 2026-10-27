@@ -57,7 +57,8 @@ function buildMuiTheme(mode: "light" | "dark") {
           // MUI sets `button { color: inherit }` outside @layer, which beats
           // Tailwind utility layers and makes shadcn primary buttons unreadable
           // (dark text on dark bg). Revert to the previous cascade layer.
-          "button, [data-slot='button']": {
+          // Leave Drop-in buttons on the SDK color token.
+          "button:not([id^='evonet-dropin'] *), [data-slot='button']:not([id^='evonet-dropin'] *)": {
             color: "revert-layer",
           },
         },

@@ -48,7 +48,6 @@
 }
 
 :root {
-    --evonet-open-banner: 0px;
     --background: oklch(1 0 0);
     --foreground: oklch(0.145 0 0);
     --card: oklch(1 0 0);
@@ -126,7 +125,6 @@
     }
   body {
     @apply bg-background text-foreground;
-    padding-top: var(--evonet-open-banner);
     }
   html {
     @apply font-sans;
@@ -292,14 +290,13 @@ a.storefront-cta svg,
 }
 
 /*
- * Evonet Drop-in SDK applies appearance typography via unscoped element
- * selectors (label, button, input, …) on document. Restore app typography
- * + Figma chrome colors for builder / dev-console only — not inside
- * #evonet-dropin-*.
+ * Builder / dev-console chrome only. The exclusion has to sit on the styled
+ * element. An ancestor :not() still matches the Drop-in root, so buttons
+ * inside #evonet-dropin-* were inheriting --font-sans over the SDK token.
  * Light: title #0a0a0a, labels #5d5d5d, captions #737373 (Drop-in Builder V2).
  */
-[data-builder-chrome] :not([id^="evonet-dropin"] *) label,
-[data-builder-chrome] :not([id^="evonet-dropin"] *) [data-slot="label"] {
+[data-builder-chrome] label:not([id^="evonet-dropin"] *),
+[data-builder-chrome] [data-slot="label"]:not([id^="evonet-dropin"] *) {
   font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
   font-size: 0.875rem;
   font-weight: 400;
@@ -308,63 +305,59 @@ a.storefront-cta svg,
   color: #5d5d5d;
 }
 
-[data-builder-chrome] :not([id^="evonet-dropin"] *) [data-slot="button"],
-[data-builder-chrome] :not([id^="evonet-dropin"] *) button:not(.storefront-cta) {
+[data-builder-chrome] [data-slot="button"]:not([id^="evonet-dropin"] *),
+[data-builder-chrome] button:not(.storefront-cta):not([id^="evonet-dropin"] *) {
   font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
 }
 
-[data-builder-chrome] :not([id^="evonet-dropin"] *) h1,
-[data-builder-chrome] :not([id^="evonet-dropin"] *) h2,
-[data-builder-chrome] :not([id^="evonet-dropin"] *) h3,
-[data-builder-chrome] :not([id^="evonet-dropin"] *) h4 {
+[data-builder-chrome] h1:not([id^="evonet-dropin"] *),
+[data-builder-chrome] h2:not([id^="evonet-dropin"] *),
+[data-builder-chrome] h3:not([id^="evonet-dropin"] *),
+[data-builder-chrome] h4:not([id^="evonet-dropin"] *) {
   font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
   color: #0a0a0a;
 }
 
-[data-builder-chrome] :not([id^="evonet-dropin"] *) input:not([type="color"]),
-[data-builder-chrome] :not([id^="evonet-dropin"] *) textarea {
+[data-builder-chrome] input:not([type="color"]):not([id^="evonet-dropin"] *),
+[data-builder-chrome] textarea:not([id^="evonet-dropin"] *) {
   font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
   color: #5d5d5d;
 }
 
-[data-builder-chrome] :not([id^="evonet-dropin"] *) p {
+[data-builder-chrome] p:not([id^="evonet-dropin"] *) {
   font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
 }
 
-[data-builder-chrome] :not([id^="evonet-dropin"] *) [data-slot="select-trigger"],
-[data-builder-chrome] :not([id^="evonet-dropin"] *) [data-slot="select-value"] {
+[data-builder-chrome] [data-slot="select-trigger"]:not([id^="evonet-dropin"] *),
+[data-builder-chrome] [data-slot="select-value"]:not([id^="evonet-dropin"] *) {
   color: #5d5d5d;
 }
 
-[data-builder-chrome] :not([id^="evonet-dropin"] *) .text-muted-foreground {
+[data-builder-chrome] .text-muted-foreground:not([id^="evonet-dropin"] *) {
   color: #737373 !important;
 }
 
-.dark [data-builder-chrome] :not([id^="evonet-dropin"] *) label,
-.dark [data-builder-chrome] :not([id^="evonet-dropin"] *) [data-slot="label"],
-.dark [data-builder-chrome] :not([id^="evonet-dropin"] *) input:not([type="color"]),
-.dark [data-builder-chrome] :not([id^="evonet-dropin"] *) textarea,
-.dark [data-builder-chrome] :not([id^="evonet-dropin"] *) [data-slot="select-trigger"],
-.dark [data-builder-chrome] :not([id^="evonet-dropin"] *) [data-slot="select-value"] {
+.dark [data-builder-chrome] label:not([id^="evonet-dropin"] *),
+.dark [data-builder-chrome] [data-slot="label"]:not([id^="evonet-dropin"] *),
+.dark [data-builder-chrome] input:not([type="color"]):not([id^="evonet-dropin"] *),
+.dark [data-builder-chrome] textarea:not([id^="evonet-dropin"] *),
+.dark [data-builder-chrome] [data-slot="select-trigger"]:not([id^="evonet-dropin"] *),
+.dark [data-builder-chrome] [data-slot="select-value"]:not([id^="evonet-dropin"] *) {
   color: var(--muted-foreground);
 }
 
-.dark [data-builder-chrome] :not([id^="evonet-dropin"] *) h1,
-.dark [data-builder-chrome] :not([id^="evonet-dropin"] *) h2,
-.dark [data-builder-chrome] :not([id^="evonet-dropin"] *) h3,
-.dark [data-builder-chrome] :not([id^="evonet-dropin"] *) h4 {
+.dark [data-builder-chrome] h1:not([id^="evonet-dropin"] *),
+.dark [data-builder-chrome] h2:not([id^="evonet-dropin"] *),
+.dark [data-builder-chrome] h3:not([id^="evonet-dropin"] *),
+.dark [data-builder-chrome] h4:not([id^="evonet-dropin"] *) {
   color: var(--foreground);
 }
 
-.dark [data-builder-chrome] :not([id^="evonet-dropin"] *) .text-muted-foreground {
+.dark [data-builder-chrome] .text-muted-foreground:not([id^="evonet-dropin"] *) {
   color: var(--muted-foreground) !important;
 }
 
-[data-builder-chrome]
-  :not([id^="evonet-dropin"] *)
-  input:not([type="color"])::placeholder,
-[data-builder-chrome]
-  :not([id^="evonet-dropin"] *)
-  textarea::placeholder {
+[data-builder-chrome] input:not([type="color"]):not([id^="evonet-dropin"] *)::placeholder,
+[data-builder-chrome] textarea:not([id^="evonet-dropin"] *)::placeholder {
   font-family: inherit;
 }

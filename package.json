@@ -7,6 +7,7 @@
     "postinstall": "node scripts/patch-next-swc-wasm.cjs",
     "preswc:prepare": "node -e \"const fs=require('fs');const p='node_modules/@next/swc-darwin-arm64';try{if(fs.existsSync(p)){fs.rmSync(p,{recursive:true,force:true});console.log('Removed',p)}}catch(e){console.warn('SWC cleanup skipped:',e?.message||e)}\"",
     "dev": "npm run preswc:prepare && NEXT_DISABLE_SWC_WASM= NEXT_SWC_PATH=.next/swc-cache next dev",
+    "tunnel": "cloudflared tunnel --no-autoupdate --protocol http2 --url \"${TUNNEL_URL:-http://127.0.0.1:3010}\"",
     "build": "npm run preswc:prepare && NEXT_DISABLE_SWC_WASM= NEXT_SWC_PATH=.next/swc-cache next build",
     "start": "npm run preswc:prepare && NEXT_DISABLE_SWC_WASM= NEXT_SWC_PATH=.next/swc-cache next start"
   },

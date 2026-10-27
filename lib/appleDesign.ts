@@ -69,14 +69,6 @@ export const appleScrollbarCss = `
   *::-webkit-scrollbar-corner {
     background: transparent;
   }
-  /* Soften horizontal thumbs inside Evonet Drop-in (More payment methods) */
-  [id^="evonet-dropin"] *::-webkit-scrollbar {
-    height: 4px;
-    width: 4px;
-  }
-  [id^="evonet-dropin"] *::-webkit-scrollbar-track {
-    margin: 4px 8px;
-  }
 `;
 
 /**
