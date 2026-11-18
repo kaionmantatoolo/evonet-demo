@@ -47,7 +47,9 @@ export function OpenInAppBanner() {
     const root = document.documentElement;
     if (visible) root.style.setProperty("--evonet-open-banner", BANNER_HEIGHT);
     else root.style.removeProperty("--evonet-open-banner");
-    return () => root.style.removeProperty("--evonet-open-banner");
+    return () => {
+      root.style.removeProperty("--evonet-open-banner");
+    };
   }, [visible]);
 
   if (!visible) return null;
