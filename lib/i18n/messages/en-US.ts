@@ -121,6 +121,21 @@ export interface SiteMessages {
     refreshSessionId: string;
     refreshSessionIdRequired: string;
     creatingSession: string;
+    interactionBodyTitle: string;
+    interactionBodyHint: string;
+    interactionBodyEnable: string;
+    interactionBodyLoad: string;
+    interactionBodyLoading: string;
+    interactionBodyInvalid: string;
+    interactionBodyEmpty: string;
+    oneTapPay: string;
+    oneTapPayHint: string;
+    oneTapBrand: string;
+    oneTapVaultId: string;
+    oneTapVaultIdHint: string;
+    oneTapWidth: string;
+    oneTapHeight: string;
+    oneTapRequired: string;
     orderPaymentMethods: string;
     orderPaymentMethodsHint: string;
     showSaveImage: string;
@@ -367,6 +382,23 @@ export const EN_US: SiteMessages = {
     refreshSessionId: "Refresh Session ID",
     refreshSessionIdRequired: "Refresh Session ID (required)",
     creatingSession: "Creating Session...",
+    interactionBodyTitle: "Interaction request body",
+    interactionBodyHint:
+      "When this is on, the JSON below is signed and sent instead of the generated session body. Each create uses a new order id. UAT/PROD keys stay on the server.",
+    interactionBodyEnable: "Use custom body",
+    interactionBodyLoad: "Load the body that would be sent",
+    interactionBodyLoading: "Loading body...",
+    interactionBodyInvalid: "Custom body must be a JSON object.",
+    interactionBodyEmpty: "Load or paste a JSON object before creating a session.",
+    oneTapPay: "One Tap Pay",
+    oneTapPayHint:
+      "Sends merchantOrderInfo.oneTapPay and the same brand on appearance.oneTapPay. Off omits both.",
+    oneTapBrand: "Brand",
+    oneTapVaultId: "Vault ID",
+    oneTapVaultIdHint: "userInfo.vaultID. Required together with the shopper reference.",
+    oneTapWidth: "Button width",
+    oneTapHeight: "Button height",
+    oneTapRequired: "User reference and vault ID are required for One Tap Pay.",
     orderPaymentMethods: "Order Payment Methods",
     orderPaymentMethodsHint:
       "Order of payment methods in Drop-in (enabledPaymentMethod). Use * for remaining methods. Refresh session after changing.",

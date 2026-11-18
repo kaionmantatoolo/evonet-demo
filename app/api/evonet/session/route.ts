@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
+import {
+  isJsonObject,
+  orderIdFromInteractionBody,
+} from "../../../../lib/interactionBody";
 import { sanitizeEvonetReturnUrl } from "../../../../lib/evonetReturnUrl";
 import { resolveEvonetServerConfig } from "../../../../lib/evonetTarget";
 import type {
   EvonetInteractionRequest,
   EvonetInteractionResponse,
+  EvonetOneTapPayBrand,
   EvonetRecurringProcessingModel,
 } from "../../../../types/evonet";
 
@@ -12,6 +17,9 @@ const RECURRING_MODELS: EvonetRecurringProcessingModel[] = [
   "Subscription",
   "Unscheduled",
 ];
+
+const ONE_TAP_BRANDS: EvonetOneTapPayBrand[] = ["ApplePay", "GooglePay"];
+const ONE_TAP_VALID_TIME = 40000;
 
 const EVONET_RETURN_URL =
   process.env.EVONET_RETURN_URL ?? "http://localhost:3000/evonet/dropin-test";
@@ -45,7 +53,19 @@ export async function POST(req: NextRequest) {
     recurringProcessingModel,
     enabledPaymentMethod,
     returnURL: bodyReturnURL,
+    preview,
+    interactionBody,
+    oneTapPay: bodyOneTapPay,
+    vaultID: bodyVaultID,
   } = body;
+
+  const useInteractionBody = interactionBody !== undefined && preview !== true;
+  if (useInteractionBody && !isJsonObject(interactionBody)) {
+    return NextResponse.json(
+      { error: "interactionBody must be a JSON object." },
+      { status: 400 }
+    );
+  }
 
   const {
     target,
@@ -58,13 +78,23 @@ export async function POST(req: NextRequest) {
     bodyTarget ?? (environment != null ? String(environment) : undefined)
   );
 
+  if (!environment && !bodyTarget) {
+    return NextResponse.json(
+      {
+        error:
+          "Missing environment or target for interaction request.",
+      },
+      { status: 400 }
+    );
+  }
+
   if (
-    amount == null ||
-    Number.isNaN(amount) ||
-    !currency ||
-    !orderId ||
-    !environment ||
-    !locale
+    !useInteractionBody &&
+    (amount == null ||
+      Number.isNaN(amount) ||
+      !currency ||
+      !orderId ||
+      !locale)
   ) {
     return NextResponse.json(
       {
@@ -75,9 +105,35 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const enableSaveCard = saveCardForNextPurchase === true;
+  const enableSaveCard = !useInteractionBody && saveCardForNextPurchase === true;
   const referenceTrimmed =
     typeof userInfoReference === "string" ? userInfoReference.trim() : "";
+  const oneTapPay =
+    typeof bodyOneTapPay === "string" &&
+    ONE_TAP_BRANDS.includes(bodyOneTapPay as EvonetOneTapPayBrand)
+      ? (bodyOneTapPay as EvonetOneTapPayBrand)
+      : undefined;
+  if (
+    !useInteractionBody &&
+    typeof bodyOneTapPay === "string" &&
+    bodyOneTapPay.trim() !== "" &&
+    !oneTapPay
+  ) {
+    return NextResponse.json(
+      { error: "oneTapPay must be ApplePay or GooglePay." },
+      { status: 400 }
+    );
+  }
+  const vaultID = typeof bodyVaultID === "string" ? bodyVaultID.trim() : "";
+  if (!useInteractionBody && oneTapPay && (!referenceTrimmed || !vaultID)) {
+    return NextResponse.json(
+      {
+        error:
+          "userInfoReference and vaultID are required when oneTapPay is set.",
+      },
+      { status: 400 }
+    );
+  }
   if (enableSaveCard && !referenceTrimmed) {
     return NextResponse.json(
       {
@@ -126,7 +182,6 @@ export async function POST(req: NextRequest) {
   }
 
   const merchantTransTime = new Date().toISOString().replace(/\.\d{3}Z$/, "+00:00");
-  const idempotencyKey = `evonet_${orderId}_${Date.now()}`;
 
   let normalizedEnabledPaymentMethod: string[] | undefined;
   if (enabledPaymentMethod != null) {
@@ -156,6 +211,9 @@ export async function POST(req: NextRequest) {
     merchantOrderInfo: {
       merchantOrderID: orderId,
       merchantOrderTime: merchantTransTime,
+      ...(oneTapPay
+        ? { oneTapPay, merchantOrderReference: orderId }
+        : {}),
       ...(normalizedEnabledPaymentMethod
         ? { enabledPaymentMethod: normalizedEnabledPaymentMethod }
         : {}),
@@ -173,22 +231,38 @@ export async function POST(req: NextRequest) {
     captureAfterHours: "0",
     locale,
     description: description ?? undefined,
+    ...(oneTapPay ? { validTime: ONE_TAP_VALID_TIME } : {}),
   };
 
   if (allowAuthentication === true) {
     payload.allowAuthentication = true;
   }
 
-  if (enableSaveCard) {
-    payload.userInfo = { reference: referenceTrimmed };
-    if (shouldIncludeRecurringModel) {
-      payload.paymentMethod = { recurringProcessingModel: recurringModel };
-    }
+  if (enableSaveCard || oneTapPay) {
+    payload.userInfo = {
+      ...(referenceTrimmed ? { reference: referenceTrimmed } : {}),
+      ...(oneTapPay ? { vaultID } : {}),
+    };
   }
+
+  if (enableSaveCard && shouldIncludeRecurringModel) {
+    payload.paymentMethod = { recurringProcessingModel: recurringModel };
+  }
+
+  if (preview === true) {
+    return NextResponse.json({ payload });
+  }
+
+  const outbound: Record<string, unknown> =
+    useInteractionBody && isJsonObject(interactionBody) ? interactionBody : payload;
+  const idempotencyOrderId =
+    orderIdFromInteractionBody(outbound) ??
+    (typeof orderId === "string" && orderId.trim() ? orderId.trim() : "override");
+  const idempotencyKey = `evonet_${idempotencyOrderId}_${Date.now()}`;
 
   try {
     const dateTime = new Date().toISOString().replace(/\.\d{3}Z$/, "+00:00");
-    const bodyString = JSON.stringify(payload);
+    const bodyString = JSON.stringify(outbound);
 
     const isKeyBased =
       EVONET_SIGN_KEY.startsWith("sk_") ||

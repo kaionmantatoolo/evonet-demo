@@ -145,6 +145,23 @@ export const JA_JP: SiteMessages = {
     refreshSessionId: "Session ID を更新",
     refreshSessionIdRequired: "Session ID を更新（必須）",
     creatingSession: "セッション作成中...",
+    interactionBodyTitle: "Interaction request body",
+    interactionBodyHint:
+      "オンにすると、下の JSON を署名して送信し、自動生成の body は使いません。作成のたびに新しい order id を使います。UAT/PROD の鍵はサーバー側のままです。",
+    interactionBodyEnable: "カスタム body で作成",
+    interactionBodyLoad: "送信される body を読み込む",
+    interactionBodyLoading: "読み込み中...",
+    interactionBodyInvalid: "カスタム body は JSON object である必要があります。",
+    interactionBodyEmpty: "作成する前に JSON object を読み込むか貼り付けてください。",
+    oneTapPay: "One Tap Pay",
+    oneTapPayHint:
+      "merchantOrderInfo.oneTapPay を送り、SDK の appearance.oneTapPay も同じ brand になります。オフでは送りません。",
+    oneTapBrand: "Brand",
+    oneTapVaultId: "Vault ID",
+    oneTapVaultIdHint: "userInfo.vaultID。ショッパー参照とセットで必要です。",
+    oneTapWidth: "ボタン幅",
+    oneTapHeight: "ボタン高さ",
+    oneTapRequired: "One Tap Pay にはユーザー参照と vault ID が必要です。",
     orderPaymentMethods: "支払い方法の順序",
     orderPaymentMethodsHint:
       "Drop-in の支払い方法順（enabledPaymentMethod）。残りは *。変更後はセッションを更新。",

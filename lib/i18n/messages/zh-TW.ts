@@ -142,6 +142,23 @@ export const ZH_TW: SiteMessages = {
     refreshSessionId: "重新整理 Session ID",
     refreshSessionIdRequired: "重新整理 Session ID（必要）",
     creatingSession: "正在建立 Session...",
+    interactionBodyTitle: "Interaction request body",
+    interactionBodyHint:
+      "開啟後，會用下面嘅 JSON 簽名並送出，唔再用自動組好嘅 body。每次開單都會換新 order id。UAT/PROD key 仍然留喺伺服器。",
+    interactionBodyEnable: "用自訂 body 開單",
+    interactionBodyLoad: "載入而家會送出嘅 body",
+    interactionBodyLoading: "載入中...",
+    interactionBodyInvalid: "自訂 body 必須係 JSON object。",
+    interactionBodyEmpty: "開單前請先載入或貼上 JSON object。",
+    oneTapPay: "One Tap Pay",
+    oneTapPayHint:
+      "會送 merchantOrderInfo.oneTapPay，SDK appearance.oneTapPay 用同一個 brand。關掉就唔送。",
+    oneTapBrand: "Brand",
+    oneTapVaultId: "Vault ID",
+    oneTapVaultIdHint: "userInfo.vaultID。同 shopper reference 一齊先可以開單。",
+    oneTapWidth: "按鈕闊度",
+    oneTapHeight: "按鈕高度",
+    oneTapRequired: "One Tap Pay 需要 user reference 同 vault ID。",
     orderPaymentMethods: "付款方式順序",
     orderPaymentMethodsHint:
       "Drop-in 付款方式順序（enabledPaymentMethod）。其餘方法可用 *。變更後請重新整理 session。",

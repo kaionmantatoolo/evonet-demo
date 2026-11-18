@@ -145,6 +145,23 @@ export const KO_KR: SiteMessages = {
     refreshSessionId: "Session ID 새로고침",
     refreshSessionIdRequired: "Session ID 새로고침(필수)",
     creatingSession: "세션 생성 중...",
+    interactionBodyTitle: "Interaction request body",
+    interactionBodyHint:
+      "켜면 아래 JSON을 서명해 보내고, 자동으로 만든 body는 사용하지 않습니다. 세션을 만들 때마다 새 order id를 사용합니다. UAT/PROD 키는 서버에 남습니다.",
+    interactionBodyEnable: "사용자 지정 body로 생성",
+    interactionBodyLoad: "전송될 body 불러오기",
+    interactionBodyLoading: "불러오는 중...",
+    interactionBodyInvalid: "사용자 지정 body는 JSON object여야 합니다.",
+    interactionBodyEmpty: "세션을 만들기 전에 JSON object를 불러오거나 붙여넣으세요.",
+    oneTapPay: "One Tap Pay",
+    oneTapPayHint:
+      "merchantOrderInfo.oneTapPay를 보내고 SDK appearance.oneTapPay도 같은 brand입니다. 끄면 보내지 않습니다.",
+    oneTapBrand: "Brand",
+    oneTapVaultId: "Vault ID",
+    oneTapVaultIdHint: "userInfo.vaultID. 구매자 reference와 함께 필요합니다.",
+    oneTapWidth: "버튼 너비",
+    oneTapHeight: "버튼 높이",
+    oneTapRequired: "One Tap Pay에는 사용자 reference와 vault ID가 필요합니다.",
     orderPaymentMethods: "결제 수단 순서",
     orderPaymentMethodsHint:
       "Drop-in 결제 수단 순서(enabledPaymentMethod). 나머지는 *를 사용하세요. 변경 후 세션을 새로고침하세요.",

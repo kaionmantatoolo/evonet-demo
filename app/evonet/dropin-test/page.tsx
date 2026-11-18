@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { LocaleSwitcher } from "@/components/LocaleSwitcher";
 import { DropinSdkVersionBadge } from "@/components/DropinSdkVersionBadge";
@@ -54,6 +55,11 @@ import {
 import { digInteractionPaymentStatus } from "../../../lib/digInteractionPaymentStatus";
 import { buildClientEvonetReturnUrl } from "../../../lib/evonetReturnUrl";
 import { ensureUserInfoReference } from "../../../lib/userInfoReference";
+import {
+  isJsonObject,
+  orderIdFromInteractionBody,
+  withFreshOrderId,
+} from "../../../lib/interactionBody";
 import { CopyableIdInline } from "../../../components/CopyableIdValue";
 import {
   amountDisplayChoice,
@@ -69,6 +75,7 @@ import type {
   BinRule,
   EvonetDropinConfig,
   EvonetDropinEvent,
+  EvonetOneTapPayBrand,
   EvonetRecurringProcessingModel,
   EvonetSdkAppearance,
   EvonetSdkFontObject,
@@ -82,6 +89,53 @@ const DEFAULT_CURRENCY =
   process.env.NEXT_PUBLIC_EVONET_DEFAULT_CURRENCY ?? "HKD";
 const ENV_CHIP_TAP_WINDOW_MS = 2000;
 const ENV_CHIP_TAPS_REQUIRED = 5;
+
+const INTERACTION_BODY_STORAGE_KEY = "evonet-validation-interaction-body";
+
+function readStoredInteractionBody(): { enabled: boolean; text: string } {
+  if (typeof window === "undefined") return { enabled: false, text: "" };
+  try {
+    const raw = sessionStorage.getItem(INTERACTION_BODY_STORAGE_KEY);
+    if (!raw) return { enabled: false, text: "" };
+    const parsed = JSON.parse(raw) as { enabled?: unknown; text?: unknown };
+    return {
+      enabled: parsed.enabled === true,
+      text: typeof parsed.text === "string" ? parsed.text : "",
+    };
+  } catch {
+    return { enabled: false, text: "" };
+  }
+}
+
+function persistInteractionBody(enabled: boolean, text: string) {
+  try {
+    sessionStorage.setItem(
+      INTERACTION_BODY_STORAGE_KEY,
+      JSON.stringify({ enabled, text })
+    );
+  } catch {
+    /* ignore quota / private mode */
+  }
+}
+
+function parseCustomInteractionBody(text: string): Record<string, unknown> {
+  const trimmed = text.trim();
+  if (!trimmed) {
+    throw new Error(
+      "Load or paste a JSON object before creating a session."
+    );
+  }
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(trimmed) as unknown;
+  } catch {
+    throw new Error("Custom body must be a JSON object.");
+  }
+  if (!isJsonObject(parsed)) {
+    throw new Error("Custom body must be a JSON object.");
+  }
+  return parsed;
+}
 
 function generateOrderId(): string {
   const suffix =
@@ -266,6 +320,10 @@ function EvonetDropinTestPage() {
   const [allowAuthentication, setAllowAuthentication] = useState(false);
   const [saveCardForNextPurchase, setSaveCardForNextPurchase] = useState(false);
   const [userInfoReference, setUserInfoReference] = useState("");
+  const [oneTapPay, setOneTapPay] = useState<"" | EvonetOneTapPayBrand>("");
+  const [vaultID, setVaultID] = useState("");
+  const [oneTapWidth, setOneTapWidth] = useState("240px");
+  const [oneTapHeight, setOneTapHeight] = useState("40px");
   const [includeRecurringProcessingModel, setIncludeRecurringProcessingModel] =
     useState(true);
   const [recurringProcessingModel, setRecurringProcessingModel] =
@@ -355,6 +413,10 @@ function EvonetDropinTestPage() {
   const [sessionId, setSessionId] = useState<string>(DEFAULT_SESSION_ID);
 
   const [isCreatingSession, setIsCreatingSession] = useState(false);
+  const [interactionBodyEnabled, setInteractionBodyEnabled] = useState(false);
+  const [interactionBodyText, setInteractionBodyText] = useState("");
+  const [isLoadingInteractionBody, setIsLoadingInteractionBody] =
+    useState(false);
   const [sessionError, setSessionError] = useState<string | null>(null);
 
   /**
@@ -480,6 +542,15 @@ function EvonetDropinTestPage() {
     }
   };
 
+  const handleOneTapChange = (enabled: boolean) => {
+    if (!enabled) {
+      setOneTapPay("");
+      return;
+    }
+    setOneTapPay((prev) => prev || "ApplePay");
+    setUserInfoReference((prev) => ensureUserInfoReference(prev));
+  };
+
   const sdkAppearance: EvonetSdkAppearance = useMemo(() => {
     const a: EvonetSdkAppearance = {};
     const put = (key: keyof EvonetSdkAppearance, value: string) => {
@@ -502,6 +573,13 @@ function EvonetDropinTestPage() {
     put("colorSecondary", colorSecondary);
     if (logoPosition !== "left") {
       a.logoPosition = logoPosition;
+    }
+    if (oneTapPay) {
+      a.oneTapPay = oneTapPay;
+      a.oneTapSpace = {
+        width: oneTapWidth.trim() || "240px",
+        height: oneTapHeight.trim() || "40px",
+      };
     }
     const br = borderRadiusInput
       .split(",")
@@ -546,6 +624,9 @@ function EvonetDropinTestPage() {
     colorPrimary,
     colorSecondary,
     logoPosition,
+    oneTapHeight,
+    oneTapPay,
+    oneTapWidth,
     typography,
   ]);
 
@@ -756,6 +837,21 @@ function EvonetDropinTestPage() {
     }
 
     if (
+      event.type === "payment_pending" &&
+      payload &&
+      ["B2001", "B2002", "B2003", "B2006"].includes(String(payload.code ?? ""))
+    ) {
+      setSessionSpent(true);
+      const message =
+        typeof payload.message === "string" && payload.message.trim()
+          ? payload.message.trim()
+          : "This order can no longer be used.";
+      setSessionError(
+        `${message} (${payload.code}). Create a new session to continue.`
+      );
+    }
+
+    if (
       event.type === "payment_success" ||
       event.type === "payment_fail" ||
       event.type === "payment_cancelled"
@@ -904,12 +1000,21 @@ function EvonetDropinTestPage() {
   const handleCreateSession = async (options?: {
     initDropin?: boolean;
     environmentOverride?: string;
+    interactionBodyEnabled?: boolean;
+    interactionBodyText?: string;
   }) => {
     setSessionError(null);
-    if (saveCardForNextPurchase && !userInfoReference.trim()) {
+    const useCustomBody =
+      options?.interactionBodyEnabled ?? interactionBodyEnabled;
+    const customBodyText = options?.interactionBodyText ?? interactionBodyText;
+    if (!useCustomBody && saveCardForNextPurchase && !userInfoReference.trim()) {
       setSessionError(
         "User reference is required when Allow save card for next purchase is enabled (maps to userInfo.reference)."
       );
+      return;
+    }
+    if (!useCustomBody && oneTapPay && (!userInfoReference.trim() || !vaultID.trim())) {
+      setSessionError("User reference and vault ID are required for One Tap Pay.");
       return;
     }
 
@@ -929,10 +1034,31 @@ function EvonetDropinTestPage() {
       return;
     }
 
+    let interactionBody: Record<string, unknown> | undefined;
+    if (useCustomBody) {
+      try {
+        const parsed = parseCustomInteractionBody(customBodyText);
+        const freshOrderId = generateOrderId();
+        interactionBody = withFreshOrderId(parsed, freshOrderId);
+        const nextText = JSON.stringify(interactionBody, null, 2);
+        setInteractionBodyText(nextText);
+        persistInteractionBody(true, nextText);
+      } catch (error) {
+        setSessionError(
+          error instanceof Error
+            ? error.message
+            : "Custom body must be a JSON object."
+        );
+        return;
+      }
+    }
+
     const envForSession = options?.environmentOverride ?? environment;
     const targetForSession = targetFromSdkEnvironment(envForSession);
 
-    const newOrderId = generateOrderId();
+    const newOrderId =
+      (interactionBody && orderIdFromInteractionBody(interactionBody)) ||
+      generateOrderId();
     setOrderId(newOrderId);
 
     setIsCreatingSession(true);
@@ -962,16 +1088,24 @@ function EvonetDropinTestPage() {
           ...(returnURL ? { returnURL } : {}),
           ...(enabledPaymentMethod ? { enabledPaymentMethod } : {}),
           ...(allowAuthentication ? { allowAuthentication: true } : {}),
-          ...(useSaveCard
+            ...(useSaveCard
+              ? {
+                  saveCardForNextPurchase: true,
+                  userInfoReference: userInfoReference.trim(),
+                  includeRecurringProcessingModel: useRecurring,
+                  ...(useRecurring
+                    ? { recurringProcessingModel: recurringModel }
+                    : {}),
+                }
+              : {}),
+          ...(oneTapPay
             ? {
-                saveCardForNextPurchase: true,
+                oneTapPay,
+                vaultID: vaultID.trim(),
                 userInfoReference: userInfoReference.trim(),
-                includeRecurringProcessingModel: useRecurring,
-                ...(useRecurring
-                  ? { recurringProcessingModel: recurringModel }
-                  : {}),
               }
             : {}),
+          ...(interactionBody ? { interactionBody } : {}),
         }),
       });
 
@@ -1025,6 +1159,85 @@ function EvonetDropinTestPage() {
     }
   };
 
+  const handleLoadInteractionBody = async () => {
+    setSessionError(null);
+    setIsLoadingInteractionBody(true);
+    try {
+      const numericAmount = parseFloat(amount);
+      if (Number.isNaN(numericAmount) || numericAmount < 0) {
+        throw new Error("Please enter a valid amount before creating sessionID.");
+      }
+      if (!freeTrial && numericAmount <= 0) {
+        throw new Error("Please enter a valid amount before creating sessionID.");
+      }
+      if (!currency) {
+        throw new Error("Currency is required.");
+      }
+      const amountForSession = freeTrial ? 0 : numericAmount;
+      const enabledPaymentMethod = parseEnabledPaymentMethodInput(
+        enabledPaymentMethodInput
+      );
+      const returnURL = buildClientEvonetReturnUrl();
+      const useSaveCard = freeTrial || saveCardForNextPurchase;
+      const useRecurring = freeTrial || includeRecurringProcessingModel;
+      const recurringModel = freeTrial
+        ? "Subscription"
+        : recurringProcessingModel;
+      const response = await fetch("/api/evonet/session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          preview: true,
+          amount: amountForSession,
+          currency,
+          orderId: generateOrderId(),
+          description,
+          environment,
+          target: targetFromSdkEnvironment(environment),
+          locale,
+          ...(returnURL ? { returnURL } : {}),
+          ...(enabledPaymentMethod ? { enabledPaymentMethod } : {}),
+          ...(allowAuthentication ? { allowAuthentication: true } : {}),
+          ...(useSaveCard
+            ? {
+                saveCardForNextPurchase: true,
+                userInfoReference: userInfoReference.trim(),
+                includeRecurringProcessingModel: useRecurring,
+                ...(useRecurring
+                  ? { recurringProcessingModel: recurringModel }
+                  : {}),
+              }
+            : {}),
+          ...(oneTapPay
+            ? {
+                oneTapPay,
+                vaultID: vaultID.trim(),
+                userInfoReference: userInfoReference.trim(),
+              }
+            : {}),
+        }),
+      });
+      const data = (await response.json()) as {
+        payload?: Record<string, unknown>;
+        error?: string;
+      };
+      if (!response.ok || !data.payload || !isJsonObject(data.payload)) {
+        throw new Error(data.error ?? "Failed to preview the interaction body.");
+      }
+      const nextText = JSON.stringify(data.payload, null, 2);
+      setInteractionBodyText(nextText);
+      persistInteractionBody(interactionBodyEnabled, nextText);
+    } catch (error) {
+      setSessionError(
+        error instanceof Error
+          ? error.message
+          : "Failed to preview the interaction body."
+      );
+    } finally {
+      setIsLoadingInteractionBody(false);
+    }
+  };
+
   /** Amount, save-card, and recurring model live in the Interaction session. */
   const skipAmountAutoSessionRef = useRef(true);
   useEffect(() => {
@@ -1035,12 +1248,13 @@ function EvonetDropinTestPage() {
     const numericAmount = parseFloat(amount);
     if (Number.isNaN(numericAmount) || numericAmount < 0) return;
     if (!freeTrial && numericAmount <= 0) return;
-    if (freeTrial || saveCardForNextPurchase) {
+    if (freeTrial || saveCardForNextPurchase || oneTapPay) {
       if (!userInfoReference.trim()) {
         setUserInfoReference(ensureUserInfoReference());
         return;
       }
     }
+    if (oneTapPay && !vaultID.trim()) return;
     const timer = window.setTimeout(() => {
       void handleCreateSession({ initDropin: true });
     }, 650);
@@ -1052,6 +1266,8 @@ function EvonetDropinTestPage() {
     freeTrial,
     userInfoReference,
     saveCardForNextPurchase,
+    oneTapPay,
+    vaultID,
     includeRecurringProcessingModel,
     recurringProcessingModel,
   ]);
@@ -1143,6 +1359,8 @@ function EvonetDropinTestPage() {
       allowAuthentication,
       saveCardForNextPurchase,
       userInfoReference,
+      oneTapPay,
+      vaultID,
       includeRecurringProcessingModel,
       recurringProcessingModel,
       freeTrial,
@@ -1174,8 +1392,30 @@ function EvonetDropinTestPage() {
         setSessionError("Currency is required.");
         return;
       }
+      const storedBody = readStoredInteractionBody();
+      setInteractionBodyEnabled(storedBody.enabled);
+      setInteractionBodyText(storedBody.text);
+      let interactionBody: Record<string, unknown> | undefined;
+      if (storedBody.enabled) {
+        try {
+          const parsed = parseCustomInteractionBody(storedBody.text);
+          const freshOrderId = generateOrderId();
+          interactionBody = withFreshOrderId(parsed, freshOrderId);
+          const nextText = JSON.stringify(interactionBody, null, 2);
+          setInteractionBodyText(nextText);
+          persistInteractionBody(true, nextText);
+        } catch (error) {
+          setSessionError(
+            error instanceof Error
+              ? error.message
+              : "Custom body must be a JSON object."
+          );
+          return;
+        }
+      }
+
       const useSaveCard = snap.freeTrial || snap.saveCardForNextPurchase;
-      if (useSaveCard && !snap.userInfoReference.trim()) {
+      if (!interactionBody && useSaveCard && !snap.userInfoReference.trim()) {
         setSessionError(
           "User reference is required when save-card is enabled."
         );
@@ -1183,7 +1423,9 @@ function EvonetDropinTestPage() {
       }
 
       setIsCreatingSession(true);
-      const newOrderId = generateOrderId();
+      const newOrderId =
+        (interactionBody && orderIdFromInteractionBody(interactionBody)) ||
+        generateOrderId();
       setOrderId(newOrderId);
 
       try {
@@ -1224,6 +1466,14 @@ function EvonetDropinTestPage() {
                     : {}),
                 }
               : {}),
+            ...(snap.oneTapPay
+              ? {
+                  oneTapPay: snap.oneTapPay,
+                  vaultID: snap.vaultID.trim(),
+                  userInfoReference: snap.userInfoReference.trim(),
+                }
+              : {}),
+            ...(interactionBody ? { interactionBody } : {}),
           }),
           signal: ac.signal,
         });
@@ -1408,6 +1658,76 @@ function EvonetDropinTestPage() {
                       aria-label="Allow authentication on interaction"
                     />
                   </div>
+                  <div className="space-y-4 rounded-none border p-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <Label htmlFor="one-tap-pay" className="font-medium">
+                          One Tap Pay
+                        </Label>
+                        <p className="mt-1 break-words text-xs text-muted-foreground">
+                          Sends merchantOrderInfo.oneTapPay and the same brand on appearance.oneTapPay. Off omits both.
+                        </p>
+                      </div>
+                      <Switch
+                        id="one-tap-pay"
+                        className="shrink-0"
+                        checked={oneTapPay !== ""}
+                        onCheckedChange={handleOneTapChange}
+                        aria-label="One Tap Pay"
+                      />
+                    </div>
+                    {oneTapPay ? (
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <div className="min-w-0 space-y-2">
+                          <Label htmlFor="one-tap-brand">Brand</Label>
+                          <Select
+                            value={oneTapPay}
+                            onValueChange={(value) =>
+                              setOneTapPay(value as EvonetOneTapPayBrand)
+                            }
+                          >
+                            <SelectTrigger id="one-tap-brand" className="w-full" aria-label="One Tap Pay brand">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="ApplePay">ApplePay</SelectItem>
+                              <SelectItem value="GooglePay">GooglePay</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="min-w-0 space-y-2">
+                          <Label htmlFor="one-tap-vault">Vault ID</Label>
+                          <Input
+                            id="one-tap-vault"
+                            value={vaultID}
+                            onChange={(event) => setVaultID(event.target.value)}
+                            placeholder="1234"
+                          />
+                          <p className="break-words text-xs text-muted-foreground">
+                            userInfo.vaultID. Required together with the shopper reference.
+                          </p>
+                        </div>
+                        <div className="min-w-0 space-y-2">
+                          <Label htmlFor="one-tap-width">Button width</Label>
+                          <Input
+                            id="one-tap-width"
+                            value={oneTapWidth}
+                            onChange={(event) => setOneTapWidth(event.target.value)}
+                            placeholder="240px"
+                          />
+                        </div>
+                        <div className="min-w-0 space-y-2">
+                          <Label htmlFor="one-tap-height">Button height</Label>
+                          <Input
+                            id="one-tap-height"
+                            value={oneTapHeight}
+                            onChange={(event) => setOneTapHeight(event.target.value)}
+                            placeholder="40px"
+                          />
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
                   {showPaymentCopy ? (
                     <>
                       <div className="min-w-0 space-y-2">
@@ -1505,8 +1825,8 @@ function EvonetDropinTestPage() {
                         value={userInfoReference}
                         onChange={(event) => setUserInfoReference(event.target.value)}
                         placeholder="your_customer_id_123"
-                        disabled={!saveCardForNextPurchase}
-                        required={saveCardForNextPurchase}
+                        disabled={!saveCardForNextPurchase && !oneTapPay}
+                        required={saveCardForNextPurchase || oneTapPay !== ""}
                       />
                       <p className="break-words text-xs text-muted-foreground">
                         Stable shopper ID used to bind the token.
@@ -1723,7 +2043,7 @@ function EvonetDropinTestPage() {
                   <Button
                     type="button"
                     size="sm"
-                    onClick={() => void handleCreateSession()}
+                    onClick={() => void handleCreateSession({ initDropin: true })}
                     disabled={isCreatingSession}
                   >
                     {isCreatingSession ? "Creating session…" : "Create session"}
@@ -1746,6 +2066,57 @@ function EvonetDropinTestPage() {
                 <p className="text-xs text-muted-foreground">
                   Session uses server credentials. Initialize runs Drop-in in this browser.
                 </p>
+
+                <Accordion
+                  type="single"
+                  collapsible
+                  className="rounded-none border border-border bg-card px-4 text-card-foreground"
+                >
+                  <AccordionItem value="interaction-body" className="border-0">
+                    <AccordionTrigger>Interaction request body</AccordionTrigger>
+                    <AccordionContent className="space-y-3 pt-2">
+                      <p className="text-xs text-muted-foreground">
+                        When this is on, the JSON below is signed and sent instead of the generated session body. Each create uses a new order id. UAT/PROD keys stay on the server.
+                      </p>
+                      <div className="flex items-center justify-between gap-4">
+                        <Label htmlFor="validation-interaction-body" className="font-medium">
+                          Use custom body
+                        </Label>
+                        <Switch
+                          id="validation-interaction-body"
+                          checked={interactionBodyEnabled}
+                          onCheckedChange={(checked) => {
+                            setInteractionBodyEnabled(checked);
+                            persistInteractionBody(checked, interactionBodyText);
+                          }}
+                          aria-label="Use custom body"
+                        />
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => void handleLoadInteractionBody()}
+                        disabled={isCreatingSession || isLoadingInteractionBody}
+                      >
+                        {isLoadingInteractionBody
+                          ? "Loading body..."
+                          : "Load the body that would be sent"}
+                      </Button>
+                      <Textarea
+                        value={interactionBodyText}
+                        onChange={(event) => {
+                          const next = event.target.value;
+                          setInteractionBodyText(next);
+                          persistInteractionBody(interactionBodyEnabled, next);
+                        }}
+                        spellCheck={false}
+                        className="min-h-48 font-mono text-xs"
+                        aria-label="Interaction request body"
+                      />
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
 
                 <div className="space-y-3 rounded-none border border-border bg-muted/40 p-3">
                   <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Live SDK sync</p>

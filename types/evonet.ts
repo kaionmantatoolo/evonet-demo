@@ -80,6 +80,12 @@ export interface EvonetSdkAppearance {
   colorPrimary?: string;
   colorSecondary?: string;
   logoPosition?: "left" | "middle" | "right";
+  /** Must match `merchantOrderInfo.oneTapPay` on the interaction order. */
+  oneTapPay?: EvonetOneTapPayBrand;
+  oneTapSpace?: {
+    width?: string;
+    height?: string;
+  };
   /**
    * Corner radii. Evonet Drop-in SDK requires CSS length strings
    * (e.g. `["10px","2px","50px","8px"]`), not bare numbers.
@@ -139,6 +145,8 @@ export type EvonetRecurringProcessingModel =
   | "Subscription"
   | "Unscheduled";
 
+export type EvonetOneTapPayBrand = "ApplePay" | "GooglePay";
+
 export interface EvonetInteractionRequest {
   amount: number;
   currency: string;
@@ -177,6 +185,23 @@ export interface EvonetInteractionRequest {
    * When omitted, server uses `EVONET_RETURN_URL`.
    */
   returnURL?: string;
+  /**
+   * When true, the session route returns the interaction JSON it would POST
+   * and does not call Evonet.
+   */
+  preview?: boolean;
+  /**
+   * When set, this object is signed and POSTed instead of the generated payload.
+   * `environment` / `target` on the request still choose the credential set.
+   */
+  interactionBody?: Record<string, unknown>;
+  /**
+   * When `ApplePay` or `GooglePay`, the interaction order is a One Tap Pay order.
+   * Also requires `vaultID` and `userInfoReference`.
+   */
+  oneTapPay?: EvonetOneTapPayBrand;
+  /** Maps to `userInfo.vaultID` when `oneTapPay` is set. */
+  vaultID?: string;
 }
 
 export interface EvonetInteractionResponse {
