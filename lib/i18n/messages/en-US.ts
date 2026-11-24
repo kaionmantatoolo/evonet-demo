@@ -131,11 +131,8 @@ export interface SiteMessages {
     oneTapPay: string;
     oneTapPayHint: string;
     oneTapBrand: string;
-    oneTapVaultId: string;
-    oneTapVaultIdHint: string;
     oneTapWidth: string;
     oneTapHeight: string;
-    oneTapRequired: string;
     orderPaymentMethods: string;
     orderPaymentMethodsHint: string;
     showSaveImage: string;
@@ -394,11 +391,8 @@ export const EN_US: SiteMessages = {
     oneTapPayHint:
       "Sends merchantOrderInfo.oneTapPay and the same brand on appearance.oneTapPay. Off omits both.",
     oneTapBrand: "Brand",
-    oneTapVaultId: "Vault ID",
-    oneTapVaultIdHint: "userInfo.vaultID. Required together with the shopper reference.",
     oneTapWidth: "Button width",
     oneTapHeight: "Button height",
-    oneTapRequired: "User reference and vault ID are required for One Tap Pay.",
     orderPaymentMethods: "Order Payment Methods",
     orderPaymentMethodsHint:
       "Order of payment methods in Drop-in (enabledPaymentMethod). Use * for remaining methods. Refresh session after changing.",

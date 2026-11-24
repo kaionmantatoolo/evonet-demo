@@ -154,11 +154,8 @@ export const ZH_TW: SiteMessages = {
     oneTapPayHint:
       "會送 merchantOrderInfo.oneTapPay，SDK appearance.oneTapPay 用同一個 brand。關掉就唔送。",
     oneTapBrand: "Brand",
-    oneTapVaultId: "Vault ID",
-    oneTapVaultIdHint: "userInfo.vaultID。同 shopper reference 一齊先可以開單。",
     oneTapWidth: "按鈕闊度",
     oneTapHeight: "按鈕高度",
-    oneTapRequired: "One Tap Pay 需要 user reference 同 vault ID。",
     orderPaymentMethods: "付款方式順序",
     orderPaymentMethodsHint:
       "Drop-in 付款方式順序（enabledPaymentMethod）。其餘方法可用 *。變更後請重新整理 session。",

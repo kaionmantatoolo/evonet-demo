@@ -157,11 +157,8 @@ export const KO_KR: SiteMessages = {
     oneTapPayHint:
       "merchantOrderInfo.oneTapPay를 보내고 SDK appearance.oneTapPay도 같은 brand입니다. 끄면 보내지 않습니다.",
     oneTapBrand: "Brand",
-    oneTapVaultId: "Vault ID",
-    oneTapVaultIdHint: "userInfo.vaultID. 구매자 reference와 함께 필요합니다.",
     oneTapWidth: "버튼 너비",
     oneTapHeight: "버튼 높이",
-    oneTapRequired: "One Tap Pay에는 사용자 reference와 vault ID가 필요합니다.",
     orderPaymentMethods: "결제 수단 순서",
     orderPaymentMethodsHint:
       "Drop-in 결제 수단 순서(enabledPaymentMethod). 나머지는 *를 사용하세요. 변경 후 세션을 새로고침하세요.",

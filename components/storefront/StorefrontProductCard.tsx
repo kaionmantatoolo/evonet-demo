@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState, type CSSProperties } from "react";
+import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import {
   Box,
   Button,
   Chip,
+  Collapse,
   Divider,
   Portal,
   Stack,
@@ -19,9 +20,23 @@ import {
   shopSecondaryButtonSx,
   shopSizeButtonSx,
 } from "./storefrontButtons";
-import { bagBounce, enterUp } from "./storefrontMotion";
+import { bagBounce, enterUp, fadeUp } from "./storefrontMotion";
 import type { StorefrontCssVars } from "../../lib/storefrontSnapshot";
 import type { StorefrontCopy } from "../../lib/storefrontCopy";
+
+function ExpressPaySlot({ children }: { children: ReactNode }) {
+  return (
+    <Collapse in appear timeout={360}>
+      <Box
+        sx={{
+          animation: `${fadeUp} 420ms cubic-bezier(0.22, 1, 0.36, 1)`,
+        }}
+      >
+        {children}
+      </Box>
+    </Collapse>
+  );
+}
 
 interface StorefrontProductCardProps {
   product: DemoProduct;
@@ -33,6 +48,8 @@ interface StorefrontProductCardProps {
   onAddToCart: () => void;
   onBuyNow: () => void;
   justAdded: boolean;
+  /** SDK express button, shown above Buy now after the brand check passes. */
+  expressPay?: ReactNode;
   /** Needed when sticky CTA is portaled outside the themed tree. */
   themeVars?: StorefrontCssVars;
   copy: StorefrontCopy;
@@ -48,6 +65,7 @@ export function StorefrontProductCard({
   onAddToCart,
   onBuyNow,
   justAdded,
+  expressPay,
   themeVars,
   copy,
 }: StorefrontProductCardProps) {
@@ -330,6 +348,7 @@ export function StorefrontProductCard({
           spacing={1.25}
           sx={{ pt: 0.5, display: { xs: "none", md: "flex" } }}
         >
+          {expressPay ? <ExpressPaySlot>{expressPay}</ExpressPaySlot> : null}
           <Button
             fullWidth
             size="large"
@@ -377,7 +396,9 @@ export function StorefrontProductCard({
               boxShadow: "0 -8px 24px rgba(28, 25, 23, 0.08)",
             }}
           >
-            <Stack direction="row" spacing={1} alignItems="stretch" sx={{ width: "100%" }}>
+            <Stack spacing={1}>
+              {expressPay ? <ExpressPaySlot>{expressPay}</ExpressPaySlot> : null}
+              <Stack direction="row" spacing={1} alignItems="stretch" sx={{ width: "100%" }}>
               <Button
                 variant="outlined"
                 onClick={onAddToCart}
@@ -423,6 +444,7 @@ export function StorefrontProductCard({
               >
                 {copy.buyNowShort(currency, product.price.toFixed(2))}
               </Button>
+              </Stack>
             </Stack>
           </Box>
         </Portal>

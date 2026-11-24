@@ -1,6 +1,7 @@
 import type {
   BinRule,
   EvonetDropinMode,
+  EvonetOneTapPayBrand,
   EvonetRecurringProcessingModel,
   EvonetSdkAppearance,
   EvonetSdkUiOption,
@@ -28,6 +29,8 @@ export interface StorefrontSnapshot {
   /** Save-card / recurring knobs from Builder (Fan Club when Subscription). */
   saveCardForNextPurchase?: boolean;
   userInfoReference?: string;
+  /** One Tap brand from Builder. Off when omitted. */
+  oneTapPay?: EvonetOneTapPayBrand;
   includeRecurringProcessingModel?: boolean;
   recurringProcessingModel?: EvonetRecurringProcessingModel;
   savedAt: string;
@@ -50,6 +53,14 @@ export function isFanClubStorefront(
     snapshot.includeRecurringProcessingModel !== false &&
     snapshot.recurringProcessingModel === "Subscription"
   );
+}
+
+/** One Tap brand for the interaction order. Shopper reference is not part of it. */
+export function oneTapSessionFields(
+  snapshot: Pick<StorefrontSnapshot, "oneTapPay">
+): { oneTapPay: EvonetOneTapPayBrand } | undefined {
+  if (!snapshot.oneTapPay) return undefined;
+  return { oneTapPay: snapshot.oneTapPay };
 }
 
 export type StorefrontCssVars = Record<string, string>;

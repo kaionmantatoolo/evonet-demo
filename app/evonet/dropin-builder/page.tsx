@@ -369,7 +369,6 @@ function DropinBuilderPage() {
   const [saveCardForNextPurchase, setSaveCardForNextPurchase] = useState(false);
   const [userInfoReference, setUserInfoReference] = useState("");
   const [oneTapPay, setOneTapPay] = useState<"" | EvonetOneTapPayBrand>("");
-  const [vaultID, setVaultID] = useState("");
   const [oneTapWidth, setOneTapWidth] = useState("240px");
   const [oneTapHeight, setOneTapHeight] = useState("40px");
   const [includeRecurringProcessingModel, setIncludeRecurringProcessingModel] =
@@ -613,7 +612,6 @@ function DropinBuilderPage() {
       return;
     }
     setOneTapPay((prev) => prev || "ApplePay");
-    setUserInfoReference((prev) => ensureUserInfoReference(prev));
   };
 
   const parsedBorderRadius = useMemo(() => {
@@ -958,6 +956,7 @@ function DropinBuilderPage() {
               : {}),
           }
         : {}),
+      ...(oneTapPay ? { oneTapPay } : {}),
     }),
     [
       binRules,
@@ -967,6 +966,7 @@ function DropinBuilderPage() {
       locale,
       maxWaitTime,
       mode,
+      oneTapPay,
       orderAmount,
       orderCurrency,
       recurringProcessingModel,
@@ -1015,10 +1015,6 @@ function DropinBuilderPage() {
       setSessionError(
         "User reference is required when Allow save card for next purchase is enabled (maps to userInfo.reference)."
       );
-      return;
-    }
-    if (!useCustomBody && oneTapPay && (!userInfoReference.trim() || !vaultID.trim())) {
-      setSessionError(t.oneTapRequired);
       return;
     }
     setIsCreatingSession(true);
@@ -1089,13 +1085,7 @@ function DropinBuilderPage() {
                   : {}),
               }
             : {}),
-          ...(oneTapPay
-            ? {
-                oneTapPay,
-                vaultID: vaultID.trim(),
-                userInfoReference: userInfoReference.trim(),
-              }
-            : {}),
+          ...(oneTapPay ? { oneTapPay } : {}),
           ...(interactionBody ? { interactionBody } : {}),
         }),
       });
@@ -1169,13 +1159,7 @@ function DropinBuilderPage() {
                   : {}),
               }
             : {}),
-          ...(oneTapPay
-            ? {
-                oneTapPay,
-                vaultID: vaultID.trim(),
-                userInfoReference: userInfoReference.trim(),
-              }
-            : {}),
+          ...(oneTapPay ? { oneTapPay } : {}),
         }),
       });
       const data = (await response.json()) as {
@@ -1207,13 +1191,12 @@ function DropinBuilderPage() {
     const parsed = Number.parseFloat(orderAmount);
     if (!Number.isFinite(parsed) || parsed < 0) return;
     if (!freeTrial && parsed <= 0) return;
-    if (freeTrial || saveCardForNextPurchase || oneTapPay) {
+    if (freeTrial || saveCardForNextPurchase) {
       if (!userInfoReference.trim()) {
         setUserInfoReference(ensureUserInfoReference());
         return;
       }
     }
-    if (oneTapPay && !vaultID.trim()) return;
     const timer = window.setTimeout(() => {
       void handleCreateSession();
     }, 650);
@@ -1226,7 +1209,6 @@ function DropinBuilderPage() {
     userInfoReference,
     saveCardForNextPurchase,
     oneTapPay,
-    vaultID,
     includeRecurringProcessingModel,
     recurringProcessingModel,
   ]);
@@ -1843,16 +1825,6 @@ function DropinBuilderPage() {
                             </Select>
                           </div>
                           <div className="space-y-2">
-                            <Label htmlFor="one-tap-vault">{t.oneTapVaultId}</Label>
-                            <Input
-                              id="one-tap-vault"
-                              value={vaultID}
-                              onChange={(event) => setVaultID(event.target.value)}
-                              placeholder="1234"
-                            />
-                            <p className="text-xs text-muted-foreground">{t.oneTapVaultIdHint}</p>
-                          </div>
-                          <div className="space-y-2">
                             <Label htmlFor="one-tap-width">{t.oneTapWidth}</Label>
                             <Input
                               id="one-tap-width"
@@ -1912,8 +1884,8 @@ function DropinBuilderPage() {
                                   setUserInfoReference(event.target.value)
                                 }
                                 placeholder="your_customer_id_123"
-                                disabled={!saveCardForNextPurchase && !oneTapPay}
-                                required={saveCardForNextPurchase || oneTapPay !== ""}
+                                disabled={!saveCardForNextPurchase}
+                                required={saveCardForNextPurchase}
                               />
                               <p className="text-xs text-muted-foreground">
                                 {t.userReferenceHint}

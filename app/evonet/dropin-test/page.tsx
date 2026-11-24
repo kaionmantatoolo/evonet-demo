@@ -321,7 +321,6 @@ function EvonetDropinTestPage() {
   const [saveCardForNextPurchase, setSaveCardForNextPurchase] = useState(false);
   const [userInfoReference, setUserInfoReference] = useState("");
   const [oneTapPay, setOneTapPay] = useState<"" | EvonetOneTapPayBrand>("");
-  const [vaultID, setVaultID] = useState("");
   const [oneTapWidth, setOneTapWidth] = useState("240px");
   const [oneTapHeight, setOneTapHeight] = useState("40px");
   const [includeRecurringProcessingModel, setIncludeRecurringProcessingModel] =
@@ -548,7 +547,6 @@ function EvonetDropinTestPage() {
       return;
     }
     setOneTapPay((prev) => prev || "ApplePay");
-    setUserInfoReference((prev) => ensureUserInfoReference(prev));
   };
 
   const sdkAppearance: EvonetSdkAppearance = useMemo(() => {
@@ -1013,11 +1011,6 @@ function EvonetDropinTestPage() {
       );
       return;
     }
-    if (!useCustomBody && oneTapPay && (!userInfoReference.trim() || !vaultID.trim())) {
-      setSessionError("User reference and vault ID are required for One Tap Pay.");
-      return;
-    }
-
     const numericAmount = parseFloat(amount);
     if (Number.isNaN(numericAmount) || numericAmount < 0) {
       setSessionError("Please enter a valid amount before creating sessionID.");
@@ -1098,13 +1091,7 @@ function EvonetDropinTestPage() {
                     : {}),
                 }
               : {}),
-          ...(oneTapPay
-            ? {
-                oneTapPay,
-                vaultID: vaultID.trim(),
-                userInfoReference: userInfoReference.trim(),
-              }
-            : {}),
+          ...(oneTapPay ? { oneTapPay } : {}),
           ...(interactionBody ? { interactionBody } : {}),
         }),
       });
@@ -1208,13 +1195,7 @@ function EvonetDropinTestPage() {
                   : {}),
               }
             : {}),
-          ...(oneTapPay
-            ? {
-                oneTapPay,
-                vaultID: vaultID.trim(),
-                userInfoReference: userInfoReference.trim(),
-              }
-            : {}),
+          ...(oneTapPay ? { oneTapPay } : {}),
         }),
       });
       const data = (await response.json()) as {
@@ -1248,13 +1229,12 @@ function EvonetDropinTestPage() {
     const numericAmount = parseFloat(amount);
     if (Number.isNaN(numericAmount) || numericAmount < 0) return;
     if (!freeTrial && numericAmount <= 0) return;
-    if (freeTrial || saveCardForNextPurchase || oneTapPay) {
+    if (freeTrial || saveCardForNextPurchase) {
       if (!userInfoReference.trim()) {
         setUserInfoReference(ensureUserInfoReference());
         return;
       }
     }
-    if (oneTapPay && !vaultID.trim()) return;
     const timer = window.setTimeout(() => {
       void handleCreateSession({ initDropin: true });
     }, 650);
@@ -1267,7 +1247,6 @@ function EvonetDropinTestPage() {
     userInfoReference,
     saveCardForNextPurchase,
     oneTapPay,
-    vaultID,
     includeRecurringProcessingModel,
     recurringProcessingModel,
   ]);
@@ -1360,7 +1339,6 @@ function EvonetDropinTestPage() {
       saveCardForNextPurchase,
       userInfoReference,
       oneTapPay,
-      vaultID,
       includeRecurringProcessingModel,
       recurringProcessingModel,
       freeTrial,
@@ -1466,13 +1444,7 @@ function EvonetDropinTestPage() {
                     : {}),
                 }
               : {}),
-            ...(snap.oneTapPay
-              ? {
-                  oneTapPay: snap.oneTapPay,
-                  vaultID: snap.vaultID.trim(),
-                  userInfoReference: snap.userInfoReference.trim(),
-                }
-              : {}),
+            ...(snap.oneTapPay ? { oneTapPay: snap.oneTapPay } : {}),
             ...(interactionBody ? { interactionBody } : {}),
           }),
           signal: ac.signal,
@@ -1696,18 +1668,6 @@ function EvonetDropinTestPage() {
                           </Select>
                         </div>
                         <div className="min-w-0 space-y-2">
-                          <Label htmlFor="one-tap-vault">Vault ID</Label>
-                          <Input
-                            id="one-tap-vault"
-                            value={vaultID}
-                            onChange={(event) => setVaultID(event.target.value)}
-                            placeholder="1234"
-                          />
-                          <p className="break-words text-xs text-muted-foreground">
-                            userInfo.vaultID. Required together with the shopper reference.
-                          </p>
-                        </div>
-                        <div className="min-w-0 space-y-2">
                           <Label htmlFor="one-tap-width">Button width</Label>
                           <Input
                             id="one-tap-width"
@@ -1825,8 +1785,8 @@ function EvonetDropinTestPage() {
                         value={userInfoReference}
                         onChange={(event) => setUserInfoReference(event.target.value)}
                         placeholder="your_customer_id_123"
-                        disabled={!saveCardForNextPurchase && !oneTapPay}
-                        required={saveCardForNextPurchase || oneTapPay !== ""}
+                        disabled={!saveCardForNextPurchase}
+                        required={saveCardForNextPurchase}
                       />
                       <p className="break-words text-xs text-muted-foreground">
                         Stable shopper ID used to bind the token.

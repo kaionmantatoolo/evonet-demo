@@ -197,11 +197,9 @@ export interface EvonetInteractionRequest {
   interactionBody?: Record<string, unknown>;
   /**
    * When `ApplePay` or `GooglePay`, the interaction order is a One Tap Pay order.
-   * Also requires `vaultID` and `userInfoReference`.
+   * Sent as `merchantOrderInfo.oneTapPay`. Shopper reference stays on save-card.
    */
   oneTapPay?: EvonetOneTapPayBrand;
-  /** Maps to `userInfo.vaultID` when `oneTapPay` is set. */
-  vaultID?: string;
 }
 
 export interface EvonetInteractionResponse {

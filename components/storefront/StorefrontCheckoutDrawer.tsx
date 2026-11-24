@@ -320,6 +320,8 @@ export function StorefrontCheckoutDrawer({
               <Stack spacing={1.1}>
                 {lines.map((line) => {
                   const thumb = productThumbForColor(product, line.colorId);
+                  const lineName = line.name || product.name;
+                  const unitPrice = line.unitPrice || product.price;
                   return (
                     <Box
                       key={line.id}
@@ -342,8 +344,8 @@ export function StorefrontCheckoutDrawer({
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <Box
                           component="img"
-                          src={thumb?.src}
-                          alt={thumb?.alt ?? product.name}
+                          src={line.imageSrc ?? thumb?.src}
+                          alt={line.imageAlt ?? thumb?.alt ?? lineName}
                           sx={{
                             width: "100%",
                             height: "100%",
@@ -361,7 +363,7 @@ export function StorefrontCheckoutDrawer({
                             lineHeight: 1.25,
                           }}
                         >
-                          {product.name}
+                          {lineName}
                         </Typography>
                         <Typography
                           variant="caption"
@@ -375,7 +377,7 @@ export function StorefrontCheckoutDrawer({
                         variant="body2"
                         sx={{ fontWeight: 650, fontSize: "0.85rem" }}
                       >
-                        {currency} {(product.price * line.quantity).toFixed(2)}
+                        {currency} {(unitPrice * line.quantity).toFixed(2)}
                       </Typography>
                     </Box>
                   );

@@ -1,6 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useTheme } from "next-themes";
@@ -19,11 +26,14 @@ import {
 import ShoppingBagOutlinedIcon from "@mui/icons-material/ShoppingBagOutlined";
 import { ThemeToggle } from "../ThemeToggle";
 import {
-  getLocalizedDemoProduct,
+  alsoInTheShop,
+  DEFAULT_APPAREL_ID,
+  getLocalizedApparel,
   type DemoProduct,
   productImagesForColor,
 } from "./demoProduct";
 import { DropinModePreviewShell } from "../DropinModePreviewShell";
+import { EvonetDropinHost } from "../EvonetDropinHost";
 import { StorefrontDropinOverlayStage } from "./StorefrontDropinOverlayStage";
 import { StorefrontBagDrawer } from "./StorefrontBagDrawer";
 import { StorefrontCheckoutDrawer } from "./StorefrontCheckoutDrawer";
@@ -31,14 +41,20 @@ import {
   StorefrontOrderResult,
   type StorefrontCheckoutSummary,
 } from "./StorefrontOrderResult";
+import { ShopWordmark } from "./ShopWordmark";
 import { StorefrontProductCard } from "./StorefrontProductCard";
 import { bagBounce, enterUp } from "./storefrontMotion";
+import { oneTapBrandReady } from "../../lib/oneTapBrandReady";
 import {
+  cartLineAmount,
   cartLineCount,
   cartLineId,
   type StorefrontCartLine,
 } from "./cartTypes";
-import { shopSecondaryButtonSx } from "./storefrontButtons";
+import {
+  SHOP_PRIMARY_BUTTON_HEIGHT_PX,
+  shopSecondaryButtonSx,
+} from "./storefrontButtons";
 import {
   parseEvonetReturnParams,
   parseEvonetSdkPaymentEvent,
@@ -48,7 +64,7 @@ import {
 import { buildClientEvonetReturnUrl } from "../../lib/evonetReturnUrl";
 import {
   appearanceToStorefrontCssVars,
-  resolveStorefrontUnitPrice,
+  oneTapSessionFields,
   type StorefrontSnapshot,
 } from "../../lib/storefrontSnapshot";
 import {
@@ -80,6 +96,16 @@ function generateOrderId(): string {
   return `SHOP-${Date.now()}-${suffix}`;
 }
 
+/** Full checkout Drop-in stays a normal method list. One Tap stays on the PDP button. */
+function checkoutAppearance(
+  appearance: StorefrontSnapshot["appearance"]
+): StorefrontSnapshot["appearance"] {
+  const next = { ...appearance };
+  delete next.oneTapPay;
+  delete next.oneTapSpace;
+  return next;
+}
+
 interface StorefrontExperienceProps {
   config: StorefrontConfig;
   /** When set, "Back to Builder" closes overlay instead of navigating away. */
@@ -102,11 +128,22 @@ export function StorefrontExperience({
   const [bagOpen, setBagOpen] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [sessionID, setSessionID] = useState("");
+  const [pdpSessionId, setPdpSessionId] = useState("");
+  const [pdpOrderId, setPdpOrderId] = useState("");
+  const [expressReady, setExpressReady] = useState(false);
+  const pdpSessionRef = useRef("");
+  const pdpProductRef = useRef("");
+  const pdpOrderRef = useRef("");
+  const pdpCreateRef = useRef<Promise<{
+    sessionId: string;
+    orderId: string;
+  } | null> | null>(null);
   const [sdkInitGeneration, setSdkInitGeneration] = useState(0);
   const [isCreatingSession, setIsCreatingSession] = useState(false);
   const [sessionError, setSessionError] = useState<string | null>(null);
-  const [selectedSize, setSelectedSize] = useState("M");
-  const [selectedColorId, setSelectedColorId] = useState("black");
+  const [selectedProductId, setSelectedProductId] = useState(DEFAULT_APPAREL_ID);
+  const [selectedSize, setSelectedSize] = useState("Free");
+  const [selectedColorId, setSelectedColorId] = useState("navy");
   const [justAdded, setJustAdded] = useState(false);
   const [toastOpen, setToastOpen] = useState(false);
   const [checkoutSummary, setCheckoutSummary] =
@@ -132,6 +169,10 @@ export function StorefrontExperience({
     setBagOpen(false);
     setSessionID("");
     setSdkInitGeneration(0);
+    pdpSessionRef.current = "";
+    pdpOrderRef.current = "";
+    setPdpSessionId("");
+    setPdpOrderId("");
     if (result.status === "success") {
       setCartLines([]);
     }
@@ -152,37 +193,60 @@ export function StorefrontExperience({
   );
 
   const currency = config.currency?.trim() || "HKD";
-  const unitPrice = resolveStorefrontUnitPrice(config.amount);
-  const product: DemoProduct = useMemo(
-    () => getLocalizedDemoProduct(storefrontLocale, unitPrice),
-    [storefrontLocale, unitPrice]
+  const apparel = useMemo(
+    () => getLocalizedApparel(storefrontLocale),
+    [storefrontLocale]
   );
+  const product: DemoProduct =
+    apparel.find((item) => item.id === selectedProductId) ?? apparel[0];
   const cartQty = cartLineCount(cartLines);
-  const cartTotal = product.price * Math.max(cartQty, 0);
+  const cartTotal = cartLineAmount(cartLines);
   const colorLabel =
     product.colors.find((c) => c.id === selectedColorId)?.label ??
-    copy.product.colors.black;
+    product.colors[0]?.label ??
+    "";
+
+  useLayoutEffect(() => {
+    setSelectedColorId(product.colors[0]?.id ?? "");
+    setSelectedSize(product.sizes[0] ?? "");
+  }, [product]);
 
   useEffect(() => {
     setCartLines((prev) =>
-      prev.map((line) => ({
-        ...line,
-        colorLabel:
-          product.colors.find((c) => c.id === line.colorId)?.label ??
-          line.colorLabel,
-      }))
+      prev.map((line) => {
+        const item = apparel.find((entry) => entry.id === line.productId);
+        if (!item) return line;
+        const color = item.colors.find((entry) => entry.id === line.colorId);
+        const thumb = color?.images[0];
+        return {
+          ...line,
+          name: item.name,
+          unitPrice: item.price,
+          colorLabel: color?.label ?? line.colorLabel,
+          imageSrc: thumb?.src ?? line.imageSrc,
+          imageAlt: thumb?.alt ?? line.imageAlt,
+        };
+      })
     );
-  }, [product]);
+  }, [apparel]);
 
   const makeLine = useCallback(
-    (quantity: number): StorefrontCartLine => ({
-      id: cartLineId(selectedColorId, selectedSize),
+    (quantity: number): StorefrontCartLine => {
+      const thumb = productImagesForColor(product, selectedColorId)[0];
+      return {
+      id: cartLineId(product.id, selectedColorId, selectedSize),
+      productId: product.id,
+      name: product.name,
+      unitPrice: product.price,
+      imageSrc: thumb?.src,
+      imageAlt: thumb?.alt ?? product.name,
       size: selectedSize,
       colorId: selectedColorId,
       colorLabel,
       quantity: Math.max(1, quantity),
-    }),
-    [colorLabel, selectedColorId, selectedSize]
+      };
+    },
+    [colorLabel, product, selectedColorId, selectedSize]
   );
 
   const dropinConfig: EvonetDropinConfig | null = useMemo(() => {
@@ -198,7 +262,7 @@ export function StorefrontExperience({
         ? { maxWaitTime: config.maxWaitTime || "10" }
         : undefined,
       uiOption: config.uiOption,
-      appearance: config.appearance,
+      appearance: checkoutAppearance(config.appearance),
       binRules: config.verifyPaymentBrand ? config.binRules : undefined,
     };
   }, [config, storefrontLocale, sessionID]);
@@ -227,15 +291,14 @@ export function StorefrontExperience({
         .map((line) => ({ ...line }));
       if (checkoutLines.length === 0) return;
 
-      const qty = cartLineCount(checkoutLines);
-      const amount = product.price * qty;
+      const amount = cartLineAmount(checkoutLines);
       const orderId = generateOrderId();
-      const description = `${product.name} · ${checkoutLines
+      const description = checkoutLines
         .map(
           (line) =>
-            `${copy.sizeLine(line.colorLabel, line.size)} × ${line.quantity}`
+            `${line.name} · ${copy.sizeLine(line.colorLabel, line.size)} × ${line.quantity}`
         )
-        .join("; ")}`;
+        .join("; ");
 
       setBagOpen(false);
       setOrderResult(null);
@@ -292,13 +355,113 @@ export function StorefrontExperience({
       copy.sessionUnexpected,
       copy.sizeLine,
       currency,
-      product.name,
-      product.price,
     ]
   );
 
+  const createPdpSession = useCallback(async (): Promise<{
+    sessionId: string;
+    orderId: string;
+  } | null> => {
+    if (!oneTapSessionFields(config)) return null;
+    const forProduct = product.id;
+    if (
+      pdpSessionRef.current &&
+      pdpOrderRef.current &&
+      pdpProductRef.current === forProduct
+    ) {
+      return { sessionId: pdpSessionRef.current, orderId: pdpOrderRef.current };
+    }
+    if (pdpCreateRef.current && pdpProductRef.current === forProduct) {
+      return pdpCreateRef.current;
+    }
+    pdpProductRef.current = forProduct;
+
+    const task = (async () => {
+      const orderId = generateOrderId();
+      const returnURL = buildClientEvonetReturnUrl();
+      const response = await fetch("/api/evonet/session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          amount: product.price,
+          currency,
+          orderId,
+          description: product.name,
+          environment: config.environment,
+          locale: storefrontLocale,
+          ...oneTapSessionFields(config),
+          ...(returnURL ? { returnURL } : {}),
+          ...(config.enabledPaymentMethod?.length
+            ? { enabledPaymentMethod: config.enabledPaymentMethod }
+            : {}),
+        }),
+      });
+      const data = (await response.json()) as {
+        sessionId?: string;
+        error?: string;
+      };
+      if (!response.ok || !data.sessionId) {
+        throw new Error(data.error ?? copy.sessionFailed);
+      }
+      if (pdpProductRef.current !== forProduct) return null;
+      pdpSessionRef.current = data.sessionId;
+      pdpOrderRef.current = orderId;
+      setPdpSessionId(data.sessionId);
+      setPdpOrderId(orderId);
+      return { sessionId: data.sessionId, orderId };
+    })().catch((error: unknown) => {
+      setSessionError(
+        error instanceof Error ? error.message : copy.sessionUnexpected
+      );
+      return null;
+    });
+
+    pdpCreateRef.current = task;
+    try {
+      return await task;
+    } finally {
+      if (pdpCreateRef.current === task) pdpCreateRef.current = null;
+    }
+  }, [
+    config,
+    copy.sessionFailed,
+    copy.sessionUnexpected,
+    currency,
+    product.id,
+    product.name,
+    product.price,
+    storefrontLocale,
+  ]);
+
+  useLayoutEffect(() => {
+    pdpSessionRef.current = "";
+    pdpOrderRef.current = "";
+    setPdpSessionId("");
+    setPdpOrderId("");
+  }, [product.id]);
+
+  useEffect(() => {
+    if (!oneTapSessionFields(config)) return;
+    if (pdpSessionRef.current) return;
+    void createPdpSession();
+  }, [config, createPdpSession, pdpSessionId]);
+
+  useEffect(() => {
+    if (!config.oneTapPay) {
+      setExpressReady(false);
+      return;
+    }
+    let cancelled = false;
+    void oneTapBrandReady(config.oneTapPay, config.environment).then((ready) => {
+      if (!cancelled) setExpressReady(ready);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [config.environment, config.oneTapPay]);
+
   const handleAddToCart = () => {
-    const id = cartLineId(selectedColorId, selectedSize);
+    const id = cartLineId(product.id, selectedColorId, selectedSize);
     setCartLines((prev) => {
       const existing = prev.find((line) => line.id === id);
       if (existing) {
@@ -391,6 +554,59 @@ export function StorefrontExperience({
   };
 
   const showOrderResult = Boolean(orderResult);
+  const expressDropinConfig: EvonetDropinConfig | null = useMemo(() => {
+    if (!pdpSessionId.trim()) return null;
+    return {
+      type: "payment",
+      sessionID: pdpSessionId.trim(),
+      environment: config.environment as EvonetDropinConfig["environment"],
+      mode: "embedded",
+      language: storefrontLocale,
+      uiOption: config.uiOption,
+      appearance: {
+        ...config.appearance,
+        oneTapSpace: {
+          width: "100%",
+          height: `${SHOP_PRIMARY_BUTTON_HEIGHT_PX}px`,
+        },
+      },
+    };
+  }, [
+    config.appearance,
+    config.environment,
+    config.uiOption,
+    pdpSessionId,
+    storefrontLocale,
+  ]);
+  const showExpressPay =
+    expressReady && expressDropinConfig != null && !checkoutOpen;
+  const expressBarExtra = showExpressPay
+    ? SHOP_PRIMARY_BUTTON_HEIGHT_PX + 10
+    : 0;
+  const expressPay =
+    showExpressPay && expressDropinConfig ? (
+      <Box
+        sx={{
+          width: "100%",
+          height: SHOP_PRIMARY_BUTTON_HEIGHT_PX,
+          overflow: "hidden",
+          "& .cil-dropIn-container, & .cil-dropIn-one-tap-container, & .cil-dropIn-one-tap-pay, & .google-pay-btn, & .google-pay-btn-wrap, & .gpay-button, & .apple-pay-button, & apple-pay-button":
+            {
+              width: "100% !important",
+              maxWidth: "100%",
+              height: `${SHOP_PRIMARY_BUTTON_HEIGHT_PX}px !important`,
+              minHeight: `${SHOP_PRIMARY_BUTTON_HEIGHT_PX}px !important`,
+            },
+        }}
+      >
+        <EvonetDropinHost
+          compact
+          config={expressDropinConfig}
+          initGeneration={1}
+          onEvent={handleDropinEvent}
+        />
+      </Box>
+    ) : null;
 
   const fallbackSummary: StorefrontCheckoutSummary = {
     orderId:
@@ -411,6 +627,7 @@ export function StorefrontExperience({
 
   return (
     <Box
+      data-storefront-root=""
       className={`${display.variable} ${sans.variable}`}
       component="main"
       sx={{
@@ -457,16 +674,7 @@ export function StorefrontExperience({
             justifyContent="space-between"
           >
             <Stack direction="row" spacing={3} alignItems="center">
-              <Typography
-                sx={{
-                  fontFamily: "var(--shop-font-display)",
-                  fontWeight: 400,
-                  fontSize: "1.45rem",
-                  letterSpacing: "0.04em",
-                }}
-              >
-                {product.brand}
-              </Typography>
+              <ShopWordmark dark={colorMode === "dark"} />
               <Typography
                 variant="caption"
                 sx={{
@@ -555,7 +763,13 @@ export function StorefrontExperience({
 
       <Container
         maxWidth="lg"
-        sx={{ py: { xs: 2, md: 6 }, pb: { xs: 11, md: 6 } }}
+        sx={{
+          py: { xs: 2, md: 6 },
+          pb: {
+            xs: expressBarExtra ? `calc(88px + ${expressBarExtra}px)` : 11,
+            md: 6,
+          },
+        }}
       >
         <StorefrontProductCard
           product={product}
@@ -567,9 +781,114 @@ export function StorefrontExperience({
           onAddToCart={handleAddToCart}
           onBuyNow={handleBuyNow}
           justAdded={justAdded}
+          expressPay={expressPay}
           themeVars={cssVars}
           copy={copy}
         />
+      </Container>
+
+      <Container maxWidth="lg" sx={{ pb: { xs: 3, md: 6 } }}>
+        <Typography
+          sx={{
+            mb: 2,
+            color: "var(--shop-muted)",
+            letterSpacing: 2.2,
+            fontWeight: 600,
+            fontSize: 11,
+            textTransform: "uppercase",
+          }}
+        >
+          {alsoInTheShop(storefrontLocale)}
+        </Typography>
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: {
+              xs: "1fr 1fr",
+              sm: "repeat(2, minmax(0, 280px))",
+            },
+            gap: 1.5,
+          }}
+        >
+          {apparel
+            .filter((item) => item.id !== product.id)
+            .map((item) => {
+              const shot = item.colors[0]?.images[0];
+              return (
+                <Box
+                  key={item.id}
+                  component="button"
+                  type="button"
+                  onClick={() => {
+                    setSelectedProductId(item.id);
+                    const root = document.querySelector("[data-storefront-root]");
+                    let node = root?.parentElement ?? null;
+                    while (node) {
+                      const overflow = getComputedStyle(node).overflowY;
+                      if (
+                        (overflow === "auto" || overflow === "scroll") &&
+                        node.scrollHeight > node.clientHeight
+                      ) {
+                        node.scrollTo({ top: 0, behavior: "smooth" });
+                        return;
+                      }
+                      node = node.parentElement;
+                    }
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                  }}
+                  sx={{
+                    p: 0,
+                    m: 0,
+                    display: "block",
+                    textAlign: "left",
+                    color: "var(--shop-text)",
+                    bgcolor: "transparent",
+                    border: "1px solid var(--shop-border)",
+                    borderRadius: 2.5,
+                    overflow: "hidden",
+                    cursor: "pointer",
+                    font: "inherit",
+                  }}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <Box
+                    component="img"
+                    src={shot?.src}
+                    alt=""
+                    sx={{
+                      width: "100%",
+                      aspectRatio: "4 / 5",
+                      objectFit: "cover",
+                      objectPosition: shot?.objectPosition ?? "50% 15%",
+                      display: "block",
+                      bgcolor: "var(--shop-muted-surface, #f3f4f6)",
+                    }}
+                  />
+                  <Box sx={{ p: 1.25 }}>
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        display: "block",
+                        color: "var(--shop-muted)",
+                        letterSpacing: 1.4,
+                        fontWeight: 600,
+                      }}
+                    >
+                      {item.brand}
+                    </Typography>
+                    <Typography sx={{ fontWeight: 650, fontSize: "0.95rem" }}>
+                      {item.name}
+                    </Typography>
+                    <Typography
+                      sx={{ color: "var(--shop-muted)", fontSize: "0.85rem" }}
+                    >
+                      {currency} {item.price.toFixed(2)}
+                    </Typography>
+                  </Box>
+                </Box>
+              );
+            })}
+        </Box>
       </Container>
 
       <Box
@@ -577,7 +896,10 @@ export function StorefrontExperience({
         sx={{
           mt: { xs: 0.5, md: 4 },
           py: { xs: 3.5, md: 7 },
-          pb: { xs: 11, md: 7 },
+          pb: {
+            xs: expressBarExtra ? `calc(88px + ${expressBarExtra}px)` : 11,
+            md: 7,
+          },
           borderTop: "1px solid var(--shop-border)",
           background:
             "linear-gradient(180deg, color-mix(in srgb, var(--shop-primary) 5%, var(--shop-bg)), var(--shop-bg))",
@@ -662,7 +984,7 @@ export function StorefrontExperience({
           pt: 3.5,
           // Clear the mobile sticky Buy now bar (+ home-indicator safe area).
           pb: {
-            xs: "calc(28px + 76px + env(safe-area-inset-bottom, 0px))",
+            xs: `calc(28px + 76px + ${expressBarExtra}px + env(safe-area-inset-bottom, 0px))`,
             md: 3.5,
           },
           mt: 2,
@@ -674,16 +996,7 @@ export function StorefrontExperience({
             justifyContent="space-between"
             spacing={1.5}
           >
-            <Typography
-              sx={{
-                fontFamily: "var(--shop-font-display)",
-                fontWeight: 400,
-                fontSize: "1.25rem",
-                letterSpacing: "0.04em",
-              }}
-            >
-              {product.brand}
-            </Typography>
+            <ShopWordmark dark={colorMode === "dark"} height={24} />
             <Typography variant="caption" sx={{ color: "var(--shop-muted)" }}>
               {copy.footerMeta} · {config.environment} ·{" "}
               {storefrontLocale} · {checkoutMode}

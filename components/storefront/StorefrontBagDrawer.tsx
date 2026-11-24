@@ -57,7 +57,10 @@ export function StorefrontBagDrawer({
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const quantity = cartLineCount(lines);
-  const total = product.price * quantity;
+  const total = lines.reduce(
+    (sum, line) => sum + (line.unitPrice || product.price) * line.quantity,
+    0
+  );
   const panelBg = themeVars?.["--shop-bg"] || "#ffffff";
 
   return (
@@ -160,6 +163,8 @@ export function StorefrontBagDrawer({
               {lines.map((line) => {
                 const thumb = productThumbForColor(product, line.colorId);
                 const lineLabel = copy.sizeLine(line.colorLabel, line.size);
+                const lineName = line.name || product.name;
+                const unitPrice = line.unitPrice || product.price;
                 return (
                   <Box
                     key={line.id}
@@ -181,8 +186,8 @@ export function StorefrontBagDrawer({
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <Box
                         component="img"
-                        src={thumb?.src}
-                        alt={thumb?.alt ?? product.name}
+                        src={line.imageSrc ?? thumb?.src}
+                        alt={line.imageAlt ?? thumb?.alt ?? lineName}
                         sx={{
                           width: "100%",
                           height: "100%",
@@ -194,7 +199,7 @@ export function StorefrontBagDrawer({
                     <Stack spacing={0.75} justifyContent="space-between">
                       <Box>
                         <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-                          {product.name}
+                          {lineName}
                         </Typography>
                         <Typography
                           variant="caption"
@@ -206,7 +211,7 @@ export function StorefrontBagDrawer({
                           variant="body2"
                           sx={{ mt: 0.5, fontWeight: 650 }}
                         >
-                          {currency} {product.price.toFixed(2)}
+                          {currency} {unitPrice.toFixed(2)}
                         </Typography>
                       </Box>
                       <Stack direction="row" spacing={1} alignItems="center">

@@ -157,11 +157,8 @@ export const JA_JP: SiteMessages = {
     oneTapPayHint:
       "merchantOrderInfo.oneTapPay を送り、SDK の appearance.oneTapPay も同じ brand になります。オフでは送りません。",
     oneTapBrand: "Brand",
-    oneTapVaultId: "Vault ID",
-    oneTapVaultIdHint: "userInfo.vaultID。ショッパー参照とセットで必要です。",
     oneTapWidth: "ボタン幅",
     oneTapHeight: "ボタン高さ",
-    oneTapRequired: "One Tap Pay にはユーザー参照と vault ID が必要です。",
     orderPaymentMethods: "支払い方法の順序",
     orderPaymentMethodsHint:
       "Drop-in の支払い方法順（enabledPaymentMethod）。残りは *。変更後はセッションを更新。",

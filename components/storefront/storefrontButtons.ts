@@ -2,6 +2,13 @@ import type { SxProps, Theme } from "@mui/material";
 
 const EASE = "cubic-bezier(0.22, 1, 0.36, 1)";
 
+/**
+ * Outer height of `shopPrimaryButtonSx` at the default 16px root:
+ * 12px padding × 2 + 0.98rem × 1.75 line + 1px border × 2.
+ * The PDP express wallet button uses this so it lines up with Buy now.
+ */
+export const SHOP_PRIMARY_BUTTON_HEIGHT_PX = 53;
+
 /** Primary CTA — Buy now / Checkout / Continue shopping */
 export const shopPrimaryButtonSx: SxProps<Theme> = {
   py: 1.5,

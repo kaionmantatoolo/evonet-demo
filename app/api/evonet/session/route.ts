@@ -56,7 +56,6 @@ export async function POST(req: NextRequest) {
     preview,
     interactionBody,
     oneTapPay: bodyOneTapPay,
-    vaultID: bodyVaultID,
   } = body;
 
   const useInteractionBody = interactionBody !== undefined && preview !== true;
@@ -121,16 +120,6 @@ export async function POST(req: NextRequest) {
   ) {
     return NextResponse.json(
       { error: "oneTapPay must be ApplePay or GooglePay." },
-      { status: 400 }
-    );
-  }
-  const vaultID = typeof bodyVaultID === "string" ? bodyVaultID.trim() : "";
-  if (!useInteractionBody && oneTapPay && (!referenceTrimmed || !vaultID)) {
-    return NextResponse.json(
-      {
-        error:
-          "userInfoReference and vaultID are required when oneTapPay is set.",
-      },
       { status: 400 }
     );
   }
@@ -238,11 +227,8 @@ export async function POST(req: NextRequest) {
     payload.allowAuthentication = true;
   }
 
-  if (enableSaveCard || oneTapPay) {
-    payload.userInfo = {
-      ...(referenceTrimmed ? { reference: referenceTrimmed } : {}),
-      ...(oneTapPay ? { vaultID } : {}),
-    };
+  if (enableSaveCard && referenceTrimmed) {
+    payload.userInfo = { reference: referenceTrimmed };
   }
 
   if (enableSaveCard && shouldIncludeRecurringModel) {

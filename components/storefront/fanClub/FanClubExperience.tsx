@@ -28,6 +28,7 @@ import {
 import { enterUp } from "../storefrontMotion";
 import {
   appearanceToStorefrontCssVars,
+  oneTapSessionFields,
   resolveStorefrontUnitPrice,
   type StorefrontSnapshot,
 } from "../../../lib/storefrontSnapshot";
@@ -310,6 +311,7 @@ export function FanClubExperience({
           userInfoReference,
           includeRecurringProcessingModel: true,
           recurringProcessingModel: "Subscription",
+          ...oneTapSessionFields(config),
           ...(returnURL ? { returnURL } : {}),
           ...(config.enabledPaymentMethod?.length
             ? { enabledPaymentMethod: config.enabledPaymentMethod }
@@ -337,6 +339,7 @@ export function FanClubExperience({
   }, [
     config.enabledPaymentMethod,
     config.environment,
+    config.oneTapPay,
     copy.sessionFailed,
     copy.sessionUnexpected,
     currency,

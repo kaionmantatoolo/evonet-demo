@@ -248,6 +248,8 @@ export function StorefrontOrderResult({
             <Stack spacing={1.75}>
               {summary.lines.map((line) => {
                 const thumb = productThumbForColor(product, line.colorId);
+                const lineName = line.name || product.name;
+                const unitPrice = line.unitPrice || product.price;
                 return (
                 <Box
                   key={line.id}
@@ -269,8 +271,8 @@ export function StorefrontOrderResult({
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <Box
                       component="img"
-                      src={thumb?.src}
-                      alt={thumb?.alt ?? product.name}
+                      src={line.imageSrc ?? thumb?.src}
+                      alt={line.imageAlt ?? thumb?.alt ?? lineName}
                       sx={{
                         width: "100%",
                         height: "100%",
@@ -281,7 +283,7 @@ export function StorefrontOrderResult({
                   </Box>
                   <Box>
                     <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.35 }}>
-                      {product.name}
+                      {lineName}
                     </Typography>
                     <Typography variant="body2" sx={{ color: "var(--shop-muted)" }}>
                       {copy.sizeLine(line.colorLabel, line.size)} ·{" "}
@@ -289,7 +291,7 @@ export function StorefrontOrderResult({
                     </Typography>
                     <Typography variant="body2" sx={{ mt: 0.75, fontWeight: 650 }}>
                       {summary.currency}{" "}
-                      {(product.price * line.quantity).toFixed(2)}
+                      {(unitPrice * line.quantity).toFixed(2)}
                     </Typography>
                   </Box>
                 </Box>

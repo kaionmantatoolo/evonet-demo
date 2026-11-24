@@ -11,6 +11,7 @@ import type {
   EvonetWindow,
 } from "../types/evonet";
 import { DROPIN_SCRIPT_SRC } from "../lib/dropinSdkScript";
+import { reloadDropinOrder } from "../lib/dropinReload";
 import { buildDropinPulseCss } from "../lib/dropinPulseTargets";
 import { applyDropinAppearanceCss } from "../lib/applyDropinAppearanceCss";
 import { dismissDropinQrOverlays } from "../lib/dismissDropinQrOverlay";
@@ -255,6 +256,11 @@ interface EvonetDropinHostProps {
    * changing unrelated `config` identity semantics.
    */
   initGeneration: number;
+  /**
+   * Increment to call `reload()` on the current instance. Order details only.
+   * Does not construct a new DropInSDK.
+   */
+  orderReloadGeneration?: number;
   onEvent?: (event: EvonetDropinEvent) => void;
   /** Called after each successful `new DropInSDK(...)` with a serializable payload. */
   onSdkInitApplied?: (info: SdkInitAppliedInfo) => void;
@@ -273,6 +279,7 @@ interface EvonetDropinHostProps {
 export function EvonetDropinHost({
   config,
   initGeneration,
+  orderReloadGeneration = 0,
   onEvent,
   onSdkInitApplied,
   compact = false,
@@ -284,6 +291,7 @@ export function EvonetDropinHost({
   const containerIdRef = useRef(containerId);
   containerIdRef.current = containerId;
   const dropInInstanceRef = useRef<unknown>(null);
+  const orderReloadSeenRef = useRef(0);
   const handledVerificationIdsRef = useRef<Set<string>>(new Set());
   const [scriptLoaded, setScriptLoaded] = useState(false);
 
@@ -301,6 +309,23 @@ export function EvonetDropinHost({
 
   const pulseKeyRef = useRef(pulseKey);
   pulseKeyRef.current = pulseKey;
+
+  useEffect(() => {
+    if (!orderReloadGeneration || orderReloadGeneration === orderReloadSeenRef.current) {
+      return;
+    }
+    orderReloadSeenRef.current = orderReloadGeneration;
+    const reloaded = reloadDropinOrder(dropInInstanceRef.current);
+    if (!reloaded) {
+      onEventRef.current?.({
+        type: "sdk_message",
+        payload: {
+          source: "reload",
+          note: "Drop-in instance has no reload(). Order details were not refreshed.",
+        },
+      });
+    }
+  }, [orderReloadGeneration]);
 
   /** Scoped pulse keyframes + selectors (same-document Drop-in chrome). */
   useEffect(() => {
