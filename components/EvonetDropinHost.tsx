@@ -1053,6 +1053,17 @@ export function EvonetDropinHost({
           px: compact ? 0 : { xs: 0.75, sm: 2 },
           py: compact ? 0 : { xs: 1, sm: 2 },
           overflow: "visible",
+          ...(config.appearance?.oneTapPay
+            ? {
+                display: "flex",
+                justifyContent: "center",
+                "& .cil-dropIn-one-tap-container": {
+                  display: "flex",
+                  justifyContent: "center",
+                  width: "100%",
+                },
+              }
+            : {}),
         }}
       />
     </Box>
