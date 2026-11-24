@@ -590,6 +590,14 @@ export function StorefrontExperience({
           width: "100%",
           height: SHOP_PRIMARY_BUTTON_HEIGHT_PX,
           overflow: "hidden",
+          bgcolor: "transparent",
+          /* SDK paints colorBackground on the host. The wallet control is a pill, so that fill shows as a white box around it. */
+          "& .MuiBox-root, & [id^='evonet-dropin'], & .cil-dropIn-container, & .cil-dropIn-one-tap-container, & .cil-dropIn-one-tap-pay:has(apple-pay-button), & .cil-dropIn-one-tap-pay:has(.apple-pay-button)":
+            {
+              background: "transparent !important",
+              backgroundColor: "transparent !important",
+              boxShadow: "none !important",
+            },
           "& .cil-dropIn-container, & .cil-dropIn-one-tap-container, & .cil-dropIn-one-tap-pay, & .google-pay-btn, & .google-pay-btn-wrap, & .gpay-button, & .apple-pay-button, & apple-pay-button":
             {
               width: "100% !important",

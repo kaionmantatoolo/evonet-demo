@@ -100,14 +100,6 @@ function parseRgb(hex: string): [number, number, number] | null {
   ];
 }
 
-function toHex(r: number, g: number, b: number): string {
-  const clamp = (n: number) =>
-    Math.max(0, Math.min(255, Math.round(n)))
-      .toString(16)
-      .padStart(2, "0");
-  return `#${clamp(r)}${clamp(g)}${clamp(b)}`;
-}
-
 /** Approximate relative luminance for hex colors (0–1). */
 function hexLuminance(hex: string): number {
   const rgb = parseRgb(hex);
@@ -124,69 +116,6 @@ function isLightHex(hex: string): boolean {
   return hexLuminance(hex) > 0.72;
 }
 
-function mixHex(a: string, b: string, t: number): string {
-  const rgbA = parseRgb(a);
-  const rgbB = parseRgb(b);
-  if (!rgbA || !rgbB) return a;
-  const u = Math.max(0, Math.min(1, t));
-  return toHex(
-    rgbA[0] + (rgbB[0] - rgbA[0]) * u,
-    rgbA[1] + (rgbB[1] - rgbA[1]) * u,
-    rgbA[2] + (rgbB[2] - rgbA[2]) * u
-  );
-}
-
-function contrastRatio(a: string, b: string): number {
-  const l1 = hexLuminance(a);
-  const l2 = hexLuminance(b);
-  const lighter = Math.max(l1, l2);
-  const darker = Math.min(l1, l2);
-  return (lighter + 0.05) / (darker + 0.05);
-}
-
-/** Lift a color toward white until it contrasts enough with a dark background. */
-function ensureContrastOnBg(
-  foreground: string,
-  background: string,
-  minRatio = 3
-): string {
-  if (contrastRatio(foreground, background) >= minRatio) return foreground;
-  let out = foreground;
-  for (let i = 1; i <= 8; i += 1) {
-    out = mixHex(foreground, "#ffffff", i / 8);
-    if (contrastRatio(out, background) >= minRatio) return out;
-  }
-  return "#fafaf9";
-}
-
-function actionLabelOn(fill: string, inverse: string): string {
-  if (contrastRatio(inverse, fill) >= 3) return inverse;
-  return isLightHex(fill) ? "#1c1917" : "#fafaf9";
-}
-
-/**
- * Dark shell tinted by merchant action/primary so storefront dark mode
- * still reads as the Builder theme — not a generic stone palette.
- */
-function themeTintedDarkShell(tint: string): {
-  bg: string;
-  surface: string;
-  mutedSurface: string;
-  text: string;
-  muted: string;
-  border: string;
-} {
-  const seed = isLightHex(tint) ? mixHex(tint, "#0c0a09", 0.55) : tint;
-  return {
-    bg: mixHex("#0c0a09", seed, 0.1),
-    surface: mixHex("#1c1917", seed, 0.14),
-    mutedSurface: mixHex("#292524", seed, 0.16),
-    text: "#fafaf9",
-    muted: mixHex("#a8a29e", seed, 0.18),
-    border: mixHex("#44403c", seed, 0.22),
-  };
-}
-
 const LIGHT_SHELL = {
   surface: "#ffffff",
   mutedSurface: "#f3f4f6",
@@ -195,29 +124,21 @@ const LIGHT_SHELL = {
   borderFallback: "#e7e5e4",
 } as const;
 
-/** Builder default action when colorAction is empty. */
-const DEFAULT_ACTION = "#111827";
-/** Evonet blue — used for dark-shell CTAs when the theme action is near-black. */
-const EVONET_CTA_BLUE = "#1a86e8";
-
-/** Dark, low-chroma fills look disabled on a dark storefront shell. */
-function isNearBlackNeutral(hex: string): boolean {
-  const rgb = parseRgb(hex);
-  if (!rgb) return false;
-  const [r, g, b] = rgb;
-  const chroma = Math.max(r, g, b) - Math.min(r, g, b);
-  return hexLuminance(hex) < 0.14 && chroma < 48;
-}
-
-function resolveDarkShellAction(action: string, shopBg: string): string {
-  if (
-    action.toLowerCase() === DEFAULT_ACTION ||
-    isNearBlackNeutral(action)
-  ) {
-    return EVONET_CTA_BLUE;
-  }
-  return ensureContrastOnBg(action, shopBg, 4.5);
-}
+/**
+ * iOS shop dark mode: system black, grouped gray surfaces, Anon Tokyo blush.
+ * Matches `Color(.systemBackground)` / `secondarySystemBackground` and
+ * `BrandAccent` in the iOS demo.
+ */
+const IOS_DARK_SHELL = {
+  bg: "#000000",
+  surface: "#1C1C1E",
+  mutedSurface: "#2C2C2E",
+  text: "#F5F5F7",
+  muted: "#AEAEB2",
+  border: "#3A3A3C",
+  action: "#F3C2CC",
+  actionText: "#9A2744",
+} as const;
 
 export function writeStorefrontSnapshot(snapshot: Omit<StorefrontSnapshot, "savedAt">): void {
   if (typeof window === "undefined") return;
@@ -261,11 +182,8 @@ export function resolveStorefrontUnitPrice(
 
 /**
  * Map Drop-in appearance tokens onto shop CSS custom properties.
- * Dark shell when:
- * - site theme is dark and merchant background is light (tint the shell), or
- * - merchant `colorBackground` is already dark (use it as the shell — don't
- *   keep LIGHT_SHELL white surfaces that fight light primary text).
- * Drop-in payment chrome still uses the snapshot `appearance` as-is.
+ * Dark mode follows the iOS shop palette. Light mode uses the merchant
+ * appearance. Drop-in payment chrome still uses the snapshot `appearance`.
  */
 export function appearanceToStorefrontCssVars(
   appearance: EvonetSdkAppearance | undefined,
@@ -273,10 +191,6 @@ export function appearanceToStorefrontCssVars(
 ): StorefrontCssVars {
   const action = asHex(appearance?.colorAction, "#111827");
   const background = asHex(appearance?.colorBackground, "#ffffff");
-  const formBackground = asHex(
-    appearance?.colorFormBackground,
-    background
-  );
   const primary = asHex(appearance?.colorPrimary, action);
   const secondary = asHex(appearance?.colorSecondary, "#6b7280");
   const inverse = asHex(appearance?.colorInverse, "#ffffff");
@@ -295,78 +209,40 @@ export function appearanceToStorefrontCssVars(
             : firstRadius.trim()
         : "12px";
 
-  const merchantDarkBg = !isLightHex(background);
-  const useTintedDarkShell = colorMode === "dark" && isLightHex(background);
-  const tintSeed =
-    !isLightHex(action) &&
-    action.toLowerCase() !== DEFAULT_ACTION &&
-    !isNearBlackNeutral(action)
-      ? action
-      : !isLightHex(primary) && !isNearBlackNeutral(primary)
-        ? primary
-        : EVONET_CTA_BLUE;
-  const tintedShell = useTintedDarkShell
-    ? themeTintedDarkShell(tintSeed)
-    : null;
-  const merchantDarkShell = merchantDarkBg
-    ? {
-        bg: background,
-        surface: !isLightHex(formBackground)
-          ? formBackground
-          : mixHex(background, "#ffffff", 0.08),
-        mutedSurface: mixHex(background, "#ffffff", 0.12),
-        text: isLightHex(primary)
-          ? primary
-          : ensureContrastOnBg(primary, background, 3),
-        muted: isLightHex(secondary)
-          ? secondary
-          : ensureContrastOnBg(secondary, background, 2.5),
-        border: asHex(
-          appearance?.colorBoxStroke,
-          mixHex(background, "#ffffff", 0.16)
-        ),
-      }
-    : null;
-  const darkShell = tintedShell ?? merchantDarkShell;
+  if (colorMode === "dark") {
+    return {
+      "--shop-bg": IOS_DARK_SHELL.bg,
+      "--shop-surface": IOS_DARK_SHELL.surface,
+      "--shop-muted-surface": IOS_DARK_SHELL.mutedSurface,
+      "--shop-primary": IOS_DARK_SHELL.text,
+      "--shop-action": IOS_DARK_SHELL.action,
+      "--shop-action-text": IOS_DARK_SHELL.actionText,
+      "--shop-text": IOS_DARK_SHELL.text,
+      "--shop-muted": IOS_DARK_SHELL.muted,
+      "--shop-border": IOS_DARK_SHELL.border,
+      "--shop-radius": radius,
+    };
+  }
 
-  const shopBg = darkShell ? darkShell.bg : background;
-  const shopSurface = darkShell ? darkShell.surface : LIGHT_SHELL.surface;
-  const shopMutedSurface = darkShell
-    ? darkShell.mutedSurface
-    : LIGHT_SHELL.mutedSurface;
-  const shopText = darkShell
-    ? darkShell.text
-    : primary === action || primary === background
+  const shopBg = background;
+  const shopSurface = LIGHT_SHELL.surface;
+  const shopMutedSurface = LIGHT_SHELL.mutedSurface;
+  const shopText =
+    primary === action || primary === background
       ? LIGHT_SHELL.textFallback
       : primary;
-  const shopMuted = darkShell
-    ? useTintedDarkShell && isLightHex(secondary)
-      ? mixHex(darkShell.muted, secondary, 0.35)
-      : darkShell.muted
-    : secondary === action
-      ? LIGHT_SHELL.mutedFallback
-      : secondary;
-  const shopBorder = darkShell
-    ? darkShell.border
-    : asHex(appearance?.colorBoxStroke, LIGHT_SHELL.borderFallback);
-
-  // Default near-black action → Evonet blue on dark shell (gray lift looks disabled).
-  const shopAction = darkShell
-    ? resolveDarkShellAction(action, shopBg)
-    : action;
-  const shopActionText = darkShell
-    ? actionLabelOn(shopAction, inverse)
-    : isLightHex(action) && isLightHex(inverse)
+  const shopMuted =
+    secondary === action ? LIGHT_SHELL.mutedFallback : secondary;
+  const shopBorder = asHex(
+    appearance?.colorBoxStroke,
+    LIGHT_SHELL.borderFallback
+  );
+  const shopAction = action;
+  const shopActionText =
+    isLightHex(action) && isLightHex(inverse)
       ? LIGHT_SHELL.textFallback
       : inverse;
-
-  const shopPrimary = darkShell
-    ? ensureContrastOnBg(
-        isLightHex(primary) ? primary : mixHex(primary, darkShell.text, 0.55),
-        shopBg,
-        3
-      )
-    : primary;
+  const shopPrimary = primary;
 
   return {
     "--shop-bg": shopBg,
